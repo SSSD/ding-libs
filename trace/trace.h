@@ -156,4 +156,11 @@ extern unsigned trace_level;
 #define TRACE_ERROR_DOUBLE(msg, num) TRACE_DOUBLE(TRACE_ERROR, msg, num)
 #define TRACE_INFO_DOUBLE(msg, num)  TRACE_DOUBLE(TRACE_INFO, msg, num)
 
+/* Some other nice wrappers for function entry and exit */
+#define TRACE_FLOW_ENTRY()          TRACE_FLOW_STRING(__FUNCTION__, "Entry")
+#define TRACE_FLOW_EXIT()           TRACE_FLOW_STRING(__FUNCTION__, "Exit")
+#define TRACE_FLOW_RETURN(val)      \
+        TRACE_FLOW_NUMBER(__FUNCTION__ " returning:", val)
+
+
 #endif /* COMMON_TRACE_H */
