@@ -341,8 +341,9 @@ int ref_array_replace(struct ref_array *ra,
     }
 
     /* Clear old element */
-    ra->cb((unsigned char *)(ra->storage) + idx * ra->elsize,
-           REF_ARRAY_DELETE, ra->cb_data);
+    if (ra->cb)
+        ra->cb((unsigned char *)(ra->storage) + idx * ra->elsize,
+               REF_ARRAY_DELETE, ra->cb_data);
 
     /* Overwrite element */
     memcpy((unsigned char *)(ra->storage) + idx * ra->elsize,
@@ -375,8 +376,9 @@ int ref_array_remove(struct ref_array *ra,
     }
 
     /* Clear old element */
-    ra->cb((unsigned char *)(ra->storage) + idx * ra->elsize,
-           REF_ARRAY_DELETE, ra->cb_data);
+    if (ra->cb)
+        ra->cb((unsigned char *)(ra->storage) + idx * ra->elsize,
+               REF_ARRAY_DELETE, ra->cb_data);
 
     /* Shift elements left */
     for (i = idx + 1; i < ra->len; i++) {
