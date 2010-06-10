@@ -91,7 +91,8 @@ int ini_comment_get_numlines(struct ini_comment *ic,
 /* Get line */
 int ini_comment_get_line(struct ini_comment *ic,
                          uint32_t idx,
-                         char **line);
+                         char **line,
+                         uint32_t *line_len);
 
 /* Swap lines */
 int ini_comment_swap(struct ini_comment *ic,

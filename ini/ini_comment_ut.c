@@ -111,7 +111,7 @@ int alter_test(void)
     }
 
     for (i = 0; i < num; i++) {
-        error = ini_comment_get_line(ic, i, &line);
+        error = ini_comment_get_line(ic, i, &line, NULL);
         if (error) {
             printf("Failed to get line.\n");
             ini_comment_destroy(ic);
@@ -137,7 +137,7 @@ int alter_test(void)
     }
 
     for (i = 0; i < num; i++) {
-        error = ini_comment_get_line(ic, i, &line);
+        error = ini_comment_get_line(ic, i, &line, NULL);
         if (error) {
             printf("Failed to get line.\n");
             ini_comment_destroy(ic);

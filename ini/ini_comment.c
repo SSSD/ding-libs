@@ -57,6 +57,7 @@
 /****************************************/
 struct ini_comment {
     struct ref_array *ra;
+    struct ref_array *ra_len;
     uint32_t state;
 };
 
@@ -71,6 +72,7 @@ void ini_comment_destroy(struct ini_comment *ic)
     if (ic) {
         /* Function will check for NULL */
         ref_array_destroy(ic->ra);
+        ref_array_destroy(ic->ra_len);
         free(ic);
     }
     TRACE_FLOW_STRING("ini_comment_destroy", "Exit");
@@ -94,6 +96,7 @@ int ini_comment_create(struct ini_comment **ic)
 {
     int error = EOK;
     struct ref_array *ra = NULL;
+    struct ref_array *ra_len = NULL;
     struct ini_comment *ic_new = NULL;
 
     TRACE_FLOW_STRING("ini_comment_create", "Entry");
@@ -108,15 +111,28 @@ int ini_comment_create(struct ini_comment **ic)
         return error;
     }
 
+    error = ref_array_create(&ra_len,
+                             sizeof(uint32_t),
+                             INI_COMMENT_BLOCK,
+                             NULL,
+                             NULL);
+    if (error) {
+        TRACE_ERROR_NUMBER("Error creating ref array", error);
+        ref_array_destroy(ra);
+        return error;
+    }
+
     ic_new = malloc(sizeof(struct ini_comment));
     if (!ic_new) {
         TRACE_ERROR_NUMBER("Memory allocation error", ENOMEM);
-        ref_array_destroy(ic_new->ra);
+        ref_array_destroy(ra);
+        ref_array_destroy(ra_len);
         return ENOMEM;
     }
 
     /* Initialize members here */
     ic_new->ra = ra;
+    ic_new->ra_len = ra_len;
     ic_new->state = INI_COMMENT_EMPTY;
 
     *ic = ic_new;
@@ -178,6 +194,7 @@ static int ini_comment_modify(struct ini_comment *ic,
     char *input = NULL;
     char *empty = NULL;
     uint32_t i, len = 0;
+    uint32_t input_len = 0;
 
     TRACE_FLOW_STRING("ini_comment_modify", "Entry");
 
@@ -214,8 +231,14 @@ static int ini_comment_modify(struct ini_comment *ic,
         }
 
         /* Dup it */
-        if (input) elem = strdup(input);
-        else elem = strdup("");
+        if (input) {
+            input_len = strlen(input);
+            elem = strndup(input, (size_t)(input_len + 1));
+        }
+        else {
+            input_len = 0;
+            elem = strdup("");
+        }
 
         if (!elem) {
             TRACE_ERROR_NUMBER("Memory allocation error", ENOMEM);
@@ -228,13 +251,35 @@ static int ini_comment_modify(struct ini_comment *ic,
     case INI_COMMENT_MODE_BUILD:
 
         TRACE_INFO_STRING("BUILD mode", "");
-        error = ref_array_append(ic->ra, &elem);
+        error = ref_array_append(ic->ra, (void *)&elem);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to append line to an array", error);
+            free(elem);
+            return error;
+        }
+
+        error = ref_array_append(ic->ra_len, (void *)&input_len);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to appen length", error);
+            return error;
+        }
         break;
 
     case INI_COMMENT_MODE_APPEND:
 
         TRACE_INFO_STRING("Append mode", "");
-        error = ref_array_append(ic->ra, &elem);
+        error = ref_array_append(ic->ra, (void *)&elem);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to append line to an array", error);
+            free(elem);
+            return error;
+        }
+
+        error = ref_array_append(ic->ra_len, (void *)&input_len);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to appen length", error);
+            return error;
+        }
         break;
 
     case INI_COMMENT_MODE_INSERT:
@@ -249,19 +294,47 @@ static int ini_comment_modify(struct ini_comment *ic,
                     TRACE_ERROR_NUMBER("Memory problem", ENOMEM);
                     return ENOMEM;
                 }
-                error = ref_array_append(ic->ra, &empty);
+                error = ref_array_append(ic->ra, (void *)&empty);
                 if (error) {
                     TRACE_ERROR_NUMBER("Append problem", error);
                     free(empty);
                     return error;
                 }
+                error = ref_array_append(ic->ra_len, (void *)&input_len);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Error adding lenghts", error);
+                    free(empty);
+                    return error;
+                }
             }
             /* Append last line */
-            error = ref_array_append(ic->ra, &elem);
+            error = ref_array_append(ic->ra, (void *)&elem);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to append last line", error);
+                return error;
+            }
+
+            error = ref_array_append(ic->ra_len, (void *)&input_len);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to append length", error);
+                return error;
+            }
+
         }
         else {
             /* Insert inside the array */
-            error = ref_array_insert(ic->ra, idx, &elem);
+            error = ref_array_insert(ic->ra, idx, (void *)&elem);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to append last line", error);
+                return error;
+            }
+
+            error = ref_array_insert(ic->ra_len, idx, (void *)&input_len);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to insert length", error);
+                return error;
+            }
+
         }
         break;
 
@@ -269,33 +342,60 @@ static int ini_comment_modify(struct ini_comment *ic,
     case INI_COMMENT_MODE_REPLACE:
 
         TRACE_INFO_STRING("Replace mode", "");
-        error = ref_array_replace(ic->ra, idx, &elem);
+        error = ref_array_replace(ic->ra, idx, (void *)&elem);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to replace", error);
+            free(elem);
+            return error;
+        }
+
+        error = ref_array_replace(ic->ra_len, idx, (void *)&input_len);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to remove length", error);
+            return error;
+        }
         break;
 
     case INI_COMMENT_MODE_REMOVE:
 
         TRACE_INFO_STRING("Remove mode", "");
         error = ref_array_remove(ic->ra, idx);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to remove", error);
+            return error;
+        }
+
+        error = ref_array_remove(ic->ra_len, idx);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to remove length", error);
+            return error;
+        }
         break;
 
     case INI_COMMENT_MODE_CLEAR:
 
         TRACE_INFO_STRING("Clear mode", "");
-        error = ref_array_replace(ic->ra, idx, &elem);
+        error = ref_array_replace(ic->ra, idx, (void *)&elem);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to replace", error);
+            free(elem);
+            return error;
+        }
+
+        error = ref_array_replace(ic->ra_len, idx, (void *)&input_len);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to replace length", error);
+            return error;
+        }
         break;
 
     default :
 
         TRACE_ERROR_STRING("Coding error", "");
-        error = EINVAL;
+        return EINVAL;
 
     }
 
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to append line to an array", error);
-        free(elem);
-        return error;
-    }
 
     /* Change state */
     if (INI_COMMENT_MODE_BUILD) ic->state = INI_COMMENT_READ;
@@ -437,7 +537,8 @@ int ini_comment_get_numlines(struct ini_comment *ic, uint32_t *num)
 }
 
 /* Get line */
-int ini_comment_get_line(struct ini_comment *ic, uint32_t idx, char **line)
+int ini_comment_get_line(struct ini_comment *ic, uint32_t idx,
+                         char **line, uint32_t *line_len)
 {
     int error = EOK;
     void *res = NULL;
@@ -453,7 +554,18 @@ int ini_comment_get_line(struct ini_comment *ic, uint32_t idx, char **line)
     if (!res) {
         error = EINVAL;
         *line = NULL;
+        if (line_len) line_len = 0;
     }
+
+    if (line_len) {
+        res = ref_array_get(ic->ra_len, idx, (void *)line_len);
+        if (!res) {
+            error = EINVAL;
+            *line = NULL;
+            *line_len = 0;
+        }
+    }
+
     TRACE_FLOW_NUMBER("ini_comment_get_line - Returning", error);
     return error;
 }
@@ -472,8 +584,12 @@ int ini_comment_swap(struct ini_comment *ic,
         return EINVAL;
     }
 
-    error = ref_array_swap(ic->ra, idx1, idx2);
-    if ((!error) && (idx1 != idx2)) {
+    if (idx1 != idx2) {
+        if ((error = ref_array_swap(ic->ra, idx1, idx2)) ||
+            (error = ref_array_swap(ic->ra_len, idx1, idx2))) {
+            TRACE_ERROR_NUMBER("Failed to swap", error);
+            return error;
+        }
         ic->state = INI_COMMENT_CHANGED;
     }
 
