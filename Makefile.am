@@ -229,11 +229,14 @@ libini_config_la_SOURCES = \
     ini/ini_defines.h \
     ini/ini_comment.c \
     ini/ini_comment.h \
+    ini/ini_valueobj.c \
+    ini/ini_valueobj.h \
     trace/trace.h
 libini_config_la_LIBADD = \
     libcollection.la \
     libpath_utils.la \
-    libref_array.la
+    libref_array.la \
+    libbasicobjects.la
 libini_config_la_LDFLAGS = \
     -version-info 2:0:0
 
@@ -242,14 +245,26 @@ dist_noinst_DATA += \
     ini/ini.d/real.conf \
     ini/ini.d/test.conf
 
-check_PROGRAMS += ini_config_ut ini_comment_ut
-TESTS += ini_config_ut ini_comment_ut
+check_PROGRAMS += \
+    ini_config_ut \
+    ini_comment_ut \
+    ini_valueobj_ut
+
+TESTS += \
+    ini_config_ut \
+    ini_comment_ut \
+    ini_valueobj_ut
+
 ini_config_ut_SOURCES = ini/ini_config_ut.c
 ini_config_ut_LDADD = \
     libini_config.la \
     libcollection.la
+
 ini_comment_ut_SOURCES = ini/ini_comment_ut.c
 ini_comment_ut_LDADD = libini_config.la
+
+ini_valueobj_ut_SOURCES = ini/ini_valueobj_ut.c
+ini_valueobj_ut_LDADD = libini_config.la
 
 ini_config-docs:
 if HAVE_DOXYGEN
