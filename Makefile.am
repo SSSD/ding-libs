@@ -26,6 +26,7 @@ AM_CPPFLAGS = \
     -I$(srcdir)/refarray \
     -I$(srcdir)/dhash \
     -I$(srcdir)/ini \
+    -I$(srcdir)/basicobjects \
     -I$(srcdir) \
     -I$(srcdir)/trace \
     $(TRACE_LEVEL)
@@ -181,6 +182,32 @@ if HAVE_DOXYGEN
 endif
 
 ##############################################################################
+# basicobjects
+##############################################################################
+
+lib_LTLIBRARIES += libbasicobjects.la
+dist_pkgconfig_DATA += basicobjects/basicobjects.pc
+dist_include_HEADERS += basicobjects/simplebuffer.h
+
+libbasicobjects_la_SOURCES = \
+    basicobjects/simplebuffer.c \
+    trace/trace.h
+libbasicobjects_la_LDFLAGS = \
+    -version-info 1:0:0
+
+check_PROGRAMS += simplebuffer_ut
+TESTS += simplebuffer_ut
+simplebuffer_ut_SOURCES = basicobjects/simplebuffer_ut.c
+simplebuffer_ut_LDADD = libbasicobjects.la
+
+basicobjects-docs:
+if HAVE_DOXYGEN
+	cd basicobjects; \
+	$(DOXYGEN) basicobjects.cfg.doxy
+endif
+
+
+##############################################################################
 # ini_config
 ##############################################################################
 
@@ -276,7 +303,7 @@ endif
 
 tests: all $(check_PROGRAMS)
 
-docs: path_utils-docs collection-docs ref_array-docs ini_config-docs
+docs: path_utils-docs collection-docs ref_array-docs ini_config-docs basicobjects-docs
 
 clean-local:
 	rm -Rf doc

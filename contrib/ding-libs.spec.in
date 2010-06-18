@@ -12,6 +12,7 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 %global dhash_version 0.4.1
 %global collection_version 0.5.1
 %global ref_array_version 0.1.1
+%global basicobjecs_vesion 0.1.0
 %global ini_config_version 0.6.1
 
 ### Patches ###
@@ -225,6 +226,44 @@ A dynamically-growing, reference-counted array
 %doc refarray/README.ref_array
 %doc refarray/doc/html/
 
+##############################################################################
+# basicobjects
+##############################################################################
+
+%package -n libbasicobjects
+Summary: Basic object types for C
+Group: Development/Libraries
+License: GPLv3+
+Version: %{basicobjects_version}
+
+%description -n libbasicobjects
+Basic object types
+
+%package -n libbasicobjects-devel
+Summary: Development files for libbasicobjects
+Group: Development/Libraries
+License: GPLv3+
+Version: %{basicobjects_version}
+Requires: libbasicobjects = %{basicobjects_version}-%{release}
+
+%description -n libbasicobjects-devel
+Basic object types
+
+%post -n libbasicobjects -p /sbin/ldconfig
+%postun -n libbasicobjects -p /sbin/ldconfig
+
+%files -n libbasicobjects
+%defattr(-,root,root,-)
+%doc COPYING
+%doc COPYING.LESSER
+%{_libdir}/libbasicobjects.so.1
+%{_libdir}/libbasicobjects.so.1.0.0
+
+%files -n libbasicobjects-devel
+%defattr(-,root,root,-)
+%{_includedir}/simplebuffer.h
+%{_libdir}/libbasicobjects.so
+%{_libdir}/pkgconfig/basicobjects.pc
 
 ##############################################################################
 # ini_config
