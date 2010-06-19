@@ -47,6 +47,12 @@ AC_CHECK_FUNC([strcasestr],
                         [Define if strcasestr exists]),
               AC_MSG_ERROR("Platform must support strcasestr"))
 
+AC_CHECK_FUNC([getline],
+              AC_DEFINE([HAVE_GETLINE],
+                        [1],
+                        [Define if getline() exists]),
+              AC_MSG_ERROR("Platform must support getline()"))
+
 AC_DEFINE([COL_MAX_DATA], [65535], [Max length of the data block allowed in the collection value.])
 
 AC_DEFINE([MAX_KEY], [1024], [Max length of the key in the INI file.])

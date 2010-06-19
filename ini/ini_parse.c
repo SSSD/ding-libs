@@ -23,13 +23,65 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
+/* For error text */
+#include <libintl.h>
+#define _(String) gettext (String)
 #include "config.h"
 #include "trace.h"
 #include "ini_parse.h"
 #include "ini_defines.h"
 #include "ini_config.h"
+#include "ini_valueobj.h"
+#include "ini_config_priv.h"
+#include "collection.h"
+#include "collection_queue.h"
+
+#define INI_WARNING 0xA0000000 /* Warning bit */
+
+struct parser_obj {
+    /* Externally passed and saved data */
+    FILE *file;
+    struct collection_item *top;
+    struct collection_item *el;
+    struct collection_item **el_acceptor;
+    const char *filename;
+    int error_level;
+    /* Wrapping boundary */
+    uint32_t boundary;
+    /* Action queue */
+    struct collection_item *queue;
+    /* Last error */
+    uint32_t last_error;
+    /* Last line number */
+    uint32_t linenum;
+    /* Line number of the last found key */
+    uint32_t keylinenum;
+    /* Internal variables */
+    struct collection_item *sec;
+    struct ini_comment *ic;
+    char *last_read;
+    uint32_t last_read_len;
+    char *key;
+    uint32_t key_len;
+    struct ref_array *raw_lines;
+    struct ref_array *raw_lengths;
+    int ret;
+};
+
+typedef int (*action_fn)(struct parser_obj *);
 
 
+#define PARSE_ACTION       "action"
+
+/* Actions */
+#define PARSE_READ      0 /* Read from the file */
+#define PARSE_INSPECT   1 /* Process read string */
+#define PARSE_POST      2 /* Reading is complete  */
+#define PARSE_ERROR     3 /* Handle error */
+#define PARSE_DONE      4 /* We are done */
+
+
+/* THIS FUNCTION WILL BE REMOVED AS SOON AS WE SWITCH TO THE NEW INTERFACE */
 /* Reads a line from the file */
 int read_line(FILE *file,
               char *buf,
@@ -187,4 +239,949 @@ int read_line(FILE *file,
 
     TRACE_FLOW_STRING("read_line", "Exit");
     return RET_PAIR;
+}
+
+/************************************************************/
+/* REMOVE FUNCTION ABOVE                                    */
+/************************************************************/
+
+/* Destroy parser object */
+void parser_destroy(struct parser_obj *po)
+{
+    TRACE_FLOW_ENTRY();
+
+    if(po) {
+        col_destroy_queue(po->queue);
+        col_destroy_collection_with_cb(po->sec, ini_cleanup_cb, NULL);
+        ini_comment_destroy(po->ic);
+        value_destroy_arrays(po->raw_lines,
+                             po->raw_lengths);
+        if (po->last_read) free(po->last_read);
+        if (po->key) free(po->key);
+        free(po);
+    }
+
+    TRACE_FLOW_EXIT();
+}
+
+/* Create parse object
+ *
+ * It assumes that the ini collection
+ * has been precreated.
+ */
+int parser_create(FILE *file,
+                  const char *config_filename,
+                  struct collection_item *ini_config,
+                  int error_level,
+                  struct collection_item **error_list,
+                  uint32_t boundary,
+                  struct parser_obj **po)
+{
+    int error = EOK;
+    struct parser_obj *new_po = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Make sure that all the parts are initialized */
+    if ((!po) ||
+        (!file) ||
+        (!config_filename) ||
+        (!ini_config) ||
+        (!error_list)) {
+        TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
+        return EINVAL;
+    }
+
+    if ((error_level != INI_STOP_ON_ANY) &&
+        (error_level != INI_STOP_ON_NONE) &&
+        (error_level != INI_STOP_ON_ERROR)) {
+        TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
+        return EINVAL;
+    }
+
+    new_po = malloc(sizeof(struct parser_obj));
+    if (!new_po) {
+        TRACE_ERROR_NUMBER("No memory", ENOMEM);
+        return ENOMEM;
+    }
+
+    /* Save external data */
+    new_po->file = file;
+    new_po->top = ini_config;
+    new_po->el_acceptor = error_list;
+    new_po->filename = config_filename;
+    new_po->error_level = error_level;
+    new_po->boundary = boundary;
+
+    /* Initialize internal varibles */
+    new_po->sec = NULL;
+    new_po->ic = NULL;
+    new_po->last_error = 0;
+    new_po->linenum = 0;
+    new_po->last_read = NULL;
+    new_po->last_read_len = 0;
+    new_po->key = NULL;
+    new_po->key_len = 0;
+    new_po->raw_lines = NULL;
+    new_po->raw_lengths = NULL;
+    new_po->ret = EOK;
+    new_po->el = NULL;
+
+    /* Create a queue */
+    new_po->queue = NULL;
+    error = col_create_queue(&(new_po->queue));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create queue", error);
+        parser_destroy(new_po);
+        return error;
+    }
+
+    error = col_enqueue_unsigned_property(new_po->queue,
+                                          PARSE_ACTION,
+                                          PARSE_READ);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create queue", error);
+        parser_destroy(new_po);
+        return error;
+    }
+
+    *po = new_po;
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Function to read next line from the file */
+int parser_read(struct parser_obj *po)
+{
+    int error = EOK;
+    char *buffer = NULL;
+    ssize_t res = 0;
+    size_t len = 0;
+    int32_t i = 0;
+    uint32_t action;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Adjust line number */
+    (po->linenum)++;
+
+    /* Get line from the file */
+    res = getline(&buffer, &len, po->file);
+    if (res == -1) {
+        if (feof(po->file)) {
+            TRACE_FLOW_STRING("Read nothing", "");
+            action = PARSE_POST;
+        }
+        else {
+            TRACE_ERROR_STRING("Error reading", "");
+            action = PARSE_ERROR;
+            po->last_error = ERR_READ;
+        }
+        if(buffer) free(buffer);
+    }
+    else {
+        /* Read Ok */
+        len = res;
+        TRACE_INFO_STRING("Read line ok:", buffer);
+        TRACE_INFO_NUMBER("Length:", len);
+        TRACE_INFO_NUMBER("Strlen:", strlen(buffer));
+
+        if (buffer[0] == '\0') {
+            /* Empty line - read again (should not ever happen) */
+            action = PARSE_READ;
+            free(buffer);
+        }
+        else {
+            /* Check length */
+            if (len >= BUFFER_SIZE) {
+                TRACE_ERROR_STRING("Too long", "");
+                action = PARSE_ERROR;
+                po->last_error = ERR_LONGDATA;
+                free(buffer);
+            }
+            else {
+                /* Trim end line */
+                i = len - 1;
+                while ((i >= 0) &&
+                       ((buffer[i] == '\r') ||
+                        (buffer[i] == '\n'))) {
+                    TRACE_INFO_NUMBER("Offset:", i);
+                    TRACE_INFO_NUMBER("Code:", buffer[i]);
+                    buffer[i] = '\0';
+                    i--;
+                }
+
+                po->last_read = buffer;
+                po->last_read_len = i + 1;
+                action = PARSE_INSPECT;
+                TRACE_INFO_STRING("Line:", po->last_read);
+                TRACE_INFO_NUMBER("Linelen:", po->last_read_len);
+            }
+        }
+    }
+
+    /* Move to the next action */
+    error = col_enqueue_unsigned_property(po->queue,
+                                          PARSE_ACTION,
+                                          action);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to schedule an action", error);
+        return error;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Complete value processing */
+static int complete_value_processing(struct parser_obj *po)
+{
+    int error = EOK;
+    struct value_obj *vo = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    /* If there is not open section create a default one */
+    if(!(po->sec)) {
+        /* Create a new section */
+        error = col_create_collection(&po->sec,
+                                      INI_DEFAULT_SECTION,
+                                      COL_CLASS_INI_SECTION);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to create default section", error);
+            return error;
+        }
+    }
+
+    /* Construct value object from what we have */
+    error = value_create_from_refarray(po->raw_lines,
+                                       po->raw_lengths,
+                                       po->keylinenum,
+                                       INI_VALUE_READ,
+                                       po->key_len,
+                                       po->boundary,
+                                       po->ic,
+                                       &vo);
+
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create value object", error);
+        return error;
+    }
+
+    /* Forget about the arrays. They are now owned by the value object */
+    po->ic = NULL;
+    po->raw_lines = NULL;
+    po->raw_lengths = NULL;
+
+
+    /* Add value to collection */
+    error = col_add_binary_property(po->sec,
+                                    NULL,
+                                    po->key,
+                                    &vo,
+                                    sizeof(struct value_obj *));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to add value object to the section", error);
+        value_destroy(vo);
+        return error;
+    }
+
+    free(po->key);
+    po->key = NULL;
+    po->key_len = 0;
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
+/* Process comment */
+static int handle_comment(struct parser_obj *po, uint32_t *action)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    /* We got a comment */
+    if (po->key) {
+        /* Previous value if any is complete */
+        error = complete_value_processing(po);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to finish saving value", error);
+            return error;
+        }
+    }
+
+    if (!(po->ic)) {
+        /* Create a new comment */
+        error = ini_comment_create(&(po->ic));
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to create comment", error);
+            return error;
+        }
+    }
+
+    /* Add line to comment */
+    error = ini_comment_build_wl(po->ic,
+                                 po->last_read,
+                                 po->last_read_len);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to add line to comment", error);
+        return error;
+    }
+    /*
+     * We are done with the comment line.
+     * Free it since comment keeps a copy.
+     */
+    free(po->last_read);
+    po->last_read = NULL;
+    po->last_read_len = 0;
+    *action = PARSE_READ;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
+/* Process line starts with space  */
+static int handle_space(struct parser_obj *po, uint32_t *action)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Do we have current value object? */
+    if (po->key) {
+        /* This is a new line in a folded value */
+        error = value_add_to_arrays(po->last_read,
+                                    po->last_read_len,
+                                    po->raw_lines,
+                                    po->raw_lengths);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add line to value", error);
+            return error;
+        }
+        /* Do not free the line, it is now an element of the array */
+        po->last_read = NULL;
+        po->last_read_len = 0;
+        *action = PARSE_READ;
+    }
+    else {
+        /* We do not have an active value
+         * but have a line is starting with a space.
+         * For now it is error.
+         * We can change it in future if
+         * people find it being too restrictive
+         */
+        *action = PARSE_ERROR;
+        po->last_error = ERR_SPACE;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Handle key-value pair */
+static int handle_kvp(struct parser_obj *po, uint32_t *action)
+{
+    int error = EOK;
+    char *eq = NULL;
+    uint32_t len = 0;
+    char *dupval = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    /* We got a line with KVP */
+    if (*(po->last_read) == '=') {
+        po->last_error = ERR_NOKEY;
+        *action = PARSE_ERROR;
+        return EOK;
+    }
+
+    /* Find "=" */
+    eq = strchr(po->last_read, '=');
+    if (eq == NULL) {
+        TRACE_ERROR_STRING("No equal sign", po->last_read);
+        po->last_error = ERR_NOEQUAL;
+        *action = PARSE_ERROR;
+        return EOK;
+    }
+
+    /* Strip spaces around "=" */
+    /* Since eq > po->last_read we can substract 1 */
+    len = eq - po->last_read - 1;
+    while ((len > 0) && (isspace(*(po->last_read + len)))) len--;
+    /* Adjust length properly */
+    len++;
+    if (!len) {
+        TRACE_ERROR_STRING("No key", po->last_read);
+        po->last_error = ERR_NOKEY;
+        *action = PARSE_ERROR;
+        return EOK;
+    }
+
+    /* Check the key length */
+    if(len >= MAX_KEY) {
+        TRACE_ERROR_STRING("Key name is too long", po->last_read);
+        po->last_error = ERR_LONGKEY;
+        *action = PARSE_ERROR;
+        return EOK;
+    }
+
+    if (po->key) {
+        /* Complete processing of the previous value */
+        error = complete_value_processing(po);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to complete value processing", error);
+            return error;
+        }
+    }
+
+    /* Dup the key name */
+    errno = 0;
+    po->key = malloc(len + 1);
+    if (!(po->key)) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to dup key", error);
+        return error;
+    }
+
+    memcpy(po->key, po->last_read, len);
+    *(po->key + len) = '\0';
+    po->key_len = len;
+
+    TRACE_INFO_STRING("Key:", po->key);
+    TRACE_INFO_NUMBER("Keylen:", po->key_len);
+
+    len = po->last_read_len - (eq - po->last_read) - 1;
+
+    /* Trim spaces after equal sign */
+    eq++;
+    while (isspace(*eq)) {
+        eq++;
+        len--;
+    }
+
+    TRACE_INFO_STRING("VALUE:", eq);
+    TRACE_INFO_NUMBER("LENGTH:", len);
+
+    /* Dup the part of the value */
+    errno = 0;
+    dupval = malloc(len + 1);
+    if (!dupval) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to dup value", error);
+        return error;
+    }
+
+    memcpy(dupval, eq, len);
+    *(dupval + len) = '\0';
+
+    /* Create new arrays */
+    error = value_create_arrays(&(po->raw_lines),
+                                &(po->raw_lengths));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create arrays", error);
+        free(dupval);
+        return error;
+    }
+
+    /* Save a duplicated part in the value */
+    error = value_add_to_arrays(dupval,
+                                len,
+                                po->raw_lines,
+                                po->raw_lengths);
+
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to add value to arrays", error);
+        free(dupval);
+        return error;
+    }
+
+    /* Save the line number of the last found key */
+    po->keylinenum = po->linenum;
+
+    /* Prepare for reading */
+    free(po->last_read);
+    po->last_read = NULL;
+    po->last_read_len = 0;
+
+    *action = PARSE_READ;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
+/* Parse and process section */
+static int handle_section(struct parser_obj *po, uint32_t *action)
+{
+    int error = EOK;
+    char *start;
+    char *end;
+    char *dupval;
+    uint32_t len;
+
+    TRACE_FLOW_ENTRY();
+
+    /* We are safe to substract 1
+     * since we know that there is at
+     * least one character on the line
+     * based on the check above.
+     */
+    end = po->last_read + po->last_read_len - 1;
+    while (isspace(*end)) end--;
+    if (*end != ']') {
+        *action = PARSE_ERROR;
+        po->last_error = ERR_NOCLOSESEC;
+        return EOK;
+    }
+
+    /* Skip spaces at the beginning of the section name */
+    start = po->last_read + 1;
+    while (isspace(*start)) start++;
+
+    /* Check if there is a section name */
+    if (start == end) {
+        *action = PARSE_ERROR;
+        po->last_error = ERR_NOSECTION;
+        return EOK;
+    }
+
+    /* Skip spaces at the end of the section name */
+    end--;
+    while (isspace(*end)) end--;
+
+    /* We got section name */
+    len = end - start + 1;
+
+    if (len > MAX_KEY) {
+        *action = PARSE_ERROR;
+        po->last_error = ERR_SECTIONLONG;
+        return EOK;
+    }
+
+    if (po->key) {
+        /* Complete processing of the previous value */
+        error = complete_value_processing(po);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to complete value processing", error);
+            return error;
+        }
+    }
+
+    /* Do we have an active section? */
+    if (po->sec) {
+        /* Save it */
+        error = col_add_collection_to_collection(po->top,
+                                                 NULL, NULL,
+                                                 po->sec,
+                                                 COL_ADD_MODE_EMBED);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to save section", error);
+            return error;
+        }
+        po->sec = NULL;
+    }
+
+    /* Dup the name */
+    errno = 0;
+    dupval = malloc(len + 1);
+    if (!dupval) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to dup section name", error);
+        return error;
+    }
+
+    memcpy(dupval, start, len);
+    dupval[len] = '\0';
+
+    /* Create a new section */
+    error = col_create_collection(&po->sec,
+                                  dupval,
+                                  COL_CLASS_INI_SECTION);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create a section", error);
+        free(dupval);
+        return error;
+    }
+
+    /* But if there is just a comment then create a special key */
+    po->key_len = sizeof(INI_SECTION_KEY) - 1;
+    po->key = strndup(INI_SECTION_KEY, sizeof(INI_SECTION_KEY));
+    /* Create new arrays */
+    error = value_create_arrays(&(po->raw_lines),
+                                &(po->raw_lengths));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create arrays", error);
+        free(dupval);
+        return error;
+    }
+
+    /* Save a duplicated part in the value */
+    error = value_add_to_arrays(dupval,
+                                len,
+                                po->raw_lines,
+                                po->raw_lengths);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to add value to the arrays", error);
+        free(dupval);
+        return error;
+    }
+
+    /* Complete processing of this value */
+    error = complete_value_processing(po);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to complete value processing", error);
+        return error;
+    }
+
+    /* We are done dealing with section */
+    free(po->last_read);
+    po->last_read = NULL;
+    po->last_read_len = 0;
+    *action = PARSE_READ;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+
+}
+
+int is_just_spaces(const char *str, uint32_t len)
+{
+    uint32_t i;
+
+    TRACE_FLOW_ENTRY();
+
+    for (i = 0; i < len; i++) {
+        if (!isspace(str[i])) return 0;
+    }
+
+    TRACE_FLOW_EXIT();
+    return 1;
+}
+
+/* Inspect the line */
+static int parser_inspect(struct parser_obj *po)
+{
+    int error = EOK;
+    uint32_t action = PARSE_DONE;
+
+    TRACE_FLOW_ENTRY();
+
+    if ((*(po->last_read) == '\0') ||
+        (*(po->last_read) == ';') ||
+        (*(po->last_read) == '#')) {
+
+        error = handle_comment(po, &action);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to process comment", error);
+            return error;
+        }
+    }
+    else if ((*(po->last_read) == ' ') ||
+             (*(po->last_read) == '\t')) {
+
+        /* Check if this is a completely empty line */
+        if (is_just_spaces(po->last_read, po->last_read_len)) {
+            error = handle_comment(po, &action);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to process comment", error);
+                return error;
+            }
+        }
+        else {
+            error = handle_space(po, &action);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to process line wrapping", error);
+                return error;
+            }
+        }
+    }
+    else if (*(po->last_read) == '[') {
+
+        error = handle_section(po, &action);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to save section", error);
+            return error;
+        }
+    }
+    else {
+
+        error = handle_kvp(po, &action);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to save section", error);
+            return error;
+        }
+    }
+
+    /* Move to the next action */
+    error = col_enqueue_unsigned_property(po->queue,
+                                          PARSE_ACTION,
+                                          action);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to schedule an action", error);
+        return error;
+    }
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+
+/* Complete file processing */
+static int parser_post(struct parser_obj *po)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    /* If there was just a comment at the bottom add special key */
+    if((po->ic) && (!(po->key))) {
+        po->key_len = sizeof(INI_SPECIAL_KEY) - 1;
+        po->key = strndup(INI_SPECIAL_KEY, sizeof(INI_SPECIAL_KEY));
+        /* Create new arrays */
+        error = value_create_arrays(&(po->raw_lines),
+                                    &(po->raw_lengths));
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to create arrays", error);
+            return error;
+        }
+
+    }
+
+    /* If there is a key being processed add it */
+    if (po->key) {
+        error = complete_value_processing(po);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to complete value processing", error);
+            return error;
+        }
+    }
+
+    /* If we are done save the section */
+    error = col_add_collection_to_collection(po->top,
+                                                NULL, NULL,
+                                                po->sec,
+                                                COL_ADD_MODE_EMBED);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to save section", error);
+        return error;
+    }
+
+    po->sec = NULL;
+
+    /* Move to the next action */
+    error = col_enqueue_unsigned_property(po->queue,
+                                          PARSE_ACTION,
+                                          PARSE_DONE);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to schedule an action", error);
+        return error;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Error and warning processing */
+static int parser_error(struct parser_obj *po)
+{
+    int error = EOK;
+    uint32_t action;
+    int idx = 0;
+    const char *errtxt[] = { ERROR_TXT, WARNING_TXT };
+    struct parse_error pe;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Create collection for errors */
+    if ((po->el_acceptor) && (!(po->el))) {
+        error = col_create_collection(&(po->el), INI_ERROR, COL_CLASS_INI_PERROR);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to create error collection", error);
+            return error;
+        }
+    }
+
+    /* Try to add to the error list only if it is present */
+    if (po->el) {
+
+        /* If this is the first error add file name as the first item */
+        if (po->ret == EOK) {
+            error = col_add_str_property(po->el,
+                                         NULL,
+                                         INI_ERROR_NAME,
+                                         po->filename,
+                                         0);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to and name to collection", error);
+                return error;
+            }
+        }
+
+        pe.line = po->linenum;
+        /* Clear the warning bit */
+        pe.error = po->last_error & ~INI_WARNING;
+        if (po->last_error & INI_WARNING) idx = 1;
+        error = col_add_binary_property(po->el, NULL,
+                                        errtxt[idx], &pe, sizeof(pe));
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add error to collection",
+                                error);
+            return error;
+        }
+    }
+
+    /* Exit if there was an error parsing file */
+    if (po->error_level == INI_STOP_ON_ANY) {
+        action = PARSE_DONE;
+        if (po->last_error & INI_WARNING) po->ret = EILSEQ;
+        else po->ret = EIO;
+    }
+    else if (po->error_level == INI_STOP_ON_NONE) {
+        action = PARSE_READ;
+        if (po->ret == 0) {
+            if (po->last_error & INI_WARNING) po->ret = EILSEQ;
+            else po->ret = EIO;
+        }
+        /* It it was warning but now if it is an error
+         * bump to return code to indicate error. */
+        else if((po->ret == EILSEQ) &&
+                (!(po->last_error & INI_WARNING))) po->ret = EIO;
+
+    }
+    else { /* Stop on error */
+        if (po->last_error & INI_WARNING) {
+            action = PARSE_READ;
+            po->ret = EILSEQ;
+        }
+        else {
+            action = PARSE_DONE;
+            po->ret = EIO;
+        }
+    }
+
+    /* Prepare for reading */
+    if (action == PARSE_READ) {
+        if (po->last_read) {
+            free(po->last_read);
+            po->last_read = NULL;
+            po->last_read_len = 0;
+        }
+    }
+    else {
+        /* If we are done save the section */
+        error = col_add_collection_to_collection(po->top,
+                                                 NULL, NULL,
+                                                 po->sec,
+                                                 COL_ADD_MODE_EMBED);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to save section", error);
+            return error;
+        }
+        po->sec = NULL;
+    }
+
+    /* Move to the next action */
+    error = col_enqueue_unsigned_property(po->queue,
+                                          PARSE_ACTION,
+                                          action);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to schedule an action", error);
+        return error;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
+/* Run parser */
+int parser_run(struct parser_obj *po)
+{
+    int error = EOK;
+    struct collection_item *item = NULL;
+    uint32_t action = 0;
+    action_fn operations[] = { parser_read,
+                               parser_inspect,
+                               parser_post,
+                               parser_error,
+                               NULL };
+
+    TRACE_FLOW_ENTRY();
+
+    while(1) {
+        /* Get next action */
+        item = NULL;
+        error = col_dequeue_item(po->queue, &item);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to get action", error);
+            return error;
+        }
+
+        /* Get action, run operation */
+        action = *((uint32_t *)(col_get_item_data(item)));
+        col_delete_item(item);
+
+        if (action == PARSE_DONE) {
+            TRACE_INFO_NUMBER("We are done", error);
+            error = po->ret;
+            if ((po->el_acceptor) && (po->el)) {
+                *(po->el_acceptor) = po->el;
+                po->el = NULL;
+            }
+            break;
+        }
+
+        error = operations[action](po);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to perform an action", error);
+            return error;
+        }
+
+    }
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Top level wrapper around the parser */
+int ini_parse_config(FILE *file,
+                     const char *config_filename,
+                     struct configobj *ini_config,
+                     int error_level,
+                     struct collection_item **error_list,
+                     uint32_t boundary)
+{
+    int error = EOK;
+    struct parser_obj *po;
+
+    TRACE_FLOW_ENTRY();
+
+    if ((!ini_config) || (!(ini_config->cfg))) {
+        TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
+        return EINVAL;
+    }
+
+    error = parser_create(file,
+                          config_filename,
+                          ini_config->cfg,
+                          error_level,
+                          error_list,
+                          boundary,
+                          &po);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to perform an action", error);
+        return error;
+    }
+
+    error = parser_run(po);
+
+    parser_destroy(po);
+
+    TRACE_INFO_NUMBER("Parsing returned:", error);
+    TRACE_FLOW_EXIT();
+    return error;
+
 }

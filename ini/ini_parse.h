@@ -23,6 +23,8 @@
 #define INI_PARSE_H
 
 #include <stdio.h>
+#include "collection.h"
+#include "ini_configobj.h"
 
 /* Internal function to read line from INI file */
 int read_line(FILE *file,
@@ -32,5 +34,20 @@ int read_line(FILE *file,
               char **value,
               int *length,
               int *ext_error);
+
+/*************************************************************************/
+/* THIS INTERFACE WILL CHANGE WHEN THE FILE CONTEXT OBJECT IS INTRODUCED */
+/*************************************************************************/
+/* NOTE: Consider moving the boundary into the config object rather than
+ * have it as a part of the parser - TBD.
+ */
+
+/* Parse a configration file */
+int ini_parse_config(FILE *file,
+                     const char *config_filename,
+                     struct configobj *ini_config,
+                     int error_level,
+                     struct collection_item **error_list,
+                     uint32_t boundary);
 
 #endif

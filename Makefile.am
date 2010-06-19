@@ -231,6 +231,10 @@ libini_config_la_SOURCES = \
     ini/ini_comment.h \
     ini/ini_valueobj.c \
     ini/ini_valueobj.h \
+    ini/ini_serialize.c \
+    ini/ini_configobj.c \
+    ini/ini_configobj.h \
+    ini/ini_config_priv.h \
     trace/trace.h
 libini_config_la_LIBADD = \
     libcollection.la \
@@ -238,7 +242,7 @@ libini_config_la_LIBADD = \
     libref_array.la \
     libbasicobjects.la
 libini_config_la_LDFLAGS = \
-    -version-info 2:0:0
+    -version-info 3:0:0
 
 dist_noinst_DATA += \
     ini/ini.conf \
@@ -250,12 +254,14 @@ dist_noinst_DATA += \
 check_PROGRAMS += \
     ini_config_ut \
     ini_comment_ut \
-    ini_valueobj_ut
+    ini_valueobj_ut \
+    ini_parse_ut
 
 TESTS += \
     ini_config_ut \
     ini_comment_ut \
-    ini_valueobj_ut
+    ini_valueobj_ut \
+    ini_parse_ut
 
 ini_config_ut_SOURCES = ini/ini_config_ut.c
 ini_config_ut_LDADD = \
@@ -268,11 +274,18 @@ ini_comment_ut_LDADD = libini_config.la
 ini_valueobj_ut_SOURCES = ini/ini_valueobj_ut.c
 ini_valueobj_ut_LDADD = libini_config.la
 
+ini_parse_ut_SOURCES = ini/ini_parse_ut.c
+ini_parse_ut_LDADD = libini_config.la
+
 ini_config-docs:
 if HAVE_DOXYGEN
 	cd ini; \
 	$(DOXYGEN) ini_config.cfg.doxy
 endif
+
+clean-local-ini_config:
+	rm -f ./*.out
+	rm -f test.ini
 
 ##############################################################################
 # Additional rules
@@ -322,5 +335,5 @@ tests: all $(check_PROGRAMS)
 
 docs: path_utils-docs collection-docs ref_array-docs ini_config-docs basicobjects-docs
 
-clean-local:
+clean-local: clean-local-ini_config
 	rm -Rf doc

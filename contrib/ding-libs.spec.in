@@ -297,8 +297,8 @@ structure
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libini_config.so.2
-%{_libdir}/libini_config.so.2.0.0
+%{_libdir}/libini_config.so.3
+%{_libdir}/libini_config.so.3.0.0
 
 %files -n libini_config-devel
 %defattr(-,root,root,-)
