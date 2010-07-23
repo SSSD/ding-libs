@@ -1497,11 +1497,27 @@ int insert_extract_test(void)
     return EOK;
 }
 
+/* Cleanup collback */
+void cb(const char *property,
+        int property_len,
+        int type,
+        void *data,
+        int length,
+        void *ext_data)
+{
+    COLOUT(printf("%s\n", *((const char **)ext_data)));
+    COLOUT(printf("Property: %s\n", property));
+    COLOUT(printf("Length: %d\n", property_len));
+    COLOUT(printf("Type: %d\n", type));
+    COLOUT(printf("Data len: %d\n", length));
+}
+
 int delete_test(void)
 {
 
     struct collection_item *col;
     int error = EOK;
+    const char *str = "Cleanup Callback Test";
 
     COLOUT(printf("\n\n==== DELETION TEST 1====\n\n"));
 
@@ -1550,7 +1566,7 @@ int delete_test(void)
     COLOUT(printf("\n\n==== DELETION TEST 2 END ====\n\n"));
 
 
-    col_destroy_collection(col);
+    col_destroy_collection_with_cb(col, cb, (void *)(&str));
 
     return error;
 }

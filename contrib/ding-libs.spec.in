@@ -10,7 +10,7 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 %global path_utils_version 0.2.1
 %global dhash_version 0.4.1
-%global collection_version 0.5.1
+%global collection_version 0.6.0
 %global ref_array_version 0.1.1
 %global basicobjecs_vesion 0.1.0
 %global ini_config_version 0.6.1
@@ -171,8 +171,8 @@ and serialization
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libcollection.so.2
-%{_libdir}/libcollection.so.2.0.0
+%{_libdir}/libcollection.so.3
+%{_libdir}/libcollection.so.3.0.0
 
 %files -n libcollection-devel
 %defattr(-,root,root,-)

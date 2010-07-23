@@ -322,4 +322,7 @@ int col_push_item(struct collection_item *stack,
 int col_pop_item(struct collection_item *stack,
                  struct collection_item **item);
 
+/**
+ * @}
+ */
 #endif

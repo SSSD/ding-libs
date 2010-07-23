@@ -265,4 +265,8 @@ char **col_collection_to_list(struct collection_item *handle,
  */
 void col_free_property_list(char **str_list);
 
+/**
+ * @}
+ */
+
 #endif

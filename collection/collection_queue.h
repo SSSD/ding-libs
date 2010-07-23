@@ -319,5 +319,8 @@ int col_enqueue_item(struct collection_item *queue,
 int col_dequeue_item(struct collection_item *queue,
                      struct collection_item **item);
 
+/**
+ * @}
+ */
 
 #endif
