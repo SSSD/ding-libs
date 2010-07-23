@@ -43,6 +43,7 @@ int simple_test(void)
     struct simplebuffer *data = NULL;
     char str1[] = "test string 1";
     char str2[] = "test string 2";
+    const char str3[] = "test string 3";
     uint32_t left = 0;
     int i;
     const unsigned char *buf;
@@ -75,6 +76,23 @@ int simple_test(void)
     error = simplebuffer_add_raw(data,
                                  (void *)str2,
                                  strlen(str2),
+                                 1);
+    if (error) {
+        printf("Failed to add string to an object %d\n", error);
+        simplebuffer_free(data);
+        return error;
+    }
+
+    error = simplebuffer_add_cr(data);
+    if (error) {
+        printf("Failed to add CR to an object %d\n", error);
+        simplebuffer_free(data);
+        return error;
+    }
+
+    error = simplebuffer_add_str(data,
+                                 str3,
+                                 strlen(str3),
                                  1);
     if (error) {
         printf("Failed to add string to an object %d\n", error);

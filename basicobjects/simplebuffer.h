@@ -53,6 +53,15 @@ int simplebuffer_add_raw(struct simplebuffer *data,
                          uint32_t len,
                          uint32_t block);
 
+
+/* Function to add string to the buffer.
+ * Same as above just uses string as an argument.
+ */
+int simplebuffer_add_str(struct simplebuffer *data,
+                         const char *str,
+                         uint32_t len,
+                         uint32_t block);
+
 /* Finction to add CR to the buffer */
 int simplebuffer_add_cr(struct simplebuffer *data);
 

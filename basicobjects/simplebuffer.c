@@ -133,6 +133,34 @@ int simplebuffer_add_raw(struct simplebuffer *data,
     return error;
 }
 
+/* Function to add string to the end of the buffer. */
+int simplebuffer_add_str(struct simplebuffer *data,
+                         const char *str,
+                         uint32_t len,
+                         uint32_t block)
+{
+
+    int error = EOK;
+    uint32_t size;
+
+    TRACE_FLOW_ENTRY();
+
+    size = len + 1;
+    error = simplebuffer_grow(data, size,
+                             ((block > size) ? block : size));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to grow buffer.", error);
+        return error;
+    }
+
+    memcpy(data->buffer + data->length, str, len);
+    data->length += len;
+    data->buffer[data->length] = '\0';
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
 /* Finction to add CR to the buffer */
 int simplebuffer_add_cr(struct simplebuffer *data)
 {
