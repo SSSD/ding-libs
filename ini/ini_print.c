@@ -75,7 +75,10 @@ const char *parsing_error_str(int parsing_error)
                                 _("Section name is too long."),
                                 _("Equal sign is missing."),
                                 _("Property name is missing."),
-                                _("Property name is too long.")
+                                _("Property name is too long."),
+                                _("Failed to read line."),
+                                _("Invalid space character at the "
+                                  "beginning of the line.")
     };
 
     /* Check the range */
