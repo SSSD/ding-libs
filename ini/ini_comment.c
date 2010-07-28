@@ -187,7 +187,8 @@ static int ini_comment_is_valid(const char *line)
 static int ini_comment_modify(struct ini_comment *ic,
                               int mode,
                               uint32_t idx,
-                              const char *line)
+                              const char *line,
+                              uint32_t length)
 {
     int error = EOK;
     char *elem = NULL;
@@ -232,7 +233,8 @@ static int ini_comment_modify(struct ini_comment *ic,
 
         /* Dup it */
         if (input) {
-            input_len = strlen(input);
+            if (length == 0) input_len = strlen(input);
+            else input_len = length;
             elem = strndup(input, (size_t)(input_len + 1));
         }
         else {
@@ -260,7 +262,7 @@ static int ini_comment_modify(struct ini_comment *ic,
 
         error = ref_array_append(ic->ra_len, (void *)&input_len);
         if (error) {
-            TRACE_ERROR_NUMBER("Failed to appen length", error);
+            TRACE_ERROR_NUMBER("Failed to append length", error);
             return error;
         }
         break;
@@ -277,7 +279,7 @@ static int ini_comment_modify(struct ini_comment *ic,
 
         error = ref_array_append(ic->ra_len, (void *)&input_len);
         if (error) {
-            TRACE_ERROR_NUMBER("Failed to appen length", error);
+            TRACE_ERROR_NUMBER("Failed to append length", error);
             return error;
         }
         break;
@@ -416,7 +418,25 @@ int ini_comment_build(struct ini_comment *ic, const char *line)
 
     TRACE_FLOW_STRING("ini_comment_build", "Entry");
 
-    error = ini_comment_modify(ic, INI_COMMENT_MODE_BUILD, 0, line);
+    error = ini_comment_modify(ic, INI_COMMENT_MODE_BUILD, 0, line, 0);
+
+    TRACE_FLOW_NUMBER("ini_comment_build - Returning", error);
+    return error;
+}
+
+/*
+ * Build up a comment object - use this when reading
+ * comments from a file.
+ */
+int ini_comment_build_wl(struct ini_comment *ic,
+                         const char *line,
+                         uint32_t length)
+{
+    int error = EOK;
+
+    TRACE_FLOW_STRING("ini_comment_build", "Entry");
+
+    error = ini_comment_modify(ic, INI_COMMENT_MODE_BUILD, 0, line, length);
 
     TRACE_FLOW_NUMBER("ini_comment_build - Returning", error);
     return error;
@@ -433,7 +453,7 @@ int ini_comment_insert(struct ini_comment *ic,
 
     TRACE_FLOW_STRING("ini_comment_insert", "Entry");
 
-    error = ini_comment_modify(ic, INI_COMMENT_MODE_INSERT, idx, line);
+    error = ini_comment_modify(ic, INI_COMMENT_MODE_INSERT, idx, line, 0);
 
     TRACE_FLOW_NUMBER("ini_comment_insert - Returning", error);
     return error;
@@ -446,7 +466,7 @@ int ini_comment_append(struct ini_comment *ic, const char *line)
 
     TRACE_FLOW_STRING("ini_comment_append", "Entry");
 
-    error = ini_comment_modify(ic, INI_COMMENT_MODE_APPEND, 0, line);
+    error = ini_comment_modify(ic, INI_COMMENT_MODE_APPEND, 0, line, 0);
 
     TRACE_FLOW_NUMBER("ini_comment_append - Returning", error);
     return error;
@@ -459,7 +479,7 @@ int ini_comment_remove(struct ini_comment *ic, uint32_t idx)
 
     TRACE_FLOW_STRING("ini_comment_remove", "Entry");
 
-    error = ini_comment_modify(ic, INI_COMMENT_MODE_REMOVE, idx, NULL);
+    error = ini_comment_modify(ic, INI_COMMENT_MODE_REMOVE, idx, NULL, 0);
 
     TRACE_FLOW_NUMBER("ini_comment_remove - Returning", error);
     return error;
@@ -472,7 +492,7 @@ int ini_comment_clear(struct ini_comment *ic, uint32_t idx)
 
     TRACE_FLOW_STRING("ini_comment_clear", "Entry");
 
-    error = ini_comment_modify(ic, INI_COMMENT_MODE_CLEAR, idx, NULL);
+    error = ini_comment_modify(ic, INI_COMMENT_MODE_CLEAR, idx, NULL, 0);
 
     TRACE_FLOW_NUMBER("ini_comment_clear - Returning", error);
     return error;
@@ -488,7 +508,7 @@ int ini_comment_replace(struct ini_comment *ic,
 
     TRACE_FLOW_STRING("ini_comment_replace", "Entry");
 
-    error = ini_comment_modify(ic, INI_COMMENT_MODE_REPLACE, idx, line);
+    error = ini_comment_modify(ic, INI_COMMENT_MODE_REPLACE, idx, line, 0);
 
     TRACE_FLOW_NUMBER("ini_comment_replace - Returning", error);
     return error;

@@ -49,6 +49,14 @@ int ini_comment_build(struct ini_comment *ic,
                       const char *line);
 
 /**
+ * Build up a comment object - use this when reading
+ * comments from a file when length is known.
+ */
+int ini_comment_build_wl(struct ini_comment *ic,
+                         const char *line,
+                         uint32_t length);
+
+/**
  * Modify comment by instering a line.
  *
  * idx can be:
