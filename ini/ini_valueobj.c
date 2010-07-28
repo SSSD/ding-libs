@@ -27,6 +27,7 @@
 #include "simplebuffer.h"
 #include "ref_array.h"
 #include "ini_comment.h"
+#include "ini_defines.h"
 #include "trace.h"
 
 struct value_obj {
@@ -40,9 +41,6 @@ struct value_obj {
     struct ini_comment *ic;
 };
 
-/* Size of the block for a value */
-#define INI_VALUE_BLOCK 100
-
 /* The length of " =" which is 3 */
 #define INI_FOLDING_OVERHEAD 3
 
@@ -51,6 +49,8 @@ struct value_obj {
 
 /* Equal sign */
 #define INI_EQUAL_SIGN  " = "
+#define INI_OPEN_BR     "["
+#define INI_CLOSE_BR    "]"
 
 
 /* Unfold the value represented by the array */
@@ -319,14 +319,12 @@ int value_create_from_refarray(struct ref_array *raw_lines,
     if ((!raw_lines) || (!raw_lengths) || (!vo)) {
         TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
         return EINVAL;
-
     }
 
     new_vo = malloc(sizeof(struct value_obj));
     if (!new_vo) {
         TRACE_ERROR_NUMBER("No memory", ENOMEM);
         return ENOMEM;
-
     }
 
     /* We are not using references here since
@@ -494,7 +492,6 @@ int value_create_new(const char *strvalue,
     int error = EOK;
     struct value_obj *new_vo = NULL;
     struct simplebuffer *oneline = NULL;
-    void *val;
 
     TRACE_FLOW_ENTRY();
 
@@ -510,11 +507,9 @@ int value_create_new(const char *strvalue,
         return error;
     }
 
-    /* Deal with the type casting */
-    memcpy(&val, &strvalue, sizeof(char *));
     /* Put value into the buffer */
-    error = simplebuffer_add_raw(oneline,
-                                 val,
+    error = simplebuffer_add_str(oneline,
+                                 strvalue,
                                  length,
                                  INI_VALUE_BLOCK);
     if (error) {
@@ -658,7 +653,6 @@ int value_update(struct value_obj *vo,
 {
     int error = EOK;
     struct simplebuffer *oneline = NULL;
-    void *val;
 
     if ((!value) || (!vo)) {
         TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
@@ -672,11 +666,9 @@ int value_update(struct value_obj *vo,
         return error;
     }
 
-    /* Deal with the type cast */
-    memcpy(&val, &value, sizeof(char *));
     /* Put value into the buffer */
-    error = simplebuffer_add_raw(oneline,
-                                 val,
+    error = simplebuffer_add_str(oneline,
+                                 value,
                                  length,
                                  INI_VALUE_BLOCK);
     if (error) {
@@ -757,7 +749,7 @@ int value_put_comment(struct value_obj *vo, struct ini_comment *ic)
 /* Serialize value */
 int value_serialize(struct value_obj *vo,
                     const char *key,
-                    struct simplebuffer **sbobj)
+                    struct simplebuffer *sbobj)
 {
     int error = EOK;
     uint32_t num = 0;
@@ -765,22 +757,14 @@ int value_serialize(struct value_obj *vo,
     uint32_t len = 0;
     char *commentline = NULL;
     char *ptr = NULL;
-    struct simplebuffer *new_sbobj = NULL;
-    void *val = NULL;
-    const char *eq = INI_EQUAL_SIGN;
     char *part = NULL;
+    int sec = 0;
 
     TRACE_FLOW_ENTRY();
 
     if (!vo) {
         TRACE_ERROR_NUMBER("Invalid input parameter", EINVAL);
         return EINVAL;
-    }
-
-    error = simplebuffer_alloc(&new_sbobj);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to allocate dynamic string.", error);
-        return error;
     }
 
     /* Put comment first */
@@ -790,7 +774,6 @@ int value_serialize(struct value_obj *vo,
         error = ini_comment_get_numlines(vo->ic, &num);
         if (error) {
             TRACE_ERROR_NUMBER("Failed to get number of lines", errno);
-            simplebuffer_free(new_sbobj);
             return error;
         }
 
@@ -802,55 +785,69 @@ int value_serialize(struct value_obj *vo,
             error = ini_comment_get_line(vo->ic, i, &commentline, &len);
             if (error) {
                 TRACE_ERROR_NUMBER("Failed to get number of lines", errno);
-                simplebuffer_free(new_sbobj);
                 return error;
             }
 
-            error = simplebuffer_add_raw(new_sbobj,
+            error = simplebuffer_add_raw(sbobj,
                                          commentline,
                                          len,
                                          INI_VALUE_BLOCK);
             if (error) {
                 TRACE_ERROR_NUMBER("Failed to add comment", error);
-                simplebuffer_free(new_sbobj);
                 return error;
             }
 
-            error = simplebuffer_add_cr(new_sbobj);
+            error = simplebuffer_add_cr(sbobj);
             if (error) {
                 TRACE_ERROR_NUMBER("Failed to add CR", error);
-                simplebuffer_free(new_sbobj);
                 return error;
             }
         }
     }
 
-    /* Deal with the type cast */
-    memcpy(&val, &key, sizeof(char *));
-
-    error = simplebuffer_add_raw(new_sbobj,
-                                 val,
-                                 vo->keylen,
-                                 INI_VALUE_BLOCK);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to add key", error);
-        simplebuffer_free(new_sbobj);
-        return error;
+    if (strncmp(key, INI_SPECIAL_KEY, sizeof(INI_SPECIAL_KEY)) == 0) {
+        /* Special key carries only a comment */
+        TRACE_FLOW_EXIT();
+        return EOK;
     }
 
-    /* Deal with the type cast */
-    memcpy(&val, &eq, sizeof(char *));
+    /* Handle the case it is a section key */
+    if (strncmp(key,
+                INI_SECTION_KEY,
+                sizeof(INI_SECTION_KEY)) == 0) sec = 1;
 
-    error = simplebuffer_add_raw(new_sbobj,
-                                 val,
-                                 sizeof(INI_EQUAL_SIGN) - 1,
-                                 INI_VALUE_BLOCK);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to add equal sign", error);
-        simplebuffer_free(new_sbobj);
-        return error;
+    if (sec) {
+        error = simplebuffer_add_str(sbobj,
+                                     INI_OPEN_BR,
+                                     sizeof(INI_OPEN_BR) - 1,
+                                     INI_VALUE_BLOCK);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add opening section bracket", error);
+            return error;
+
+        }
     }
+    else {
 
+        error = simplebuffer_add_str(sbobj,
+                                     key,
+                                     vo->keylen,
+                                     INI_VALUE_BLOCK);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add key", error);
+            return error;
+        }
+
+        error = simplebuffer_add_str(sbobj,
+                                     INI_EQUAL_SIGN,
+                                     sizeof(INI_EQUAL_SIGN) - 1,
+                                     INI_VALUE_BLOCK);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add equal sign", error);
+            return error;
+        }
+
+    }
 
     if (vo->raw_lines) {
         i = 0;
@@ -862,7 +859,6 @@ int value_serialize(struct value_obj *vo,
                 ref_array_get(vo->raw_lengths, i, (void *)&len);
                 if (error) {
                     TRACE_ERROR_NUMBER("Failed to add string", error);
-                    simplebuffer_free(new_sbobj);
                     return error;
                 }
 
@@ -871,31 +867,47 @@ int value_serialize(struct value_obj *vo,
                 TRACE_INFO_STRING("Value:", part);
                 TRACE_INFO_NUMBER("Lenght:", len);
 
-                error = simplebuffer_add_raw(new_sbobj,
+                error = simplebuffer_add_raw(sbobj,
                                              part,
                                              len,
                                              INI_VALUE_BLOCK);
                 if (error) {
                     TRACE_ERROR_NUMBER("Failed to add value", error);
-                    simplebuffer_free(new_sbobj);
                     return error;
                 }
 
-                error = simplebuffer_add_cr(new_sbobj);
-                if (error) {
-                    TRACE_ERROR_NUMBER("Failed to add CR", error);
-                    simplebuffer_free(new_sbobj);
-                    return error;
+                if (!sec) {
+                    error = simplebuffer_add_cr(sbobj);
+                    if (error) {
+                        TRACE_ERROR_NUMBER("Failed to add CR", error);
+                        return error;
+                    }
                 }
-               i++;
+                i++;
             }
             else break;
         }
     }
 
-    *sbobj = new_sbobj;
+    if (sec) {
+        error = simplebuffer_add_str(sbobj,
+                                     INI_CLOSE_BR,
+                                     sizeof(INI_CLOSE_BR) - 1,
+                                     INI_VALUE_BLOCK);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add closing bracket", error);
+            return error;
 
-    TRACE_INFO_STRING("Buffer:", (const char *)simplebuffer_get_buf(*sbobj));
+        }
+
+        error = simplebuffer_add_cr(sbobj);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add CR", error);
+            return error;
+        }
+    }
+
+    TRACE_INFO_STRING("Buffer:", (const char *)simplebuffer_get_buf(sbobj));
     TRACE_FLOW_EXIT();
     return error;
 }

@@ -124,7 +124,7 @@ int value_put_comment(struct value_obj *vo,
 /* Serialize value */
 int value_serialize(struct value_obj *vo,
                     const char *key,
-                    struct simplebuffer **sbobj);
+                    struct simplebuffer *sbobj);
 
 
 #endif

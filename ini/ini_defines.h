@@ -60,6 +60,10 @@
 
 #define INI_ERROR       "errors"
 #define INI_ERROR_NAME  "errname"
+#define INI_CONFIG_NAME "INI"
+
+#define INI_SPECIAL_KEY "="
+#define INI_SECTION_KEY "["
 
 /* Internal sizes. MAX_KEY is defined in config.h */
 #define MAX_VALUE       PATH_MAX
@@ -67,6 +71,13 @@
 
 /* Beffer length used for int to string conversions */
 #define CONVERSION_BUFFER 80
+
+/* Size of the block for a value */
+#define INI_VALUE_BLOCK 100
+
+/* This constant belongs here. Move from ini_config - TBD */
+/* #define COL_CLASS_INI_BASE        20000 */
+
 
 /* Different error string functions can be passed as callbacks */
 typedef const char * (*error_fn)(int error);

@@ -84,9 +84,14 @@ int save_value(FILE *ff, const char *key, struct value_obj *vo)
 
     TRACE_FLOW_ENTRY();
 
+    error = simplebuffer_alloc(&sbobj);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate dynamic string.", error);
+        return error;
+    }
 
     /* Serialize */
-    error = value_serialize(vo, key, &sbobj);
+    error = value_serialize(vo, key, sbobj);
     if (error) {
         printf("Failed to serialize a value object %d.\n", error);
         return error;
@@ -200,7 +205,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
     }
 
     /* Save value to the file */
-    error = save_value(stdout, "bar", new_vo);
+    error = save_value(ff, "baz", new_vo);
     if (error) {
         printf("Failed to save value to file %d.\n", error);
         value_destroy(new_vo);
@@ -342,6 +347,10 @@ int modify_test(FILE *ff, struct value_obj *vo)
                          strlen(strval),
                          INI_VALUE_CREATED,
                          10);
+    if (error) {
+        printf("Failed to update value %d.\n", error);
+        return error;
+    }
 
 
     /* Save value to the file */
@@ -456,62 +465,11 @@ int vo_basic_test(void)
 }
 
 
-int vo_file_test(void)
-{
-    int error = EOK;
-    FILE *ff = NULL;
-    uint32_t line = 0;
-    char *oneline = NULL;
-    char buffer[BUFFER_SIZE + 1];
-
-    TRACE_FLOW_ENTRY();
-
-    errno = 0;
-    ff = fopen("test.ini","r");
-    if (ff == NULL) {
-        error = errno;
-        printf("Failed to open file. Error %d.\n", error);
-        return error;
-    }
-
-    while (1) {
-
-        oneline = NULL;
-        errno = 0;
-        line++;
-
-        oneline = fgets(buffer, BUFFER_SIZE, ff);
-        if (oneline == NULL) {
-            error = errno;
-            if (feof(ff)) break;
-            printf("Failed to read file %d\n", error);
-            fclose(ff);
-            return error;
-        }
-
-        VOOUT(printf("Line %04d: %s", line, oneline));
-
-    }
-
-    fclose(ff);
-
-    /* THIS TEST IS INCOMPLETE.
-     * BUT I NEED TO ADD PARSING
-     * TO COMPLETE IT.
-     * Will be delivered later.
-     */
-
-    TRACE_FLOW_EXIT();
-    return EOK;
-}
-
-
 /* Main function of the unit test */
 int main(int argc, char *argv[])
 {
     int error = 0;
     test_fn tests[] = { vo_basic_test,
-                        vo_file_test,
                         NULL };
     test_fn t;
     int i = 0;
