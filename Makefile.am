@@ -130,7 +130,7 @@ libcollection_la_SOURCES = \
     collection/collection_priv.h \
     trace/trace.h
 libcollection_la_LDFLAGS = \
-    -version-info 2:0:0
+    -version-info 3:0:0
 
 check_PROGRAMS += \
     collection_ut \
@@ -243,7 +243,9 @@ libini_config_la_LDFLAGS = \
 dist_noinst_DATA += \
     ini/ini.conf \
     ini/ini.d/real.conf \
-    ini/ini.d/test.conf
+    ini/ini.d/test.conf \
+    ini/ini.d/ipa.conf \
+    ini/ini.d/mysssd.conf
 
 check_PROGRAMS += \
     ini_config_ut \
