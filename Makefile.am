@@ -223,7 +223,6 @@ libini_config_la_SOURCES = \
     ini/ini_list.c \
     ini/ini_print.c \
     ini/ini_parse.c \
-    ini/ini_parse.h \
     ini/ini_metadata.c \
     ini/ini_metadata.h \
     ini/ini_defines.h \

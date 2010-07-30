@@ -27,6 +27,7 @@
 
 /********************************************************************/
 /* THIS IS A BEGINNING OF THE THE NEW CONFIG OBJECT INTERFACE - TBD */
+/* It will be moved to the ini_config.h when it is ready            */
 /********************************************************************/
 
 struct configobj;
@@ -38,8 +39,16 @@ int ini_config_create(struct configobj **ini_config);
 void ini_config_destroy(struct configobj *ini_config);
 
 /* Serialize configuration object into provided buffer */
-int ini_serialize_config(struct configobj *ini_config,
+int ini_config_serialize(struct configobj *ini_config,
                          struct simplebuffer *sbobj);
+
+int ini_config_parse(FILE *file,
+                     const char *config_filename,
+                     struct configobj *ini_config,
+                     int error_level,
+                     struct collection_item **error_list,
+                     uint32_t boundary);
+
 
 
 #endif

@@ -24,7 +24,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include "ini_defines.h"
-#include "ini_parse.h"
 #include "ini_config.h"
 #include "ini_configobj.h"
 #include "simplebuffer.h"
@@ -72,7 +71,7 @@ int test_one_file(const char *filename)
         return error;
     }
 
-    error = ini_parse_config(ff,
+    error = ini_config_parse(ff,
                              filename,
                              ini_config,
                              INI_STOP_ON_NONE,
@@ -92,7 +91,7 @@ int test_one_file(const char *filename)
         return error;
     }
 
-    error = ini_serialize_config(ini_config, sbobj);
+    error = ini_config_serialize(ini_config, sbobj);
     if (error != EOK) {
         printf("Failed to parse configuration. Error %d.\n", error);
         ini_config_destroy(ini_config);
