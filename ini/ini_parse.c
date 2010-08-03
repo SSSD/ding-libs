@@ -42,7 +42,6 @@ struct parser_obj {
     FILE *file;
     struct collection_item *top;
     struct collection_item *el;
-    struct collection_item **el_acceptor;
     const char *filename;
     int error_level;
     /* Wrapping boundary */
@@ -109,7 +108,7 @@ int parser_create(FILE *file,
                   const char *config_filename,
                   struct collection_item *ini_config,
                   int error_level,
-                  struct collection_item **error_list,
+                  struct collection_item *error_list,
                   uint32_t boundary,
                   struct parser_obj **po)
 {
@@ -144,7 +143,7 @@ int parser_create(FILE *file,
     /* Save external data */
     new_po->file = file;
     new_po->top = ini_config;
-    new_po->el_acceptor = error_list;
+    new_po->el = error_list;
     new_po->filename = config_filename;
     new_po->error_level = error_level;
     new_po->boundary = boundary;
@@ -161,7 +160,6 @@ int parser_create(FILE *file,
     new_po->raw_lines = NULL;
     new_po->raw_lengths = NULL;
     new_po->ret = EOK;
-    new_po->el = NULL;
 
     /* Create a queue */
     new_po->queue = NULL;
@@ -827,46 +825,20 @@ static int parser_error(struct parser_obj *po)
     uint32_t action;
     int idx = 0;
     const char *errtxt[] = { ERROR_TXT, WARNING_TXT };
-    struct parse_error pe;
+    struct ini_parse_error pe;
 
     TRACE_FLOW_ENTRY();
 
-    /* Create collection for errors */
-    if ((po->el_acceptor) && (!(po->el))) {
-        error = col_create_collection(&(po->el), INI_ERROR, COL_CLASS_INI_PERROR);
-        if (error) {
-            TRACE_ERROR_NUMBER("Failed to create error collection", error);
-            return error;
-        }
-    }
-
-    /* Try to add to the error list only if it is present */
-    if (po->el) {
-
-        /* If this is the first error add file name as the first item */
-        if (po->ret == EOK) {
-            error = col_add_str_property(po->el,
-                                         NULL,
-                                         INI_ERROR_NAME,
-                                         po->filename,
-                                         0);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to and name to collection", error);
-                return error;
-            }
-        }
-
-        pe.line = po->linenum;
-        /* Clear the warning bit */
-        pe.error = po->last_error & ~INI_WARNING;
-        if (po->last_error & INI_WARNING) idx = 1;
-        error = col_add_binary_property(po->el, NULL,
-                                        errtxt[idx], &pe, sizeof(pe));
-        if (error) {
-            TRACE_ERROR_NUMBER("Failed to add error to collection",
-                                error);
-            return error;
-        }
+    pe.line = po->linenum;
+    /* Clear the warning bit */
+    pe.error = po->last_error & ~INI_WARNING;
+    if (po->last_error & INI_WARNING) idx = 1;
+    error = col_add_binary_property(po->el, NULL,
+                                    errtxt[idx], &pe, sizeof(pe));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to add error to collection",
+                            error);
+        return error;
     }
 
     /* Exit if there was an error parsing file */
@@ -963,10 +935,6 @@ int parser_run(struct parser_obj *po)
         if (action == PARSE_DONE) {
             TRACE_INFO_NUMBER("We are done", error);
             error = po->ret;
-            if ((po->el_acceptor) && (po->el)) {
-                *(po->el_acceptor) = po->el;
-                po->el = NULL;
-            }
             break;
         }
 
@@ -983,12 +951,8 @@ int parser_run(struct parser_obj *po)
 }
 
 /* Top level wrapper around the parser */
-int ini_config_parse(FILE *file,
-                     const char *config_filename,
-                     struct configobj *ini_config,
-                     int error_level,
-                     struct collection_item **error_list,
-                     uint32_t boundary)
+int ini_config_parse(struct ini_cfgfile *file_ctx,
+                     struct ini_cfgobj *ini_config)
 {
     int error = EOK;
     struct parser_obj *po;
@@ -1000,12 +964,12 @@ int ini_config_parse(FILE *file,
         return EINVAL;
     }
 
-    error = parser_create(file,
-                          config_filename,
+    error = parser_create(file_ctx->file,
+                          file_ctx->filename,
                           ini_config->cfg,
-                          error_level,
-                          error_list,
-                          boundary,
+                          file_ctx->error_level,
+                          file_ctx->error_list,
+                          ini_config->boundary,
                           &po);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to perform an action", error);
@@ -1013,11 +977,18 @@ int ini_config_parse(FILE *file,
     }
 
     error = parser_run(po);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to parse file", error);
+        col_get_collection_count(file_ctx->error_list, &(file_ctx->count));
+        if(file_ctx->count) (file_ctx->count)--;
+        parser_destroy(po);
+        return error;
+    }
 
     parser_destroy(po);
 
-    TRACE_INFO_NUMBER("Parsing returned:", error);
+
+    TRACE_INFO_NUMBER("Count returned:", error);
     TRACE_FLOW_EXIT();
     return error;
-
 }

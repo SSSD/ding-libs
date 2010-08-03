@@ -24,7 +24,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include "ini_defines.h"
-#include "ini_config.h"
 #include "ini_configobj.h"
 #include "simplebuffer.h"
 #include "path_utils.h"
@@ -45,10 +44,11 @@ typedef int (*test_fn)(void);
 int test_one_file(const char *filename)
 {
     int error = EOK;
+    struct ini_cfgfile *file_ctx = NULL;
     FILE *ff = NULL;
     char new_file[100];
-    struct configobj *ini_config = NULL;
-    struct collection_item *error_list = NULL;
+    struct ini_cfgobj *ini_config = NULL;
+    char **error_list = NULL;
     struct simplebuffer *sbobj = NULL;
     uint32_t left = 0;
     char filename_base[96];
@@ -57,32 +57,37 @@ int test_one_file(const char *filename)
 
     /* Create config collection */
     error = ini_config_create(&ini_config);
-    if (error != EOK) {
+    if (error) {
         printf("Failed to create collection. Error %d.\n", error);
         return error;
     }
 
-    errno = 0;
-    ff = fopen(filename,"r");
-    if(!ff) {
-        error = errno;
+    error = ini_config_file_open(filename,
+                                 INI_STOP_ON_NONE,
+                                 0, /* TBD */
+                                 0, /* TBD */
+                                 &file_ctx);
+    if (error) {
         printf("Failed to open file for reading. Error %d.\n",  error);
         ini_config_destroy(ini_config);
         return error;
     }
 
-    error = ini_config_parse(ff,
-                             filename,
-                             ini_config,
-                             INI_STOP_ON_NONE,
-                             &error_list,
-                             80);
-    fclose(ff);
-    if (error != EOK) {
+    error = ini_config_parse(file_ctx,
+                             ini_config);
+    if (error) {
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
-        INIOUT(print_file_parsing_errors(stdout, error_list));
-        col_destroy_collection(error_list);
+
+        if (ini_config_error_count(file_ctx)) {
+            INIOUT(printf("Errors detected while parsing: %s\n",
+                   ini_config_get_filename(file_ctx)));
+            ini_config_get_errors(file_ctx, &error_list);
+            INIOUT(ini_print_errors(stdout, error_list));
+        }
+        /* We do not return here intentionally */
     }
+
+    ini_config_file_close(file_ctx);
 
     error = simplebuffer_alloc(&sbobj);
     if (error) {
@@ -93,7 +98,7 @@ int test_one_file(const char *filename)
 
     error = ini_config_serialize(ini_config, sbobj);
     if (error != EOK) {
-        printf("Failed to parse configuration. Error %d.\n", error);
+        printf("Failed to serialize configuration. Error %d.\n", error);
         ini_config_destroy(ini_config);
         simplebuffer_free(sbobj);
         return error;

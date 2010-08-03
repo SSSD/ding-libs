@@ -46,8 +46,8 @@
 #define FAILED_TO_PROC_V    _("Internal Error. Failed to process list of validation errors.\n")
 #define ERROR_HEADER_V      _("Validation errors and warnings in file: %s\n")
 
-#define LINE_FORMAT         _("%s (%d) on line %d: %s\n")
-
+#define LINE_FORMAT         _("%s (%d) on line %d: %s")
+#define MAX_ERROR_LINE      120
 
 /* Codes that parsing function can return */
 #define RET_PAIR        0
@@ -59,6 +59,7 @@
 #define RET_ERROR       6
 
 #define INI_ERROR       "errors"
+#define INI_METADATA    "meta"
 #define INI_ERROR_NAME  "errname"
 #define INI_CONFIG_NAME "INI"
 
@@ -73,10 +74,26 @@
 #define CONVERSION_BUFFER 80
 
 /* Size of the block for a value */
-#define INI_VALUE_BLOCK 100
+#define INI_VALUE_BLOCK   100
 
-/* This constant belongs here. Move from ini_config - TBD */
-/* #define COL_CLASS_INI_BASE        20000 */
+/* Default boundary */
+#define INI_WRAP_BOUNDARY 80
+
+/* This constant belongs here. */
+#define COL_CLASS_INI_BASE        20000
+/**
+ * @brief A one level collection of parse errors.
+ *
+ * Collection stores \ref parse_error structures.
+ */
+#define COL_CLASS_INI_PERROR      COL_CLASS_INI_BASE + 2
+
+/**
+ * @brief Collection of metadata.
+ *
+ * Collection that stores metadata.
+ */
+#define COL_CLASS_INI_META        COL_CLASS_INI_BASE + 4
 
 
 /* Different error string functions can be passed as callbacks */

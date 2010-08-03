@@ -63,7 +63,7 @@ static int ini_serialize_cb(const char *property,
 }
 
 /* Traverse the collection and build the serialization object */
-int ini_config_serialize(struct configobj *ini_config,
+int ini_config_serialize(struct ini_cfgobj *ini_config,
                          struct simplebuffer *sbobj)
 {
     int error = EOK;

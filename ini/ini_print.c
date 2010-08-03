@@ -388,3 +388,25 @@ void print_config_parsing_errors(FILE *file,
 
     TRACE_FLOW_STRING("print_config_parsing_errors", "Exit");
 }
+
+
+/* Function to print errors from the list */
+void ini_print_errors(FILE *file, char **error_list)
+{
+    unsigned count = 0;
+
+    TRACE_FLOW_ENTRY();
+
+    if (!error_list) {
+        TRACE_FLOW_STRING("List is empty.", "");
+        return;
+    }
+
+    while (error_list[count]) {
+        fprintf(file, "%s\n", error_list[count]);
+        count++;
+    }
+
+    TRACE_FLOW_EXIT();
+    return;
+}

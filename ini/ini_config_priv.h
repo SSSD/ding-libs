@@ -25,13 +25,49 @@
 #include "collection.h"
 
 /* Configuration object */
-struct configobj {
+struct ini_cfgobj {
     /* For now just a collection */
     struct collection_item *cfg;
-    /* Boundary ? */
+    /* Boundary */
+    uint32_t boundary;
     /*...         */
     /* Statistics? Timestamps? When created? Modified? - TBD */
     /*...         */
+};
+
+
+/* Configuration file object */
+struct ini_cfgfile {
+    /***********************************/
+    /* Externally controlled variables */
+    /***********************************/
+    /* File name for the configuration file */
+    char *filename;
+    /* File stream */
+    FILE *file;
+    /* File descriptor that is passed in */
+    int fd;
+    /* Error level */
+    int error_level;
+    /* Collision flags - define how to merge things */
+    uint32_t collision_flags;
+    /* Collision flags - define how to merge things */
+    uint32_t metadata_flags;
+    /**********************/
+    /* Internal variables */
+    /**********************/
+    /* Collection of errors detected during parsing */
+    struct collection_item *error_list;
+    /* Metadata about the file */
+    struct collection_item *metadata;
+    /* Count of error lines */
+    unsigned count;
+};
+
+/* Parsing error */
+struct ini_parse_error {
+    unsigned line;
+    int error;
 };
 
 /* Internal cleanup callback */

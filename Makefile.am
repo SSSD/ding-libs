@@ -231,6 +231,7 @@ libini_config_la_SOURCES = \
     ini/ini_valueobj.c \
     ini/ini_valueobj.h \
     ini/ini_serialize.c \
+    ini/ini_fileobj.c \
     ini/ini_configobj.c \
     ini/ini_configobj.h \
     ini/ini_config_priv.h \

@@ -57,7 +57,7 @@ void ini_cleanup_cb(const char *property,
 }
 
 /* Traverse the collection and clean the object */
-void ini_config_destroy(struct configobj *ini_config)
+void ini_config_destroy(struct ini_cfgobj *ini_config)
 {
     TRACE_FLOW_ENTRY();
 
@@ -75,10 +75,10 @@ void ini_config_destroy(struct configobj *ini_config)
 }
 
 /* Create a config object */
-int ini_config_create(struct configobj **ini_config)
+int ini_config_create(struct ini_cfgobj **ini_config)
 {
     int error = EOK;
-    struct configobj *new_co = NULL;
+    struct ini_cfgobj *new_co = NULL;
 
     TRACE_FLOW_ENTRY();
 
@@ -88,7 +88,7 @@ int ini_config_create(struct configobj **ini_config)
     }
 
     errno = 0;
-    new_co = malloc(sizeof(struct configobj));
+    new_co = malloc(sizeof(struct ini_cfgobj));
     if (!new_co) {
         error = errno;
         TRACE_ERROR_NUMBER("Failed to allocate memory", ENOMEM);
@@ -96,6 +96,7 @@ int ini_config_create(struct configobj **ini_config)
     }
 
     new_co->cfg = NULL;
+    new_co->boundary = INI_WRAP_BOUNDARY;
 
     /* Create a collection to hold configuration data */
     error = col_create_collection(&(new_co->cfg),
