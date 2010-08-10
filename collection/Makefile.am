@@ -12,7 +12,7 @@ if HAVE_GCC
         -Wcast-align -Wwrite-strings
 endif
 
-AM_CPPFLAGS = -I$(topdir) -I$(topdir)/trace $(TRACE_LEVEL)
+AM_CPPFLAGS = $(TRACE_LEVEL)
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -39,7 +39,7 @@ libcollection_la_SOURCES = \
     collection_cmp.c \
     collection_iter.c \
     collection_priv.h \
-    ../trace/trace.h
+    trace.h
 libcollection_la_LDFLAGS = \
     -version-info 2:0:0
 
