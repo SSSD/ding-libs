@@ -10,7 +10,7 @@ if HAVE_GCC
         -Wcast-align -Wwrite-strings
 endif
 
-AM_CPPFLAGS = -I$(topdir)/trace -I$(topdir)/elapi/refarray $(TRACE_LEVEL)
+AM_CPPFLAGS = $(TRACE_LEVEL)
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -25,7 +25,8 @@ dist_include_HEADERS = ref_array.h
 # Build library
 lib_LTLIBRARIES = libref_array.la
 libref_array_la_SOURCES = \
-    ref_array.c
+    ref_array.c \
+    trace.h
 libref_array_la_LDFLAGS = \
     -version-info 1:0:0
 

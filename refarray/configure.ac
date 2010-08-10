@@ -1,5 +1,5 @@
-AC_INIT([ref_array],
-        0.1.0,
+AC_INIT([libref_array],
+        0.1.1,
         [sssd-devel@lists.fedorahosted.org])
 AC_CONFIG_SRCDIR([ref_array.c])
 AC_CONFIG_AUX_DIR([build])
