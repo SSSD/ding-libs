@@ -14,6 +14,10 @@ AM_SILENT_RULES
 
 AC_CONFIG_HEADERS([config.h])
 
+m4_include([m4/libcollection.m4])
+m4_include([m4/libpath_utils.m4])
+m4_include([m4/libref_array.m4])
+
 # Enable trace build
 AC_ARG_ENABLE([trace],
               [AS_HELP_STRING([--enable-trace[=LEVEL]],[build with low level tracing enabled])],
