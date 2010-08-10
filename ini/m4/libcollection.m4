@@ -1,0 +1,5 @@
+AC_SUBST(COLLECTION_OBJ)
+AC_SUBST(COLLECTION_CFLAGS)
+AC_SUBST(COLLECTION_LIBS)
+
+PKG_CHECK_MODULES(COLLECTION, collection >= 0.5.0,,AC_MSG_ERROR([libcollection development package not installed]))

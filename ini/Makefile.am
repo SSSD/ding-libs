@@ -1,6 +1,15 @@
 #DEBUG_FLAGS=@DEBUG_VAR@
 TRACE_LEVEL=@TRACE_VAR@
 
+COLLECTION_CFLAGS=@COLLECTION_CFLAGS@
+COLLECTION_LIBS=@COLLECTION_LIBS@
+
+PATH_UTILS_CFLAGS=@PATH_UTILS_CFLAGS@
+PATH_UTILS_LIBS=@PATH_UTILS_LIBS@
+
+REFARRAY_CFLAGS=@REFARRAY_CFLAGS@
+REFARRAY_LIBS=@REFARRAY_LIBS@
+
 builddir ?= .
 
 topdir=$(srcdir)/..
@@ -13,8 +22,11 @@ if HAVE_GCC
         -Wcast-align -Wwrite-strings
 endif
 
-AM_CPPFLAGS = -I$(topdir) -I$(topdir)/trace -I$(topdir)/collection \
-              -I$(topdir)/path_utils -I$(topdir)/refarray $(TRACE_LEVEL)
+AM_CPPFLAGS = \
+    $(COLLECTION_CFLAGS) \
+    $(PATH_UTILS_CFLAGS) \
+    $(REFARRAY_CFLAGS) \
+    $(TRACE_LEVEL)
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -46,23 +58,23 @@ libini_config_la_SOURCES = \
     ini_metadata.h \
     ini_defines.h \
     ini_comment.c \
-    ini_comment.h
+    ini_comment.h \
+    trace.h
 
 
 libini_config_la_LIBADD = \
-    -L$(topbuilddir)/collection \
-    -L$(topbuilddir)/path_utils \
-    -L$(topbuilddir)/refarray \
-    -lcollection \
-    -lref_array \
-    -lpath_utils
+    $(COLLECTION_LIBS) \
+    $(PATH_UTILS_LIBS) \
+    $(REFARRAY_LIBS)
 libini_config_la_LDFLAGS = \
     -version-info 2:0:0
 
 # Build unit test
 check_PROGRAMS = ini_config_ut ini_comment_ut
 ini_config_ut_SOURCES = ini_config_ut.c
-ini_config_ut_LDADD = libini_config.la -L$(topbuilddir)/collection -lcollection
+ini_config_ut_LDADD = \
+    libini_config.la \
+    $(LIBCOLLECTION_LIBS)
 ini_comment_ut_SOURCES = ini_comment_ut.c
 ini_comment_ut_LDADD = libini_config.la
 
