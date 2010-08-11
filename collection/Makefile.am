@@ -26,7 +26,7 @@ dist_include_HEADERS = \
     collection_queue.h \
     collection_stack.h
 
-dist_noinst_DATA = m4
+dist_noinst_DATA = m4 contrib/libcollection.spec.in
 
 # Build library
 lib_LTLIBRARIES = libcollection.la
@@ -71,3 +71,30 @@ tests: all $(check_PROGRAMS)
 
 clean-local:
 	rm -Rf doc
+
+
+builddir ?= .
+RPMBUILD ?= $(PWD)/rpmbuild
+
+rpmroot:
+	mkdir -p $(RPMBUILD)/BUILD
+	mkdir -p $(RPMBUILD)/RPMS
+	mkdir -p $(RPMBUILD)/SOURCES
+	mkdir -p $(RPMBUILD)/SPECS
+	mkdir -p $(RPMBUILD)/SRPMS
+
+rpms: dist-gzip rpmroot
+	cp $(builddir)/contrib/libcollection.spec $(RPMBUILD)/SPECS
+	cp $(distdir).tar.gz $(RPMBUILD)/SOURCES
+	cd $(RPMBUILD); \
+	rpmbuild --define "_topdir $(RPMBUILD)" -ba SPECS/libcollection.spec
+
+# make srpms will use the old digest algorithm to be compatible
+# with RHEL5
+srpm: dist-gzip rpmroot
+	cp $(builddir)/contrib/libcollection.spec $(RPMBUILD)/SPECS
+	cp $(distdir).tar.gz $(RPMBUILD)/SOURCES
+	cd $(RPMBUILD); \
+	rpmbuild --define "_topdir $(RPMBUILD)" \
+	         --define _source_filedigest_algorithm=1 \
+	         -bs SPECS/libcollection.spec

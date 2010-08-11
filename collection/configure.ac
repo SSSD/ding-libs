@@ -38,5 +38,5 @@ AC_PATH_PROG([DOXYGEN], [doxygen], [false])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test x$DOXYGEN != xfalse ])
 
 
-AC_CONFIG_FILES([Makefile collection.cfg.doxy collection.pc])
+AC_CONFIG_FILES([Makefile collection.cfg.doxy collection.pc contrib/libcollection.spec])
 AC_OUTPUT

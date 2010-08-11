@@ -1,0 +1,86 @@
+Name: @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@
+Release: 0%{?dist}
+Summary: Collection data-type for C
+Group: Development/Libraries
+License: LGPLv3+
+URL: http://fedorahosted.org/sssd/
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+
+### Patches ###
+
+### Dependencies ###
+
+### Build Dependencies ###
+
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: libtool
+BuildRequires: m4
+BuildRequires: doxygen
+
+%description
+A data-type to collect data in a heirarchical structure for easy iteration
+and serialization
+
+%package devel
+Summary: Development files for libcollection
+Group: Development/Libraries
+Requires: libcollection = %{version}-%{release}
+License: LGPLv3+
+
+%description devel
+A data-type to collect data in a heirarchical structure for easy iteration
+and serialization
+
+%prep
+%setup -q
+
+%build
+%configure \
+    --disable-static \
+    --disable-rpath
+
+make %{?_smp_mflags} all docs
+
+%check
+make %{?_smp_mflags} check
+
+%install
+rm -rf $RPM_BUILD_ROOT
+
+make install DESTDIR=$RPM_BUILD_ROOT
+
+# Remove .la files created by libtool
+rm -f $RPM_BUILD_ROOT/%{_libdir}/libcollection.la
+
+# Remove document install script. RPM is handling this
+rm -f doc/html/installdox
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%doc COPYING
+%doc COPYING.LESSER
+%{_libdir}/libcollection.so.2
+%{_libdir}/libcollection.so.2.0.0
+
+%files devel
+%defattr(-,root,root,-)
+%{_includedir}/collection.h
+%{_includedir}/collection_tools.h
+%{_includedir}/collection_queue.h
+%{_includedir}/collection_stack.h
+%{_libdir}/libcollection.so
+%{_libdir}/pkgconfig/collection.pc
+%doc doc/html/
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
+
+%changelog
+* Wed Aug 11 2010 Stephen Gallagher <sgallagh@redhat.com> - @PACKAGE_VERSION@-0
+- Automated build of libcollection
