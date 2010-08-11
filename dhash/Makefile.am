@@ -10,7 +10,7 @@ ACLOCAL_AMFLAGS = -I m4
 pkgconfigdir = $(libdir)/pkgconfig
 dist_pkgconfig_DATA = dhash.pc
 
-dist_noinst_DATA = m4
+dist_noinst_DATA = m4 contrib/libdhash.spec.in
 
 dist_include_HEADERS = dhash.h
 
@@ -33,3 +33,30 @@ dist_examples_DATA = examples/dhash_test.c examples/dhash_example.c
 dist_doc_DATA = README
 
 tests: all $(check_PROGRAMS)
+
+builddir ?= .
+RPMBUILD ?= $(PWD)/rpmbuild
+
+rpmroot:
+	mkdir -p $(RPMBUILD)/BUILD
+	mkdir -p $(RPMBUILD)/RPMS
+	mkdir -p $(RPMBUILD)/SOURCES
+	mkdir -p $(RPMBUILD)/SPECS
+	mkdir -p $(RPMBUILD)/SRPMS
+
+rpms: dist-gzip rpmroot
+	cp $(builddir)/contrib/libdhash.spec $(RPMBUILD)/SPECS
+	cp $(distdir).tar.gz $(RPMBUILD)/SOURCES
+	cd $(RPMBUILD); \
+	rpmbuild --define "_topdir $(RPMBUILD)" -ba SPECS/libdhash.spec
+
+# make srpms will use the old digest algorithm to be compatible
+# with RHEL5
+srpm: dist-gzip rpmroot
+	cp $(builddir)/contrib/libdhash.spec $(RPMBUILD)/SPECS
+	cp $(distdir).tar.gz $(RPMBUILD)/SOURCES
+	cd $(RPMBUILD); \
+	rpmbuild --define "_topdir $(RPMBUILD)" \
+	         --define _source_filedigest_algorithm=1 \
+	         -bs SPECS/libdhash.spec
+

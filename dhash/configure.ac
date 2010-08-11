@@ -27,5 +27,5 @@ if test x$docdir = x; then
     AC_SUBST([docdir], ${datadir}/doc/AC_PACKAGE_NAME)
 fi
 
-AC_CONFIG_FILES([Makefile dhash.pc])
+AC_CONFIG_FILES([Makefile dhash.pc contrib/libdhash.spec])
 AC_OUTPUT

@@ -1,0 +1,87 @@
+Name: @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@
+Release: 0%{?dist}
+Group: Development/Libraries
+Summary: Dynamic hash table
+License: LGPLv3+
+URL: http://fedorahosted.org/sssd/
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+
+### Patches ###
+
+### Dependencies ###
+
+### Build Dependencies ###
+
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: libtool
+BuildRequires: m4
+
+%description
+A hash table which will dynamically resize to achieve optimal storage & access
+time properties
+
+%package devel
+Summary: Development files for libdhash
+Group: Development/Libraries
+Requires: libdhash = %{version}-%{release}
+License: LGPLv3+
+
+%description devel
+A hash table which will dynamically resize to achieve optimal storage & access
+time properties
+
+%prep
+%setup -q
+
+%build
+%configure \
+    --disable-static \
+    --disable-rpath
+
+make %{?_smp_mflags}
+
+%check
+make %{?_smp_mflags} check
+
+%install
+rm -rf $RPM_BUILD_ROOT
+
+make install DESTDIR=$RPM_BUILD_ROOT
+
+# Remove the example files from the output directory
+# We will copy them directly from the source directory
+# for packaging
+rm -f \
+    $RPM_BUILD_ROOT/usr/share/doc/libdhash/README \
+    $RPM_BUILD_ROOT/usr/share/doc/libdhash/examples/dhash_example.c \
+    $RPM_BUILD_ROOT/usr/share/doc/libdhash/examples/dhash_test.c
+
+# Remove .la files created by libtool
+rm -f $RPM_BUILD_ROOT/%{_libdir}/libdhash.la
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%doc COPYING COPYING.LESSER
+%{_libdir}/libdhash.so.1
+%{_libdir}/libdhash.so.1.0.0
+
+%files devel
+%defattr(-,root,root,-)
+%{_includedir}/dhash.h
+%{_libdir}/libdhash.so
+%{_libdir}/pkgconfig/dhash.pc
+%doc README examples/
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%changelog
+* Mon Mar 15 2010 Stephen Gallagher <sgallagh@redhat.com> - @PACKAGE_VERSION@-0
+- Automated build of libdhash
