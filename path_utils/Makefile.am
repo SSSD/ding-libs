@@ -14,7 +14,7 @@ dist_pkgconfig_DATA = path_utils.pc
 
 dist_include_HEADERS = path_utils.h
 
-dist_noinst_DATA = m4
+dist_noinst_DATA = m4 contrib/libpath_utils.spec.in
 
 lib_LTLIBRARIES = libpath_utils.la
 libpath_utils_la_SOURCES = path_utils.c
@@ -48,3 +48,28 @@ docs:
 	@exit 1
 endif
 
+builddir ?= .
+RPMBUILD ?= $(PWD)/rpmbuild
+
+rpmroot:
+	mkdir -p $(RPMBUILD)/BUILD
+	mkdir -p $(RPMBUILD)/RPMS
+	mkdir -p $(RPMBUILD)/SOURCES
+	mkdir -p $(RPMBUILD)/SPECS
+	mkdir -p $(RPMBUILD)/SRPMS
+
+rpms: dist-gzip rpmroot
+	cp $(builddir)/contrib/libpath_utils.spec $(RPMBUILD)/SPECS
+	cp $(distdir).tar.gz $(RPMBUILD)/SOURCES
+	cd $(RPMBUILD); \
+	rpmbuild --define "_topdir $(RPMBUILD)" -ba SPECS/libpath_utils.spec
+
+# make srpms will use the old digest algorithm to be compatible
+# with RHEL5
+srpm: dist-gzip rpmroot
+	cp $(builddir)/contrib/libpath_utils.spec $(RPMBUILD)/SPECS
+	cp $(distdir).tar.gz $(RPMBUILD)/SOURCES
+	cd $(RPMBUILD); \
+	rpmbuild --define "_topdir $(RPMBUILD)" \
+	         --define _source_filedigest_algorithm=1 \
+	         -bs SPECS/libpath_utils.spec
