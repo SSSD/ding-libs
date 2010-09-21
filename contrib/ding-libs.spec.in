@@ -1,0 +1,313 @@
+Name: @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@
+Release: 0%{?dist}@PRERELEASE_VERSION@
+Summary: "Ding is not GLib" assorted utility libraries
+Group: Development/Libraries
+License: LGPLv3+
+URL: http://fedorahosted.org/sssd/
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+
+%global path_utils_version 0.2.1
+%global dhash_version 0.4.1
+%global collection_version 0.5.1
+%global ref_array_version 0.1.1
+%global ini_config_version 0.6.1
+
+### Patches ###
+
+### Dependencies ###
+# ding-libs is a meta-package that will pull in all of its own
+# sub-packages
+Requires: libpath_utils = %{path_utils_version}-%{release}
+Requires: libdhash = %{dhash_version}-%{release}
+Requires: libcollection = %{collection_version}-%{release}
+Requires: libref_array = %{ref_array_version}-%{release}
+Requires: libini_config = %{ini_config_version}-%{release}
+
+### Build Dependencies ###
+
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: libtool
+BuildRequires: m4
+BuildRequires: doxygen
+
+%description
+A meta-package that pulls in libcollection, libdhash, libini_config,
+librefarray and libpath_utils.
+
+%package devel
+Summary: Development packages for ding-libs
+Group: Development/Libraries
+License: LGPLv3+
+
+# ding-libs is a meta-package that will pull in all of its own
+# sub-packages
+Requires: libpath_utils-devel = %{path_utils_version}-%{release}
+Requires: libdhash-devel = %{dhash_version}-%{release}
+Requires: libcollection-devel = %{collection_version}-%{release}
+Requires: libref_array-devel = %{ref_array_version}-%{release}
+Requires: libini_config-devel = %{ini_config_version}-%{release}
+
+%description devel
+A meta-package that pulls in development libraries for libcollection,
+libdhash, libini_config, librefarray and libpath_utils.
+
+##############################################################################
+# Path Utils
+##############################################################################
+
+%package -n libpath_utils
+Summary: Filesystem Path Utilities
+Group: Development/Libraries
+License: LGPLv3+
+Version: %{path_utils_version}
+
+%description -n libpath_utils
+Utility functions to manipulate filesystem pathnames
+
+%package -n libpath_utils-devel
+Summary: Development files for libpath_utils
+Group: Development/Libraries
+Requires: libpath_utils = %{path_utils_version}-%{release}
+License: LGPLv3+
+Version: %{path_utils_version}
+
+%description -n libpath_utils-devel
+Utility functions to manipulate filesystem pathnames
+
+%post -n libpath_utils -p /sbin/ldconfig
+%postun -n libpath_utils -p /sbin/ldconfig
+
+%files -n libpath_utils
+%defattr(-,root,root,-)
+%doc COPYING COPYING.LESSER
+%{_libdir}/libpath_utils.so.1
+%{_libdir}/libpath_utils.so.1.0.0
+
+%files -n libpath_utils-devel
+%defattr(-,root,root,-)
+%{_includedir}/path_utils.h
+%{_libdir}/libpath_utils.so
+%{_libdir}/pkgconfig/path_utils.pc
+%doc path_utils/README.path_utils
+%doc path_utils/doc/html/
+
+
+##############################################################################
+# dhash
+##############################################################################
+
+%package -n libdhash
+Group: Development/Libraries
+Summary: Dynamic hash table
+License: LGPLv3+
+Version: %{dhash_version}
+
+%description -n libdhash
+A hash table which will dynamically resize to achieve optimal storage & access
+time properties
+
+%package -n libdhash-devel
+Summary: Development files for libdhash
+Group: Development/Libraries
+Requires: libdhash = %{dhash_version}-%{release}
+License: LGPLv3+
+Version: %{dhash_version}
+
+%description -n libdhash-devel
+A hash table which will dynamically resize to achieve optimal storage & access
+time properties
+
+%post -n libdhash -p /sbin/ldconfig
+%postun -n libdhash -p /sbin/ldconfig
+
+%files -n libdhash
+%defattr(-,root,root,-)
+%doc COPYING COPYING.LESSER
+%{_libdir}/libdhash.so.1
+%{_libdir}/libdhash.so.1.0.0
+
+%files -n libdhash-devel
+%defattr(-,root,root,-)
+%{_includedir}/dhash.h
+%{_libdir}/libdhash.so
+%{_libdir}/pkgconfig/dhash.pc
+%doc dhash/README.dhash
+%doc dhash/examples/
+
+
+##############################################################################
+# collection
+##############################################################################
+%package -n libcollection
+Summary: Collection data-type for C
+Group: Development/Libraries
+License: LGPLv3+
+Version: %{collection_version}
+
+%description -n libcollection
+A data-type to collect data in a hierarchical structure for easy iteration
+and serialization
+
+%package -n libcollection-devel
+Summary: Development files for libcollection
+Group: Development/Libraries
+License: LGPLv3+
+Requires: libcollection = %{collection_version}-%{release}
+Version: %{collection_version}
+
+%description -n libcollection-devel
+A data-type to collect data in a hierarchical structure for easy iteration
+and serialization
+
+%post -n libcollection -p /sbin/ldconfig
+%postun -n libcollection -p /sbin/ldconfig
+
+
+%files -n libcollection
+%defattr(-,root,root,-)
+%doc COPYING
+%doc COPYING.LESSER
+%{_libdir}/libcollection.so.2
+%{_libdir}/libcollection.so.2.0.0
+
+%files -n libcollection-devel
+%defattr(-,root,root,-)
+%{_includedir}/collection.h
+%{_includedir}/collection_tools.h
+%{_includedir}/collection_queue.h
+%{_includedir}/collection_stack.h
+%{_libdir}/libcollection.so
+%{_libdir}/pkgconfig/collection.pc
+%doc collection/doc/html/
+
+
+##############################################################################
+# ref_array
+##############################################################################
+
+%package -n libref_array
+Summary: A refcounted array for C
+Group: Development/Libraries
+License: LGPLv3+
+Version: %{ref_array_version}
+
+%description -n libref_array
+A dynamically-growing, reference-counted array
+
+%package -n libref_array-devel
+Summary: Development files for libref_array
+Group: Development/Libraries
+Requires: libref_array = %{ref_array_version}-%{release}
+License: LGPLv3+
+Version: %{ref_array_version}
+
+%description -n libref_array-devel
+A dynamically-growing, reference-counted array
+
+%post -n libref_array -p /sbin/ldconfig
+%postun -n libref_array -p /sbin/ldconfig
+
+%files -n libref_array
+%defattr(-,root,root,-)
+%doc COPYING
+%doc COPYING.LESSER
+%{_libdir}/libref_array.so.1
+%{_libdir}/libref_array.so.1.0.0
+
+%files -n libref_array-devel
+%defattr(-,root,root,-)
+%{_includedir}/ref_array.h
+%{_libdir}/libref_array.so
+%{_libdir}/pkgconfig/ref_array.pc
+%doc refarray/README.ref_array
+%doc refarray/doc/html/
+
+
+##############################################################################
+# ini_config
+##############################################################################
+
+%package -n libini_config
+Summary: INI file parser for C
+Group: Development/Libraries
+License: LGPLv3+
+Version: %{ini_config_version}
+
+%description -n libini_config
+Library to process config files in INI format into a libcollection data
+structure
+
+%package -n libini_config-devel
+Summary: Development files for libini_config
+Group: Development/Libraries
+License: LGPLv3+
+Requires: libini_config = %{ini_config_version}-%{release}
+Version: %{ini_config_version}
+
+%description -n libini_config-devel
+Library to process config files in INI format into a libcollection data
+structure
+
+%post -n libini_config -p /sbin/ldconfig
+%postun -n libini_config -p /sbin/ldconfig
+
+%files -n libini_config
+%defattr(-,root,root,-)
+%doc COPYING
+%doc COPYING.LESSER
+%{_libdir}/libini_config.so.2
+%{_libdir}/libini_config.so.2.0.0
+
+%files -n libini_config-devel
+%defattr(-,root,root,-)
+%{_includedir}/ini_config.h
+%{_libdir}/libini_config.so
+%{_libdir}/pkgconfig/ini_config.pc
+%doc ini/doc/html/
+
+
+##############################################################################
+# Build steps
+##############################################################################
+
+%prep
+%setup -q
+
+%build
+%configure \
+    --disable-static \
+    --disable-rpath
+
+make %{?_smp_mflags} all docs
+
+%check
+make %{?_smp_mflags} check
+
+%install
+rm -rf $RPM_BUILD_ROOT
+
+make install DESTDIR=$RPM_BUILD_ROOT
+
+# Remove .la files created by libtool
+rm -f $RPM_BUILD_ROOT/%{_libdir}/*.la
+
+# Remove the example files from the output directory
+# We will copy them directly from the source directory
+# for packaging
+rm -f \
+    $RPM_BUILD_ROOT/usr/share/doc/ding-libs/README.* \
+    $RPM_BUILD_ROOT/usr/share/doc/ding-libs/examples/dhash_example.c \
+    $RPM_BUILD_ROOT/usr/share/doc/ding-libs/examples/dhash_test.c
+
+# Remove document install script. RPM is handling this
+rm -f */doc/html/installdox
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%changelog
+* Tue Sep 21 2010 Stephen Gallagher <sgallagh@redhat.com> - @PACKAGE_VERSION@-0
+- Automated build of ding-libs

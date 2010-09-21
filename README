@@ -1,6 +1,10 @@
-Each of the subdirectories builds a separate shared library.
+To build the ding-libs from the tarball:
+    ./configure
+    make
+    make docs (optional)
+    make check (optional)
+    make install
 
-To build them, cd into the appropriate directory and follow the included instructions.
-
-Most information about how to use the interfaces can be found in header files
-and in the unit tests (*_ut.c).
+To build the ding-libs from a source checkout:
+    autoreconf -if
+then follow the tarball instructions above.

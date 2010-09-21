@@ -1503,6 +1503,7 @@ int main(int argc, char *argv[])
 {
     int error = EOK;
     char *srcdir = NULL;
+    char *rundir = NULL;
 
     if ((argc > 1) && (strcmp(argv[1], "-v") == 0)) verbose = 1;
 
@@ -1510,7 +1511,9 @@ int main(int argc, char *argv[])
 
     srcdir = getenv("srcdir");
     if(srcdir) {
-        if(chdir(srcdir) != 0) {
+        rundir = malloc(strlen(srcdir)+4*sizeof(char));
+        sprintf(rundir, "%s/ini", srcdir);
+        if(chdir(rundir) != 0) {
             error = errno;
             printf("Failed to change directory, error %d\n", error);
             return error;
