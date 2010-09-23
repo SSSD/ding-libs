@@ -317,8 +317,7 @@ structure
 
 %build
 %configure \
-    --disable-static \
-    --disable-rpath
+    --disable-static
 
 make %{?_smp_mflags} all docs
 
