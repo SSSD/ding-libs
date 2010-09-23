@@ -12,7 +12,7 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 %global dhash_version 0.4.1
 %global collection_version 0.6.0
 %global ref_array_version 0.1.1
-%global basicobjecs_vesion 0.1.0
+%global basicobjects_version 0.1.0
 %global ini_config_version 0.6.1
 
 ### Patches ###
