@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: @PACKAGE_NAME@
+Name: path_utils
 Description: Utility functions to manipulate filesystem pathnames
-Version: @PACKAGE_VERSION@
+Version: @PATH_UTILS_VERSION@
 Libs: -L${libdir} -lpath_utils
 Cflags: -I${includedir}
 URL: http://fedorahosted.org/sssd/
