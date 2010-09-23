@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: @PACKAGE_NAME@
+Name: dhash
 Description: A hash table which will dynamically resize to achieve optimal storage & access time properties
-Version: @PACKAGE_VERSION@
+Version: @DHASH_VERSION@
 Libs: -L${libdir} -ldhash
 Cflags: -I${includedir}
 URL: http://fedorahosted.org/sssd/

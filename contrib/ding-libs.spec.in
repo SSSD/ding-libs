@@ -8,12 +8,12 @@ URL: http://fedorahosted.org/sssd/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
-%global path_utils_version 0.2.1
-%global dhash_version 0.4.1
-%global collection_version 0.6.0
-%global ref_array_version 0.1.1
-%global basicobjects_version 0.1.0
-%global ini_config_version 0.6.1
+%global path_utils_version @PATH_UTILS_VERSION@
+%global dhash_version @DHASH_VERSION@
+%global collection_version @COLLECTION_VERSION@
+%global ref_array_version @REF_ARRAY_VERSION@
+%global basicobjects_version @BASICOBJECTS_VERSION@
+%global ini_config_version @INI_CONFIG_VERSION@
 
 ### Patches ###
 

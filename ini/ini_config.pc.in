@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: @PACKAGE_NAME@
+Name: ini_config
 Description: Library to process config files in INI format into a libcollection data structure
-Version: @PACKAGE_VERSION@
+Version: @INI_CONFIG_VERSION@
 Libs: -L${libdir} -lini_config -lcollection
 Cflags: -I${includedir}
 URL: http://fedorahosted.org/sssd/

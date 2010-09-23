@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: @PACKAGE_NAME@
+Name: ref_array
 Description: A dynamically-growing, reference-counted array
-Version: @PACKAGE_VERSION@
+Version: @REF_ARRAY_VERSION@
 Libs: -L${libdir} -lref_array
 Cflags: -I${includedir}
 URL: http://fedorahosted.org/sssd/
