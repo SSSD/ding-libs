@@ -192,10 +192,9 @@ int main(int argc, char *argv[])
 
     srcdir = getenv("srcdir");
     if(!srcdir) {
-        confdir = malloc(sizeof(char)*3);
-        sprintf(confdir, "./ini");
+        confdir = strdup("./ini");
     } else {
-        confdir = malloc(strlen(srcdir)+4*sizeof(char));
+        confdir = malloc(strlen(srcdir)+5*sizeof(char));
         sprintf(confdir, "%s/ini", srcdir);
     }
 
