@@ -135,6 +135,8 @@ int main(int argc, char **argv)
     long i, k;
     int status;
     hash_value_t value;
+    hash_value_t old_value;
+    hash_value_t new_value;
     hash_key_t key;
     char buf[1024];
     hash_table_t *table = NULL;
@@ -402,6 +404,69 @@ int main(int argc, char **argv)
                 break;
             }
         }
+    }
+
+    /* Update an entry */
+    if (test[0].val & 1) {
+        key.type = HASH_KEY_STRING;
+        key.str = test[0].str;
+    } else {
+        key.type = HASH_KEY_ULONG;
+        key.ul = test[0].val;
+    }
+
+    if ((status = hash_lookup(table, &key, &value)) != HASH_SUCCESS) {
+        fprintf(stderr, "Error: failed lookup for value %ld, at line %d (%s)\n",
+                test[0].val,  __LINE__, error_string(status));
+        exit(1);
+    }
+
+    old_value.type = value.type;
+    switch (value.type) {
+        case HASH_VALUE_LONG:
+            old_value.ul = value.ul;
+            break;
+        case HASH_VALUE_PTR:
+            old_value.ptr = strdup(value.ptr);
+            break;
+        default:
+            fprintf(stderr, "Error: unsupported value type for update.\n");
+            exit(1);
+    }
+
+    value.type = HASH_VALUE_PTR;
+    value.ptr = (void *) strdup("Updated");
+
+    if ((status = hash_enter(table, &key, &value)) != HASH_SUCCESS) {
+        fprintf(stderr, "Error: %ld failed insertion at line %d (%s) \n",
+                test[0].val, __LINE__, error_string(status));
+        exit(1);
+    }
+
+    if ((status = hash_lookup(table, &key, &new_value)) != HASH_SUCCESS) {
+        fprintf(stderr, "Error: failed lookup for value %ld, at line %d (%s)\n",
+                test[0].val,  __LINE__, error_string(status));
+        exit(1);
+    }
+
+    if (value.type == new_value.type) {
+        if (strcmp(value.ptr, new_value.ptr) != 0) {
+            fprintf(stderr, "Error: Updated value is not correct, "
+                            "expected (%s) got (%s), at line %d\n",
+                    (char *) value.ptr, (char *) new_value.ptr, __LINE__);
+            exit(1);
+        }
+    } else {
+        fprintf(stderr, "Error: Updated value is not correct, "
+                        "expected type (%d) got (%d), at line %d\n",
+                value.type, new_value.type, __LINE__);
+        exit(1);
+    }
+
+    if ((status = hash_enter(table, &key, &old_value)) != HASH_SUCCESS) {
+        fprintf(stderr, "Error: %ld failed insertion at line %d (%s) \n",
+                test[0].val, __LINE__, error_string(status));
+        exit(1);
     }
 
 

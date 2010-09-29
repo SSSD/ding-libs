@@ -898,34 +898,10 @@ int hash_enter(hash_table_t *table, hash_key_t *key, hash_value_t *value)
             memcpy((void *)element->entry.key.str, key->str, len);
             break;
         }
-        switch(element->entry.value.type = value->type) {
-        case HASH_VALUE_UNDEF:
-            element->entry.value.ul = 0;
-            break;
-        case HASH_VALUE_PTR:
-            element->entry.value.ptr = value->ptr;
-            break;
-        case HASH_VALUE_INT:
-            element->entry.value.i = value->i;
-            break;
-        case HASH_VALUE_UINT:
-            element->entry.value.ui = value->ui;
-            break;
-        case HASH_VALUE_LONG:
-            element->entry.value.l = value->l;
-            break;
-        case HASH_VALUE_ULONG:
-            element->entry.value.ul = value->ul;
-            break;
-        case HASH_VALUE_FLOAT:
-            element->entry.value.f = value->f;
-            break;
-        case HASH_VALUE_DOUBLE:
-            element->entry.value.d = value->d;
-            break;
-        }
+
         *chain = element;             /* link into chain */
         element->next = NULL;
+
         /*
          * Table over-full?
          */
@@ -934,7 +910,38 @@ int hash_enter(hash_table_t *table, hash_key_t *key, hash_value_t *value)
                 return error;
             }
         }
-    }                                       /* end not found */
+
+    } else {
+        hdelete_callback(table, HASH_ENTRY_DESTROY, &element->entry);
+    }
+
+    switch(element->entry.value.type = value->type) {
+    case HASH_VALUE_UNDEF:
+        element->entry.value.ul = 0;
+        break;
+    case HASH_VALUE_PTR:
+        element->entry.value.ptr = value->ptr;
+        break;
+    case HASH_VALUE_INT:
+        element->entry.value.i = value->i;
+        break;
+    case HASH_VALUE_UINT:
+        element->entry.value.ui = value->ui;
+        break;
+    case HASH_VALUE_LONG:
+        element->entry.value.l = value->l;
+        break;
+    case HASH_VALUE_ULONG:
+        element->entry.value.ul = value->ul;
+        break;
+    case HASH_VALUE_FLOAT:
+        element->entry.value.f = value->f;
+        break;
+    case HASH_VALUE_DOUBLE:
+        element->entry.value.d = value->d;
+        break;
+    }
+
     return HASH_SUCCESS;
 }
 
