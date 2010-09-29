@@ -81,6 +81,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "cannot add to table \"%s\" (%s)\n", key.str, hash_error_string(error));
         return error;
     }
+    free(key.str);
 
     /* Get a list of keys and print them out, free the list when we're done */
     if ((error = hash_keys(table, &count, &keys)) != HASH_SUCCESS) {
@@ -98,6 +99,7 @@ int main(int argc, char **argv)
     if ((error = hash_lookup(table, &key, &value)) != HASH_SUCCESS) {
         fprintf(stderr, "cannot find key \"%s\" (%s)\n", key.str, hash_error_string(error));
     }
+    free(key.str);
 
     /* Visit each entry in the table, callback will increment count on each visit */
     printf("Iterate using callback\n");
@@ -130,6 +132,7 @@ int main(int argc, char **argv)
 
     /* Assure key is no longer in table */
     assert (!hash_has_key(table, &key));
+    free(key.str);
 
     /* Free the table */
     hash_destroy(table);
