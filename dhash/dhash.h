@@ -309,7 +309,7 @@ int hash_delete(hash_table_t *table, hash_key_t *key);
  * function. It can be used for any purpose the caller wants. The callback
  * parameter list is:
  *
- * bool callback(hash_entry_t *item, hash_table_t *user_data);
+ * bool callback(hash_entry_t *item, void *user_data);
  *
  * WARNING: Do not modify the contents of the table during an iteration it will
  * produce undefined results. If you need to visit each item in the table and
