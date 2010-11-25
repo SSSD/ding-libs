@@ -48,7 +48,7 @@ static int ref_array_grow(struct ref_array *ra)
     int error = EOK;
     void *newbuf = NULL;
 
-    TRACE_FLOW_STRING("ref_array_grow", "Entry");
+    TRACE_FLOW_ENTRY();
 
     TRACE_INFO_NUMBER("Current length: ", ra->len);
     TRACE_INFO_NUMBER("Current size: ", ra->size);
@@ -83,7 +83,7 @@ int ref_array_create(struct ref_array **ra,
 {
     struct ref_array *new_ra = NULL;
 
-    TRACE_FLOW_STRING("ref_array_create", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if (!ra) {
         TRACE_ERROR_NUMBER("Uninitialized argument.", EINVAL);
@@ -113,14 +113,14 @@ int ref_array_create(struct ref_array **ra,
 
     *ra = new_ra;
 
-    TRACE_FLOW_STRING("ref_array_create", "Exit");
+    TRACE_FLOW_EXIT();
     return EOK;
 }
 
 /* Get new reference to an array */
 struct ref_array *ref_array_getref(struct ref_array *ra)
 {
-    TRACE_FLOW_STRING("ref_array_getref", "Entry");
+    TRACE_FLOW_ENTRY();
 
     /* Check if array is not NULL */
     if (ra) {
@@ -134,7 +134,7 @@ struct ref_array *ref_array_getref(struct ref_array *ra)
         TRACE_ERROR_STRING("Uninitialized array.", "Returning NULL");
     }
 
-    TRACE_FLOW_STRING("ref_array_getref", "Exit");
+    TRACE_FLOW_EXIT();
     return ra;
 }
 
@@ -143,7 +143,7 @@ void ref_array_destroy(struct ref_array *ra)
 {
     int idx;
 
-    TRACE_FLOW_STRING("ref_array_destroy", "Entry");
+    TRACE_FLOW_ENTRY();
 
     /* Check if array is not NULL */
     if (!ra) {
@@ -175,7 +175,7 @@ void ref_array_destroy(struct ref_array *ra)
         TRACE_ERROR_STRING("Reference count is 0.", "Coding error???");
     }
 
-    TRACE_FLOW_STRING("ref_array_destroy", "Exit");
+    TRACE_FLOW_EXIT();
 }
 
 /* Add new element to the array */
@@ -183,7 +183,8 @@ int ref_array_append(struct ref_array *ra, void *element)
 {
     int error = EOK;
 
-    TRACE_FLOW_STRING("ref_array_append", "Entry");
+    TRACE_FLOW_ENTRY();
+
     if ((!ra) || (!element)) {
         TRACE_ERROR_NUMBER("Uninitialized argument.", EINVAL);
         return EINVAL;
@@ -205,14 +206,14 @@ int ref_array_append(struct ref_array *ra, void *element)
 
     ra->len++;
 
-    TRACE_FLOW_STRING("ref_array_append", "Exit");
+    TRACE_FLOW_EXIT();
     return error;
 }
 
 /* Get element */
 void *ref_array_get(struct ref_array *ra, uint32_t idx, void *acptr)
 {
-    TRACE_FLOW_STRING("ref_array_get", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if (!ra) {
         TRACE_ERROR_STRING("Uninitialized argument.", "");
@@ -235,7 +236,7 @@ void *ref_array_get(struct ref_array *ra, uint32_t idx, void *acptr)
 
     }
 
-    TRACE_FLOW_STRING("ref_array_get returning internal storage", "Exit");
+    TRACE_FLOW_EXIT();
     return (unsigned char *)(ra->storage) + idx * ra->elsize;
 }
 
@@ -243,7 +244,7 @@ void *ref_array_get(struct ref_array *ra, uint32_t idx, void *acptr)
 /* Get length */
 int ref_array_getlen(struct ref_array *ra, uint32_t *len)
 {
-    TRACE_FLOW_STRING("ref_array_getlen", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if ((!ra) || (!len)) {
         TRACE_ERROR_STRING("Uninitialized argument.", "");
@@ -252,14 +253,14 @@ int ref_array_getlen(struct ref_array *ra, uint32_t *len)
 
     *len = ra->len;
 
-    TRACE_FLOW_STRING("ref_array_getlen", "Exit");
+    TRACE_FLOW_EXIT();
     return EOK;
 }
 
 /* Alternative function to get length */
 uint32_t ref_array_len(struct ref_array *ra)
 {
-    TRACE_FLOW_STRING("ref_array_len", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if (!ra) {
         TRACE_ERROR_STRING("Uninitialized argument.", "");
@@ -267,7 +268,7 @@ uint32_t ref_array_len(struct ref_array *ra)
         return 0;
     }
 
-    TRACE_FLOW_STRING("ref_array_len", "Exit");
+    TRACE_FLOW_EXIT();
     return ra->len;
 }
 
@@ -280,7 +281,7 @@ int ref_array_insert(struct ref_array *ra,
     int error = EOK;
     uint32_t i;
 
-    TRACE_FLOW_STRING("ref_array_insert", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if ((!ra) || (!element)) {
         TRACE_ERROR_NUMBER("Uninitialized argument.", EINVAL);
@@ -315,7 +316,7 @@ int ref_array_insert(struct ref_array *ra,
 
     ra->len++;
 
-    TRACE_FLOW_STRING("ref_array_insert", "Exit");
+    TRACE_FLOW_EXIT();
     return error;
 
 }
@@ -328,7 +329,7 @@ int ref_array_replace(struct ref_array *ra,
 {
     int error = EOK;
 
-    TRACE_FLOW_STRING("ref_array_replace", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if ((!ra) || (!element)) {
         TRACE_ERROR_NUMBER("Uninitialized argument.", EINVAL);
@@ -351,7 +352,7 @@ int ref_array_replace(struct ref_array *ra,
            ra->elsize);
 
 
-    TRACE_FLOW_STRING("ref_array_replace", "Exit");
+    TRACE_FLOW_EXIT();
     return error;
 }
 
@@ -363,7 +364,7 @@ int ref_array_remove(struct ref_array *ra,
     int error = EOK;
     uint32_t i;
 
-    TRACE_FLOW_STRING("ref_array_remove", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if (!ra) {
         TRACE_ERROR_NUMBER("Uninitialized argument.", EINVAL);
@@ -389,7 +390,7 @@ int ref_array_remove(struct ref_array *ra,
 
     ra->len--;
 
-    TRACE_FLOW_STRING("ref_array_remove", "Exit");
+    TRACE_FLOW_EXIT();
     return error;
 }
 
@@ -398,7 +399,7 @@ void ref_array_reset(struct ref_array *ra)
 {
     int idx;
 
-    TRACE_FLOW_STRING("ref_array_reset", "Entry");
+    TRACE_FLOW_ENTRY();
 
     /* Check if array is not NULL */
     if (!ra) {
@@ -418,7 +419,7 @@ void ref_array_reset(struct ref_array *ra)
     ra->size = 0;
     ra->len = 0;
 
-    TRACE_FLOW_STRING("ref_array_reset", "Exit");
+    TRACE_FLOW_EXIT();
 }
 
 /* Swap two elements in the array */
@@ -429,7 +430,7 @@ int ref_array_swap(struct ref_array *ra,
     int error = EOK;
     void *temp = NULL;
 
-    TRACE_FLOW_STRING("ref_array_swap", "Entry");
+    TRACE_FLOW_ENTRY();
 
     if (!ra) {
         TRACE_ERROR_NUMBER("Uninitialized argument.", EINVAL);
@@ -465,12 +466,84 @@ int ref_array_swap(struct ref_array *ra,
 
     free(temp);
 
-    TRACE_FLOW_STRING("ref_array_swap", "Exit");
+    TRACE_FLOW_EXIT();
     return error;
 }
 
+/* Copy array */
+int ref_array_copy(struct ref_array *ra,
+                   ref_array_copy_cb copy_cb,
+                   ref_array_fn cb,
+                   void *data,
+                   struct ref_array **copy_ra)
+{
+    int error = EOK;
+    int idx;
+    struct ref_array *new_ra = NULL;
+    void *src;
+    void *dst;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Check if array is not NULL */
+    if ((!ra) || (!copy_ra)) {
+        TRACE_ERROR_NUMBER("Invalid argument.", EINVAL);
+        return EINVAL;
+    }
+
+    new_ra = (struct ref_array *)malloc(sizeof(struct ref_array));
+    if (!new_ra) {
+        TRACE_ERROR_NUMBER("Failed to allocate memory.", ENOMEM);
+        return ENOMEM;
+    }
+
+    new_ra->storage = calloc(ra->size, ra->elsize);
+    if (!(new_ra->storage)) {
+        TRACE_ERROR_NUMBER("Failed to allocate memory.", ENOMEM);
+        free(new_ra);
+        return ENOMEM;
+    }
+
+    new_ra->elsize = ra->elsize;
+    new_ra->size = ra->size;
+    new_ra->grow_by = ra->grow_by;
+    new_ra->len = 0;
+    new_ra->refcount = 1;
+    new_ra->cb = cb;
+    new_ra->cb_data = data;
+
+    for (idx = 0; idx < ra->len; idx++) {
+        if (copy_cb) {
+            src = (void *)((unsigned char *)(ra->storage) + idx * ra->elsize);
+            dst = (void *)((unsigned char *)(new_ra->storage) +
+                                             idx * new_ra->elsize);
+
+            error = copy_cb(src, (void *)(dst));
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to copy data.", error);
+                ref_array_destroy(new_ra);
+                return error;
+            }
+        }
+        else {
+            memcpy((unsigned char *)(new_ra->storage) + idx * new_ra->elsize,
+                   (unsigned char *)(ra->storage) + idx * ra->elsize,
+                   new_ra->elsize);
+        }
+        (new_ra->len)++;
+    }
+
+
+    *copy_ra = new_ra;
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+
+
 /* Debug function */
-void ref_array_debug(struct ref_array *ra)
+void ref_array_debug(struct ref_array *ra, int num)
 {
     int i,j;
 
@@ -485,7 +558,15 @@ void ref_array_debug(struct ref_array *ra)
         for (j = 0; j < ra->elsize; j++) {
             printf("%x", *((unsigned char *)(ra->storage) + i * ra->elsize + j));
         }
-        printf("\n%s\n", *((char **)((unsigned char *)(ra->storage) + i * ra->elsize)));
+        if (num == 0) {
+            printf("\n%s\n", *((char **)((unsigned char *)(ra->storage) + i * ra->elsize)));
+        }
+        else if (num > 0) {
+            printf("\n%d\n", *((uint32_t *)((unsigned char *)(ra->storage) + i * ra->elsize)));
+        }
+        else {
+            printf("\nIt is an object.\n");
+        }
     }
     printf("\nARRAY DUMP END\n\n");
 }

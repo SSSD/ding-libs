@@ -83,11 +83,34 @@ typedef enum
  *
  * Callback that can be provided by a caller
  * to free data when the storage is actually destroyed.
+ *
+ * @param[in]  elem             Pointer to the array element.
+ * @param[in]  type             Type of the operation performed.
+ * @param[in]  data             Application data that can be used
+ *                              inside the callback.
+ * No return value.
  */
 typedef void (*ref_array_fn)(void *elem,
                              ref_array_del_enum type,
                              void *data);
 
+/**
+ * @brief Copy callback
+ *
+ * Callback that can be provided by a caller
+ * to copy elements of the array.
+ *
+ * @param[in]  elem             Pointer to the array element.
+ * @param[out] new_elem         Pointer to pointer to the new element.
+ *
+ * @return 0 - Success.
+ * @return ENOMEM - No memory.
+ * @return EINVAL - Invalid argument.
+ *
+ * Callback can return other errors and the implementor's discretion.
+ */
+typedef int (*ref_array_copy_cb)(void *elem,
+                                 void *new_elem);
 
 /**
  * @brief Create referenced array
@@ -312,6 +335,33 @@ int ref_array_swap(struct ref_array *ra,
  *
  */
 void ref_array_reset(struct ref_array *ra);
+
+
+/**
+ * @brief Copy array
+ *
+ * Function copies all contents calling a provided
+ * callback for every entry of the array.
+ *
+ *
+ * @param[in]  ra        Existing array object to copy.
+ * @param[in]  copy_cb   Copy callback.
+ * @param[in]  cb        Cleanup callback, will be used
+ *                       to clean data in the array copy.
+ * @param[in]  data      Caller supplied data
+ *                       passed to cleanup callback.
+ * @param[out] copy_ra   Newly allocated copy.
+ *
+ * @return 0 - Success.
+ * @return ENOMEM - No memory.
+ * @return EINVAL - Invalid argument.
+ */
+int ref_array_copy(struct ref_array *ra,
+                   ref_array_copy_cb copy_cb,
+                   ref_array_fn cb,
+                   void *data,
+                   struct ref_array **copy_ra);
+
 
 /**
  * @}
