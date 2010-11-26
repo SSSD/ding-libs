@@ -112,6 +112,14 @@ extern unsigned trace_level;
         } \
     } while(0)
 
+#define TRACE_RETURN(flow, val)      \
+    do { \
+        char mstr[200]; \
+        sprintf(mstr, "%s returning:", __FUNCTION__); \
+        flow(mstr, val); \
+    } while(0)
+
+
 /* Assertion */
 #define TRACE_ASSERT(expression) expression ? : printf("ASSERTION FAILED\n")
 #else /* HAVE_TRACE */
@@ -123,6 +131,7 @@ extern unsigned trace_level;
 #define TRACE_LNUMBER(level, msg, num)
 #define TRACE_SLNUMBER(level, msg, num)
 #define TRACE_DOUBLE(level, msg, num)
+#define TRACE_RETURN(flow, val)
 #endif /* HAVE_TRACE */
 
 
@@ -159,8 +168,7 @@ extern unsigned trace_level;
 /* Some other nice wrappers for function entry and exit */
 #define TRACE_FLOW_ENTRY()          TRACE_FLOW_STRING(__FUNCTION__, "Entry")
 #define TRACE_FLOW_EXIT()           TRACE_FLOW_STRING(__FUNCTION__, "Exit")
-#define TRACE_FLOW_RETURN(val)      \
-        TRACE_FLOW_NUMBER(__FUNCTION__ " returning:", val)
+#define TRACE_FLOW_RETURN(val)      TRACE_RETURN(TRACE_FLOW_NUMBER, val)
 
 
 #endif /* COMMON_TRACE_H */
