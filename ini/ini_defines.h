@@ -95,6 +95,12 @@
  */
 #define COL_CLASS_INI_META        COL_CLASS_INI_BASE + 4
 
+/* Family of errors */
+#define INI_FAMILY_PARSING      0
+#define INI_FAMILY_VALIDATION   1
+#define INI_FAMILY_GRAMMAR      2
+
+
 
 /* Different error string functions can be passed as callbacks */
 typedef const char * (*error_fn)(int error);

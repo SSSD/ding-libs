@@ -241,7 +241,8 @@ int ini_config_get_errors(struct ini_cfgfile *file_ctx,
                      col_get_item_property(item, NULL),
                      pe->error,
                      pe->line,
-                     parsing_error_str(pe->error));
+                     ini_get_error_str(pe->error,
+                                       INI_FAMILY_PARSING));
 
             errlist[count] = line;
             count++;

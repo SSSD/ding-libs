@@ -78,4 +78,7 @@ void ini_cleanup_cb(const char *property,
                     int length,
                     void *custom_data);
 
+/* Get parsing error */
+const char *ini_get_error_str(int parsing_error, int family);
+
 #endif

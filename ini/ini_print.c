@@ -66,7 +66,7 @@
 
 
 /* Function to return parsing error */
-const char *parsing_error_str(int parsing_error)
+static const char *parsing_error_str(int parsing_error)
 {
     const char *placeholder= _("Unknown pasing error.");
     const char *str_error[] = { _("Data is too long."),
@@ -109,7 +109,7 @@ const char *parsing_error_str(int parsing_error)
  * @return Error string.
  */
 
-const char *grammar_error_str(int grammar_error)
+static const char *grammar_error_str(int grammar_error)
 {
     const char *placeholder= _("Unknown grammar error.");
     /* THIS IS A TEMPORARY PLACEHOLDER !!!! */
@@ -150,7 +150,7 @@ const char *grammar_error_str(int grammar_error)
  *
  * @return Error string.
  */
-const char *validation_error_str(int validation_error)
+static const char *validation_error_str(int validation_error)
 {
     const char *placeholder= _("Unknown validation error.");
     /* THIS IS A TEMPORARY PLACEHOLDER !!!! */
@@ -170,7 +170,30 @@ const char *validation_error_str(int validation_error)
             return str_error[validation_error-1];
 }
 
+/* Wrapper to print errors */
+const char *ini_get_error_str(int error, int family)
+{
+    const char *val;
+    TRACE_FLOW_ENTRY();
 
+    switch(family) {
+    case INI_FAMILY_PARSING:
+        val = parsing_error_str(error);
+        break;
+    case INI_FAMILY_VALIDATION:
+        val = validation_error_str(error);
+        break;
+    case INI_FAMILY_GRAMMAR:
+        val = grammar_error_str(error);
+        break;
+    default:
+        val = _("Unknown error category.");
+        break;
+    }
+
+    TRACE_FLOW_EXIT();
+    return val;
+}
 
 /* Internal function that prints errors */
 static void print_error_list(FILE *file,
@@ -180,7 +203,7 @@ static void print_error_list(FILE *file,
                              char *failed_to_process,
                              char *error_header,
                              char *line_format,
-                             error_fn error_function)
+                             int family)
 {
     struct collection_iterator *iterator;
     int error;
@@ -235,10 +258,11 @@ static void print_error_list(FILE *file,
             /* Put error into provided format */
             pe = (struct parse_error *)(col_get_item_data(item));
             fprintf(file, line_format,
-                    col_get_item_property(item, NULL),      /* Error or warning */
-                    pe->error,                          /* Error */
-                    pe->line,                           /* Line */
-                    error_function(pe->error));         /* Error str */
+                    col_get_item_property(item, NULL), /* Error or warning */
+                    pe->error,                         /* Error */
+                    pe->line,                          /* Line */
+                    ini_get_error_str(pe->error,
+                                      family));        /* Error str */
         }
 
     }
@@ -260,7 +284,7 @@ void print_file_parsing_errors(FILE *file,
                      FAILED_TO_PROCCESS,
                      ERROR_HEADER,
                      LINE_FORMAT,
-                     parsing_error_str);
+                     INI_FAMILY_PARSING);
 }
 
 
@@ -290,7 +314,7 @@ void print_grammar_errors(FILE *file,
                      FAILED_TO_PROC_G,
                      ERROR_HEADER_G,
                      LINE_FORMAT,
-                     grammar_error_str);
+                     INI_FAMILY_GRAMMAR);
 }
 
 /* Print errors and warnings that were detected while validating INI file.
@@ -319,7 +343,7 @@ void print_validation_errors(FILE *file,
                      FAILED_TO_PROC_V,
                      ERROR_HEADER_V,
                      LINE_FORMAT,
-                     validation_error_str);
+                     INI_FAMILY_VALIDATION);
 }
 
 /* Print errors and warnings that were detected while parsing

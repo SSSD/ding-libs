@@ -142,14 +142,6 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
 void ini_print_errors(FILE *file, char **error_list);
 
 
-/* TBD rename the function */
-/** @brief Function to return a parsing error as a string.
- *
- * @param[in] parsing_error    Error code for the parsing error.
- *
- * @return Error string.
- */
-const char *parsing_error_str(int parsing_error);
 
 
 /* Merge two configurations together creating a new one */
