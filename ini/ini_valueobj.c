@@ -195,7 +195,14 @@ static int value_fold(struct simplebuffer *unfolded,
 
     /* Get the buffer info */
     len = simplebuffer_get_len(unfolded);
+    if (!len) {
+        /* Nothing to fold */
+        TRACE_FLOW_EXIT();
+        return EOK;
+    }
+
     buf = (const char *)simplebuffer_get_buf(unfolded);
+
 
     /* Make sure that we have at least one character to fold */
     if (fold_bound == 0) fold_bound++;
@@ -564,6 +571,92 @@ int value_create_new(const char *strvalue,
     return error;
 }
 
+/* Create a copy of the value */
+int value_copy(struct value_obj *vo,
+               struct value_obj **copy_vo)
+{
+
+    int error = EOK;
+    struct value_obj *new_vo = NULL;
+    struct simplebuffer *oneline = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    if ((!copy_vo) || (!vo)) {
+        TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
+        return EINVAL;
+    }
+
+    /* Create buffer to hold the value */
+    error = simplebuffer_alloc(&oneline);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate dynamic string.", error);
+        return error;
+    }
+
+    /* Put value into the buffer */
+    error = simplebuffer_add_str(oneline,
+                                 (const char *)simplebuffer_get_buf(vo->unfolded),
+                                 simplebuffer_get_len(vo->unfolded),
+                                 INI_VALUE_BLOCK);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to add string", error);
+        simplebuffer_free(oneline);
+        return error;
+    }
+
+    /* Acllocate new INI value structure */
+    new_vo = malloc(sizeof(struct value_obj));
+    if (!new_vo) {
+        TRACE_ERROR_NUMBER("No memory", ENOMEM);
+        simplebuffer_free(oneline);
+        return ENOMEM;
+    }
+
+    new_vo->origin = vo->origin;
+    new_vo->line = vo->line;
+    new_vo->unfolded = oneline;
+    new_vo->keylen = vo->keylen;
+    new_vo->boundary = vo->boundary;
+    new_vo->raw_lines = NULL;
+    new_vo->raw_lengths = NULL;
+
+    error = value_create_arrays(&(new_vo->raw_lines),
+                                &(new_vo->raw_lengths));
+
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to fold", error);
+        value_destroy(new_vo);
+        return error;
+    }
+
+    /* Create arrays by folding the value */
+    error = value_fold(new_vo->unfolded,
+                       new_vo->keylen,
+                       new_vo->boundary,
+                       new_vo->raw_lines,
+                       new_vo->raw_lengths);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to fold", error);
+        value_destroy(new_vo);
+        return error;
+    }
+
+    /* Copy commetn */
+    error = ini_comment_copy(vo->ic, &new_vo->ic);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to copy comment", error);
+        value_destroy(new_vo);
+        return error;
+    }
+
+    *copy_vo = new_vo;
+
+    TRACE_FLOW_EXIT();
+
+    return error;
+}
+
 /* Get concatenated value */
 int value_get_concatenated(struct value_obj *vo,
                            const char **fullstr)
@@ -643,6 +736,35 @@ int value_set_keylen(struct value_obj *vo, uint32_t key_len)
     return EOK;
 }
 
+/* Change boundary */
+int value_set_boundary(struct value_obj *vo, uint32_t boundary)
+{
+    int error = EOK;
+    TRACE_FLOW_ENTRY();
+
+    if (!vo) {
+        TRACE_ERROR_NUMBER("Invalid object", EINVAL);
+        return EINVAL;
+    }
+
+    vo->boundary = boundary;
+
+    /* Fold in new value */
+    error = value_fold(vo->unfolded,
+                       vo->keylen,
+                       vo->boundary,
+                       vo->raw_lines,
+                       vo->raw_lengths);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to fold", error);
+        /* In this case nothing to free here but
+         * the object might be unusable */
+        return error;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
 
 /* Update value */
 int value_update(struct value_obj *vo,

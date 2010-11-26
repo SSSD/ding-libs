@@ -214,7 +214,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
 
     /* Now do assertions and modifications to the object */
 
-    /* NOTE: Below this line do need to free arrays or comment
+    /* NOTE: Below this line do not need to free arrays or comment
      * they became internal parts of the value object
      * and will be freed as a part of it.
      */
@@ -420,6 +420,7 @@ int vo_basic_test(void)
         if (error) {
             printf("Failed to save value to file %d.\n", error);
             value_destroy(vo);
+            fclose(ff);
             return error;
         }
 
@@ -464,12 +465,153 @@ int vo_basic_test(void)
     return EOK;
 }
 
+int vo_copy_test(void)
+{
+    int error = EOK;
+    const char *strvalue = "Test multi word value that "
+                           "will be split between several lines";
+
+    struct value_obj *vo = NULL;
+    struct value_obj *vo_copy = NULL;
+    uint32_t wrap = 0;
+    struct ini_comment *ic = NULL;
+    FILE *ff = NULL;
+    char comment[100];
+
+    TRACE_FLOW_ENTRY();
+
+    VOOUT(printf("Copy test\n"));
+
+    errno = 0;
+    ff = fopen("test.ini","a");
+    if (ff == NULL) {
+        error = errno;
+        printf("Failed to open file. Error %d.\n", error);
+        return error;
+    }
+
+    error = ini_comment_create(&ic);
+    if (error) {
+        printf("Failed to create comment object\n");
+        fclose(ff);
+        return -1;
+    }
+
+    error = ini_comment_append(ic, "#This is a copy test!");
+    if (error) {
+        printf("Failed to add a line to the comment %d.\n", error);
+        ini_comment_destroy(ic);
+        fclose(ff);
+        return error;
+    }
+
+    error = ini_comment_append(ic, "#Replacable comment line");
+    if (error) {
+        printf("Failed to add a line to the comment %d.\n", error);
+        ini_comment_destroy(ic);
+        fclose(ff);
+        return error;
+    }
+
+    error = value_create_new(strvalue,
+                             strlen(strvalue),
+                             INI_VALUE_CREATED,
+                             3,
+                             20,
+                             ic,
+                             &vo);
+    if (error) {
+        printf("Failed to create a new value object %d.\n", error);
+        ini_comment_destroy(ic);
+        fclose(ff);
+        return error;
+    }
+
+    error = save_value(ff, "key", vo);
+    if (error) {
+        printf("Failed to save value to file %d.\n", error);
+        value_destroy(vo);
+        return error;
+    }
+
+    for (wrap = 0; wrap < 80; wrap++) {
+
+        TRACE_INFO_NUMBER("Iteration:", wrap);
+
+        error = value_copy(vo, &vo_copy);
+        if (error) {
+            printf("Failed to create a new value object %d.\n", error);
+            value_destroy(vo);
+            fclose(ff);
+            return error;
+        }
+
+        error = value_set_boundary(vo_copy, wrap);
+        if (error) {
+            printf("Failed to set boundary %d.\n", error);
+            value_destroy(vo);
+            value_destroy(vo_copy);
+            fclose(ff);
+            return error;
+        }
+
+        /* Get comment from the value */
+        error = value_extract_comment(vo_copy, &ic);
+        if (error) {
+            printf("Failed to extract comment %d.\n", error);
+            value_destroy(vo);
+            value_destroy(vo_copy);
+            fclose(ff);
+            return error;
+        }
+
+        /* Replace comment in the value */
+        sprintf(comment, ";This is value with boundary %d", wrap);
+        VOOUT(printf("Comment: %s\n", comment));
+        error = ini_comment_replace(ic, 1, comment);
+        if (error) {
+            printf("Failed to replace comment %d.\n", error);
+            value_destroy(vo);
+            value_destroy(vo_copy);
+            fclose(ff);
+            return error;
+        }
+
+        /* Set comment into the value */
+        error = value_put_comment(vo_copy, ic);
+        if (error) {
+            printf("Failed to set comment %d.\n", error);
+            value_destroy(vo);
+            value_destroy(vo_copy);
+            fclose(ff);
+            return error;
+        }
+
+        error = save_value(ff, "key", vo_copy);
+        if (error) {
+            printf("Failed to save value to file %d.\n", error);
+            value_destroy(vo);
+            value_destroy(vo_copy);
+            fclose(ff);
+            return error;
+        }
+
+        value_destroy(vo_copy);
+    }
+
+    value_destroy(vo);
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
 
 /* Main function of the unit test */
 int main(int argc, char *argv[])
 {
     int error = 0;
     test_fn tests[] = { vo_basic_test,
+                        vo_copy_test,
                         NULL };
     test_fn t;
     int i = 0;

@@ -87,6 +87,10 @@ int value_create_new(const char *strvalue,
                      struct ini_comment *ic,
                      struct value_obj **vo);
 
+/* Create a copy of the value */
+int value_copy(struct value_obj *vo,
+               struct value_obj **copy_vo);
+
 /* Destroy a value object */
 void value_destroy(struct value_obj *vo);
 
@@ -105,6 +109,9 @@ int value_get_line(struct value_obj *vo,
 /* Update key length */
 int value_set_keylen(struct value_obj *vo,
                      uint32_t key_len);
+/* Change boundary */
+int value_set_boundary(struct value_obj *vo,
+                       uint32_t boundary);
 
 /* Update value */
 int value_update(struct value_obj *vo,
