@@ -72,43 +72,67 @@ int ini_comment_insert(struct ini_comment *ic,
                        uint32_t idx,
                        const char *line);
 
-/* Modify comment by appending a line. */
+/**
+ * Modify comment by appending a line.
+ */
 int ini_comment_append(struct ini_comment *ic,
                        const char *line);
 
-/* Remove line from the comment.*/
+/**
+ * Remove line from the comment.
+ */
 int ini_comment_remove(struct ini_comment *ic,
                        uint32_t idx);
 
-/* Clear line in the comment. Line is replaced with an empty line */
+/**
+ * Clear line in the comment.
+ * Line is replaced with an empty line
+ */
 int ini_comment_clear(struct ini_comment *ic,
                       uint32_t idx);
 
-/* Replace a line in the comment */
+/**
+ * Replace a line in the comment
+ */
 int ini_comment_replace(struct ini_comment *ic,
                         uint32_t idx,
                         const char *line);
 
-/* Reset the comment - clean all lines.*/
+/**
+ * Reset the comment - clean all lines.
+ */
 int ini_comment_reset(struct ini_comment *ic);
 
-/* Get number of lines */
+/**
+ * Get number of lines
+ */
 int ini_comment_get_numlines(struct ini_comment *ic,
                              uint32_t *num);
 
-/* Get line */
+/**
+ * Get line
+ */
 int ini_comment_get_line(struct ini_comment *ic,
                          uint32_t idx,
                          char **line,
                          uint32_t *line_len);
 
-/* Swap lines */
+/**
+ * Swap lines
+ */
 int ini_comment_swap(struct ini_comment *ic,
                      uint32_t idx1,
                      uint32_t idx2);
 
+/**
+ * Create a copy of the comment object
+ */
+int ini_comment_copy(struct ini_comment *ic,
+                     struct ini_comment **ic_copy);
 
-/* Internal function to print comment */
+/**
+ * Internal function to print comment
+ */
 void ini_comment_print(struct ini_comment *ic, FILE *file);
 
 
