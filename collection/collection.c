@@ -2091,10 +2091,12 @@ static int col_copy_traverse_handler(struct collection_item *head,
         switch (traverse_data->mode) {
         case COL_COPY_NORMAL:
 
-            error = col_copy_collection(&other,
+            error = col_copy_collection_with_cb(&other,
                                         *((struct collection_item **)(current->data)),
                                         current->property,
-                                        COL_COPY_NORMAL);
+                                        COL_COPY_NORMAL,
+                                        traverse_data->copy_cb,
+                                        traverse_data->ext_data);
             if (error) {
                 TRACE_ERROR_NUMBER("Copy subcollection returned error:", error);
                 return error;
