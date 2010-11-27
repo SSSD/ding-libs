@@ -79,6 +79,20 @@ typedef int (*action_fn)(struct parser_obj *);
 #define PARSE_DONE      4 /* We are done */
 
 
+int is_just_spaces(const char *str, uint32_t len)
+{
+    uint32_t i;
+
+    TRACE_FLOW_ENTRY();
+
+    for (i = 0; i < len; i++) {
+        if (!isspace(str[i])) return 0;
+    }
+
+    TRACE_FLOW_EXIT();
+    return 1;
+}
+
 
 /* Destroy parser object */
 void parser_destroy(struct parser_obj *po)
@@ -401,14 +415,24 @@ static int handle_space(struct parser_obj *po, uint32_t *action)
         *action = PARSE_READ;
     }
     else {
-        /* We do not have an active value
-         * but have a line is starting with a space.
-         * For now it is error.
-         * We can change it in future if
-         * people find it being too restrictive
-         */
-        *action = PARSE_ERROR;
-        po->last_error = ERR_SPACE;
+        /* Check if this is a completely empty line */
+        if (is_just_spaces(po->last_read, po->last_read_len)) {
+            error = handle_comment(po, action);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to process comment", error);
+                return error;
+            }
+        }
+        else {
+            /* We do not have an active value
+             * but have a line is starting with a space.
+             * For now it is error.
+             * We can change it in future if
+             * people find it being too restrictive
+             */
+            *action = PARSE_ERROR;
+            po->last_error = ERR_SPACE;
+        }
     }
 
     TRACE_FLOW_EXIT();
@@ -424,6 +448,8 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     char *dupval = NULL;
 
     TRACE_FLOW_ENTRY();
+
+    TRACE_INFO_STRING("Last read:", po->last_read);
 
     /* We got a line with KVP */
     if (*(po->last_read) == '=') {
@@ -681,20 +707,6 @@ static int handle_section(struct parser_obj *po, uint32_t *action)
 
 }
 
-int is_just_spaces(const char *str, uint32_t len)
-{
-    uint32_t i;
-
-    TRACE_FLOW_ENTRY();
-
-    for (i = 0; i < len; i++) {
-        if (!isspace(str[i])) return 0;
-    }
-
-    TRACE_FLOW_EXIT();
-    return 1;
-}
-
 /* Inspect the line */
 static int parser_inspect(struct parser_obj *po)
 {
@@ -716,20 +728,10 @@ static int parser_inspect(struct parser_obj *po)
     else if ((*(po->last_read) == ' ') ||
              (*(po->last_read) == '\t')) {
 
-        /* Check if this is a completely empty line */
-        if (is_just_spaces(po->last_read, po->last_read_len)) {
-            error = handle_comment(po, &action);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to process comment", error);
-                return error;
-            }
-        }
-        else {
-            error = handle_space(po, &action);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to process line wrapping", error);
-                return error;
-            }
+        error = handle_space(po, &action);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to process line wrapping", error);
+            return error;
         }
     }
     else if (*(po->last_read) == '[') {

@@ -138,6 +138,10 @@ void ini_config_free_errors(char **errors);
 int ini_config_parse(struct ini_cfgfile *file_ctx,
                      struct ini_cfgobj *ini_config);
 
+/* Copy configuration */
+int ini_config_copy(struct ini_cfgobj *ini_config,
+                    struct ini_cfgobj **ini_new);
+
 /* Function to print errors from the list */
 void ini_print_errors(FILE *file, char **error_list);
 
