@@ -94,6 +94,7 @@ int save_value(FILE *ff, const char *key, struct value_obj *vo)
     error = value_serialize(vo, key, sbobj);
     if (error) {
         printf("Failed to serialize a value object %d.\n", error);
+        simplebuffer_free(sbobj);
         return error;
     }
 
@@ -604,7 +605,11 @@ int vo_copy_test(void)
     return EOK;
 }
 
-
+int vo_show_test(void)
+{
+    VOOUT(system("cat test.ini"));
+    return EOK;
+}
 
 /* Main function of the unit test */
 int main(int argc, char *argv[])
@@ -612,6 +617,7 @@ int main(int argc, char *argv[])
     int error = 0;
     test_fn tests[] = { vo_basic_test,
                         vo_copy_test,
+                        vo_show_test,
                         NULL };
     test_fn t;
     int i = 0;

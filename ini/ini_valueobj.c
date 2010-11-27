@@ -174,7 +174,7 @@ static int value_fold(struct simplebuffer *unfolded,
                       struct ref_array *raw_lines,
                       struct ref_array *raw_lengths)
 {
-    int error;
+    int error = EOK;
     const char *buf;
     uint32_t len = 0;          /* Full length of the buffer          */
     uint32_t fold_place = 0;   /* Potential folding place            */
@@ -203,6 +203,7 @@ static int value_fold(struct simplebuffer *unfolded,
 
     buf = (const char *)simplebuffer_get_buf(unfolded);
 
+    TRACE_INFO_STRING("Unfolded value:", buf);
 
     /* Make sure that we have at least one character to fold */
     if (fold_bound == 0) fold_bound++;
@@ -217,6 +218,13 @@ static int value_fold(struct simplebuffer *unfolded,
         }
         else {
              best_place = fold_bound;
+
+             /* Starting with the second line if we plan
+              * to add space ourselves factor it into folding
+              * boadary
+              */
+             if ((buf[start_place] != ' ') &&
+                 (buf[start_place] != '\t')) best_place--;
         }
 
         TRACE_INFO_NUMBER("Best place", best_place);
@@ -224,6 +232,7 @@ static int value_fold(struct simplebuffer *unfolded,
         fold_place = start_place;
         next_place = start_place;
         best_place += start_place;
+
 
         /* Parse the buffer from the right place */
         for (i = resume_place; i <= len; i++) {
@@ -274,6 +283,7 @@ static int value_fold(struct simplebuffer *unfolded,
                 }
 
                 start_place += fold_len;
+
                 /*
                  * This will force the re-processing
                  * of the same space but it is
@@ -281,6 +291,7 @@ static int value_fold(struct simplebuffer *unfolded,
                  * of the value is beyond our folding limit.
                  */
                 resume_place = next_place;
+                if (fold_len == 0) resume_place++;
                 idx++;
                 break;
             }
@@ -291,15 +302,17 @@ static int value_fold(struct simplebuffer *unfolded,
 
         /* Save last portion */
         if (done) {
-            error = save_portion(raw_lines,
-                                 raw_lengths,
-                                 buf + start_place,
-                                 next_place - start_place);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to save last chunk", error);
-                return error;
+            if (next_place - start_place) {
+                error = save_portion(raw_lines,
+                                     raw_lengths,
+                                     buf + start_place,
+                                     next_place - start_place);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to save last chunk", error);
+                    return error;
+                }
+                idx++;
             }
-            idx++;
         }
     }
 
@@ -642,18 +655,30 @@ int value_copy(struct value_obj *vo,
         return error;
     }
 
-    /* Copy commetn */
-    error = ini_comment_copy(vo->ic, &new_vo->ic);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to copy comment", error);
-        value_destroy(new_vo);
-        return error;
+    /* Copy comment */
+    if (vo->ic) {
+        error = ini_comment_copy(vo->ic, &new_vo->ic);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to copy comment", error);
+            value_destroy(new_vo);
+            return error;
+        }
     }
+    else new_vo->ic = NULL;
 
     *copy_vo = new_vo;
 
-    TRACE_FLOW_EXIT();
+    TRACE_INFO_STRING("Orig value:",
+                      (const char *)simplebuffer_get_buf(vo->unfolded));
+    TRACE_INFO_STRING("Copy value:",
+                      (const char *)simplebuffer_get_buf(new_vo->unfolded));
 
+    TRACE_INFO_NUMBER("Orig value num lines:",
+                      ref_array_len(vo->raw_lengths));
+    TRACE_INFO_NUMBER("Copy value num lines:",
+                      ref_array_len(new_vo->raw_lengths));
+
+    TRACE_FLOW_EXIT();
     return error;
 }
 
@@ -881,8 +906,10 @@ int value_serialize(struct value_obj *vo,
     char *ptr = NULL;
     char *part = NULL;
     int sec = 0;
+    uint32_t vln = 0;
 
     TRACE_FLOW_ENTRY();
+    TRACE_INFO_STRING("Serializing key:", key);
 
     if (!vo) {
         TRACE_ERROR_NUMBER("Invalid input parameter", EINVAL);
@@ -972,10 +999,22 @@ int value_serialize(struct value_obj *vo,
     }
 
     if (vo->raw_lines) {
-        i = 0;
-        for (;;) {
+
+        vln = ref_array_len(vo->raw_lines);
+        TRACE_INFO_NUMBER("Number of lines:", vln);
+
+#ifdef HAVE_TRACE
+
+extern void ref_array_debug(struct ref_array *ra, int num);
+
+        ref_array_debug(vo->raw_lines, 0);
+        ref_array_debug(vo->raw_lengths, 1);
+#endif
+
+        for (i = 0; i < vln; i++) {
             /* Get line */
             ptr = ref_array_get(vo->raw_lines, i, NULL);
+
             if (ptr) {
                 /* Get its length */
                 ref_array_get(vo->raw_lengths, i, (void *)&len);
@@ -998,16 +1037,22 @@ int value_serialize(struct value_obj *vo,
                     return error;
                 }
 
-                if (!sec) {
-                    error = simplebuffer_add_cr(sbobj);
-                    if (error) {
-                        TRACE_ERROR_NUMBER("Failed to add CR", error);
-                        return error;
-                    }
-                }
-                i++;
             }
-            else break;
+            if (!sec) {
+                error = simplebuffer_add_cr(sbobj);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to add CR", error);
+                    return error;
+                }
+            }
+        }
+
+        if ((!vln) && (!sec)) {
+            error = simplebuffer_add_cr(sbobj);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to add CR", error);
+                return error;
+            }
         }
     }
 
