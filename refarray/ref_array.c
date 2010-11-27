@@ -64,7 +64,7 @@ static int ref_array_grow(struct ref_array *ra)
     ra->size += ra->grow_by;
 
     TRACE_INFO_NUMBER("Final size: ", ra->size);
-    TRACE_FLOW_NUMBER("elapi_grow_data. Exit. Returning", error);
+    TRACE_FLOW_RETURN(error);
     return error;
 
 }
@@ -147,7 +147,7 @@ void ref_array_destroy(struct ref_array *ra)
 
     /* Check if array is not NULL */
     if (!ra) {
-        TRACE_ERROR_STRING("Uninitialized array.", "Coding error???");
+        TRACE_INFO_STRING("Uninitialized array.", "Might be Ok...");
         return;
     }
 
@@ -206,6 +206,8 @@ int ref_array_append(struct ref_array *ra, void *element)
 
     ra->len++;
 
+    TRACE_INFO_NUMBER("Length after append: ", ra->len);
+
     TRACE_FLOW_EXIT();
     return error;
 }
@@ -221,7 +223,7 @@ void *ref_array_get(struct ref_array *ra, uint32_t idx, void *acptr)
     }
 
     if (idx >= ra->len) {
-        TRACE_ERROR_NUMBER("Invalid idx.", idx);
+        TRACE_INFO_NUMBER("Invalid idx.", idx);
         return NULL;
     }
 
@@ -556,7 +558,7 @@ void ref_array_debug(struct ref_array *ra, int num)
     printf("ARRAY:\n");
     for (i = 0; i < ra->len; i++)  {
         for (j = 0; j < ra->elsize; j++) {
-            printf("%x", *((unsigned char *)(ra->storage) + i * ra->elsize + j));
+            printf("%02x", *((unsigned char *)(ra->storage) + i * ra->elsize + j));
         }
         if (num == 0) {
             printf("\n%s\n", *((char **)((unsigned char *)(ra->storage) + i * ra->elsize)));
