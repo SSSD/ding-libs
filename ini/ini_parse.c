@@ -29,13 +29,25 @@
 #include "config.h"
 #include "trace.h"
 #include "ini_defines.h"
-#include "ini_config.h"
 #include "ini_valueobj.h"
 #include "ini_config_priv.h"
+#include "ini_configobj.h"
 #include "collection.h"
 #include "collection_queue.h"
 
 #define INI_WARNING 0xA0000000 /* Warning bit */
+
+/* This constant belongs to ini_defines.h. Move from ini_config - TBD */
+#define COL_CLASS_INI_BASE        20000
+#define COL_CLASS_INI_SECTION     COL_CLASS_INI_BASE + 1
+/**
+ * @brief Name of the default section.
+ *
+ * This is the name of the implied section where orphan key-value
+ * pairs will be put.
+ */
+#define INI_DEFAULT_SECTION "default"
+
 
 struct parser_obj {
     /* Externally passed and saved data */
@@ -43,7 +55,10 @@ struct parser_obj {
     struct collection_item *top;
     struct collection_item *el;
     const char *filename;
+    /* Level of error reporting */
     int error_level;
+    /* Collistion flags */
+    uint32_t collision_flags;
     /* Wrapping boundary */
     uint32_t boundary;
     /* Action queue */
@@ -122,6 +137,7 @@ int parser_create(FILE *file,
                   const char *config_filename,
                   struct collection_item *ini_config,
                   int error_level,
+                  uint32_t collision_flags,
                   struct collection_item *error_list,
                   uint32_t boundary,
                   struct parser_obj **po)
@@ -160,6 +176,7 @@ int parser_create(FILE *file,
     new_po->el = error_list;
     new_po->filename = config_filename;
     new_po->error_level = error_level;
+    new_po->collision_flags = collision_flags;
     new_po->boundary = boundary;
 
     /* Initialize internal varibles */
@@ -287,6 +304,12 @@ static int complete_value_processing(struct parser_obj *po)
 {
     int error = EOK;
     struct value_obj *vo = NULL;
+    struct value_obj *vo_old = NULL;
+    unsigned insertmode;
+    uint32_t mergemode;
+    int suppress = 0;
+    int doinsert = 0;
+    struct collection_item *item = NULL;
 
     TRACE_FLOW_ENTRY();
 
@@ -322,17 +345,85 @@ static int complete_value_processing(struct parser_obj *po)
     po->raw_lines = NULL;
     po->raw_lengths = NULL;
 
+    mergemode = po->collision_flags & INI_MV1S_MASK;
 
-    /* Add value to collection */
-    error = col_add_binary_property(po->sec,
-                                    NULL,
-                                    po->key,
-                                    &vo,
-                                    sizeof(struct value_obj *));
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to add value object to the section", error);
-        value_destroy(vo);
-        return error;
+    switch (mergemode) {
+    case INI_MV1S_ERROR:     insertmode = COL_INSERT_DUPERROR;
+                             doinsert = 1;
+                             break;
+    case INI_MV1S_PRESERVE:  insertmode = COL_INSERT_DUPERROR;
+                             doinsert = 1;
+                             suppress = 1;
+                             break;
+    case INI_MV1S_ALLOW:     insertmode = COL_INSERT_NOCHECK;
+                             doinsert = 1;
+                             break;
+    case INI_MV1S_OVERWRITE: /* Special handling */
+    default:
+                             break;
+    }
+
+    /* Do not insert but search for dups first */
+    if (!doinsert) {
+        TRACE_INFO_STRING("Ovewrite mode. Lokking for:", po->key);
+
+        error = col_get_item(po->sec,
+                             po->key,
+                             COL_TYPE_BINARY,
+                             COL_TRAVERSE_DEFAULT,
+                             &item);
+
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed searching for dup", error);
+            return error;
+        }
+
+        /* Check if there is a dup */
+        if (item) {
+            /* Dup exists - update it */
+            vo_old = *((struct value_obj **)(col_get_item_data(item)));
+            error = col_modify_binary_item(item,
+                                           NULL,
+                                           &vo,
+                                           sizeof(struct value_obj *));
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed updating the value", error);
+                return error;
+            }
+            /* If we failed to update it is better to leak then crash,
+             * so desctroy original value only on the successful update.
+             */
+            value_destroy(vo_old);
+        }
+        else {
+            /* No dup found so we can insert with no check */
+            doinsert = 1;
+            insertmode = COL_INSERT_NOCHECK;
+        }
+    }
+
+    if (doinsert) {
+        /* Add value to collection */
+        error = col_insert_binary_property(po->sec,
+                                           NULL,
+                                           COL_DSP_END,
+                                           NULL,
+                                           0,
+                                           insertmode,
+                                           po->key,
+                                           &vo,
+                                           sizeof(struct value_obj *));
+        if (error) {
+            if ((suppress) && (error == EEXIST)) {
+                TRACE_INFO_STRING("Preseved exisitng value", po->key);
+                value_destroy(vo);
+            }
+            else {
+                TRACE_ERROR_NUMBER("Failed to add value object to the section", error);
+                value_destroy(vo);
+                return error;
+            }
+        }
     }
 
     free(po->key);
@@ -970,6 +1061,7 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
                           file_ctx->filename,
                           ini_config->cfg,
                           file_ctx->error_level,
+                          file_ctx->collision_flags,
                           file_ctx->error_list,
                           ini_config->boundary,
                           &po);

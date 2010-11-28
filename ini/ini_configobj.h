@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include "simplebuffer.h"
 
+
 /**
  * @defgroup errorlevel Error tolerance constants
  *
@@ -78,6 +79,92 @@
 /**
  * @}
  */
+
+
+/**
+ * @defgroup collisionflags Flags that define collision resolution logic.
+ *
+ * @{
+ */
+
+/**
+ * @defgroup onesecvalue Colliding values come from one section
+ *
+ * Flags that define collision resolution logic for values in
+ * the same section.
+ * These flags should be used during parsing to handle duplicate
+ * keys in the same section of the ini file.
+ *
+ * @{
+ */
+
+/** @brief Value with same key is ovewritten */
+#define INI_MV1S_OVERWRITE 0x0000
+/** @brief Collision causes error */
+#define INI_MV1S_ERROR     0x0001
+/** @brief Second value is discarded */
+#define INI_MV1S_PRESERVE  0x0002
+/** @brief Duplicates are allowed */
+#define INI_MV1S_ALLOW     0x0003
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup twosecvalue Colliding values come from two sections
+ *
+ * Flags that define collision resolution logic between two values
+ * that come from two sections with the same name.
+ * These flags should be used during parsing to handle duplicate
+ * keys coming from the same section scattered across the ini file.
+ * These flags also can be used to specify the rules of merging
+ * values that come from two files separate configuration files.
+ *
+ * @{
+ */
+/** @brief Value with same key is ovewritten */
+#define INI_MV2S_OVERWRITE 0x0000
+/** @brief Collision causes error */
+#define INI_MV2S_ERROR     0x0010
+/** @brief Second value is discarded */
+#define INI_MV2S_PRESERVE  0x0020
+/** @brief Duplicates are allowed */
+#define INI_MV2S_ALLOW     0x0030
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup mergesec Collision in two sections
+ *
+ * Flags that define collision resolution logic between two sections.
+ * These flags should be used during parsing to handle duplicate
+ * sections scattered across the ini file.
+ * These flags also can be used to specify the rules of merging
+ * sections that come from two separate configuration files.
+ *
+ * @{
+ */
+/** @brief Sections are merged */
+#define INI_MS_MERGE     0x0000
+/** @brief Collision causes error */
+#define INI_MS_ERROR     0x0100
+/** @brief First section is discarded */
+#define INI_MS_OVERWRITE 0x0200
+/** @brief Second section is discarded */
+#define INI_MS_PRESERVE  0x0300
+/** @brief Duplicates are allowed */
+#define INI_MS_ALLOW     0x0400
+
+/**
+ * @}
+ */
+/**
+ * @}
+ */
+
 
 /**
  * @defgroup structures Structures

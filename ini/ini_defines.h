@@ -100,6 +100,11 @@
 #define INI_FAMILY_VALIDATION   1
 #define INI_FAMILY_GRAMMAR      2
 
+#define INI_MV1S_MASK      0x000F /* Merge values options mask
+                                   * for one section */
+#define INI_MV2S_MASK      0x00F0 /* Merge values options mask
+                                   * for two sections. */
+#define INI_MS_MASK        0x0F00 /* Merge section options mask */
 
 
 /* Different error string functions can be passed as callbacks */

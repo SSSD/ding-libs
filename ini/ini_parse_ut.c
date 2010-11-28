@@ -231,6 +231,208 @@ int read_again_test(void)
     return error;
 }
 
+int create_expect(char *checkname)
+{
+    FILE *ff;
+    int error = EOK;
+
+    errno = 0;
+    ff = fopen(checkname, "w");
+    if(!ff) {
+        error = errno;
+        printf("Failed to open file for writing. Error %d.\n", error);
+        return error;
+    }
+
+    /* Ovewrite */
+    fprintf(ff,"#Hoho section\n");
+    fprintf(ff,"[hoho]\n");
+    fprintf(ff,"#Hoho value\n");
+    fprintf(ff,"val = hoho\n");
+    fprintf(ff,"#End of hoho\n");
+    fprintf(ff,"#Start of section\n");
+    fprintf(ff,"[foo]\n");
+    fprintf(ff,"#Second value\n");
+    fprintf(ff,"bar = second value\n");
+    fprintf(ff,"#End of section\n");
+    /* Error */
+    fprintf(ff,"#Hoho section\n");
+    fprintf(ff,"[hoho]\n");
+    fprintf(ff,"#Hoho value\n");
+    fprintf(ff,"val = hoho\n");
+    /* No "#End of hoho" line is expected due to error */
+    /* Preserve */
+    fprintf(ff,"#Hoho section\n");
+    fprintf(ff,"[hoho]\n");
+    fprintf(ff,"#Hoho value\n");
+    fprintf(ff,"val = hoho\n");
+    fprintf(ff,"#End of hoho\n");
+    fprintf(ff,"#Start of section\n");
+    fprintf(ff,"[foo]\n");
+    fprintf(ff,"#First value\n");
+    fprintf(ff,"bar = first value\n");
+    fprintf(ff,"#End of section\n");
+    /* Allow */
+    fprintf(ff,"#Hoho section\n");
+    fprintf(ff,"[hoho]\n");
+    fprintf(ff,"#Hoho value\n");
+    fprintf(ff,"val = hoho\n");
+    fprintf(ff,"#End of hoho\n");
+    fprintf(ff,"#Start of section\n");
+    fprintf(ff,"[foo]\n");
+    fprintf(ff,"#First value\n");
+    fprintf(ff,"bar = first value\n");
+    fprintf(ff,"#Second value\n");
+    fprintf(ff,"bar = second value\n");
+    fprintf(ff,"#End of section\n");
+
+    fclose(ff);
+
+    return EOK;
+}
+
+
+
+/* Check merge modes */
+int merge_values_test(void)
+{
+    int error = EOK;
+    int i;
+    struct ini_cfgfile *file_ctx = NULL;
+    FILE *ff = NULL;
+    struct ini_cfgobj *ini_config = NULL;
+    char **error_list = NULL;
+    struct simplebuffer *sbobj = NULL;
+    uint32_t left = 0;
+    uint32_t mflags[] = { INI_MV1S_OVERWRITE,
+                          INI_MV1S_ERROR,
+                          INI_MV1S_PRESERVE,
+                          INI_MV1S_ALLOW };
+
+    const char *mstr[] = { "OVERWRITE",
+                           "ERROR",
+                           "PRESERVE",
+                           "ALLOW" };
+
+    char filename[PATH_MAX];
+    char resname[PATH_MAX];
+    char checkname[PATH_MAX];
+    char command[PATH_MAX * 3];
+    char *srcdir;
+
+    srcdir = getenv("srcdir");
+    sprintf(filename, "%s/ini/ini.d/foo.conf", (srcdir == NULL) ? "." : srcdir);
+    sprintf(resname, "%s/merge.conf", (srcdir == NULL) ? "." : srcdir);
+    sprintf(checkname, "%s/expect.conf", (srcdir == NULL) ? "." : srcdir);
+
+    error = simplebuffer_alloc(&sbobj);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate dynamic string.", error);
+        return error;
+    }
+
+    for (i = 0; i < 4; i++) {
+
+        INIOUT(printf("<==== Testing mode %s  ====>\n", mstr[i]));
+
+        /* Create config collection */
+        error = ini_config_create(&ini_config);
+        if (error) {
+            printf("Failed to create collection. Error %d.\n", error);
+	        simplebuffer_free(sbobj);
+            return error;
+        }
+
+        error = ini_config_file_open(filename,
+                                     INI_STOP_ON_ANY,
+                                     mflags[i],
+                                     0, /* TBD */
+                                     &file_ctx);
+        if (error) {
+            printf("Failed to open file for reading. Error %d.\n",  error);
+            ini_config_destroy(ini_config);
+	        simplebuffer_free(sbobj);
+            return error;
+        }
+
+        error = ini_config_parse(file_ctx,
+                                 ini_config);
+        if (error) {
+            INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
+
+            if (ini_config_error_count(file_ctx)) {
+                INIOUT(printf("Errors detected while parsing: %s\n",
+                       ini_config_get_filename(file_ctx)));
+                ini_config_get_errors(file_ctx, &error_list);
+                INIOUT(ini_print_errors(stdout, error_list));
+                ini_config_free_errors(error_list);
+            }
+
+            if ((mflags[i] != INI_MV1S_ERROR) ||
+                ((mflags[i] = INI_MV1S_ERROR) && (error != EEXIST))) {
+                printf("This is unexpected error %d in mode %d\n", error, mflags[i]);
+	            ini_config_destroy(ini_config);
+		        simplebuffer_free(sbobj);
+		        ini_config_file_close(file_ctx);
+                return error;
+            }
+            /* We do not return here intentionally */
+        }
+
+        ini_config_file_close(file_ctx);
+
+        INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
+
+	    error = ini_config_serialize(ini_config, sbobj);
+	    if (error != EOK) {
+	        printf("Failed to serialize configuration. Error %d.\n", error);
+	        ini_config_destroy(ini_config);
+	        simplebuffer_free(sbobj);
+	        return error;
+	    }
+
+        ini_config_destroy(ini_config);
+	}
+
+    errno = 0;
+    ff = fopen(resname, "w");
+    if(!ff) {
+        error = errno;
+        printf("Failed to open file for writing. Error %d.\n", error);
+        simplebuffer_free(sbobj);
+        return error;
+    }
+
+    /* Save */
+    left = simplebuffer_get_len(sbobj);
+    while (left > 0) {
+        error = simplebuffer_write(fileno(ff), sbobj, &left);
+        if (error) {
+            printf("Failed to write back the configuration %d.\n", error);
+            simplebuffer_free(sbobj);
+            fclose(ff);
+            return error;
+        }
+    }
+
+    simplebuffer_free(sbobj);
+    fclose(ff);
+
+    error = create_expect(checkname);
+    if (error) {
+        printf("Failed to create file with expected contents %d.\n",  error);
+        return error;
+    }
+
+    sprintf(command,"diff -q %s %s", resname, checkname);
+    error = system(command);
+    INIOUT(printf("Comparison of %s %s returned: %d\n",
+                  resname, checkname, error));
+
+    return error;
+
+
+}
 
 /* Main function of the unit test */
 int main(int argc, char *argv[])
@@ -238,6 +440,7 @@ int main(int argc, char *argv[])
     int error = 0;
     test_fn tests[] = { read_save_test,
                         read_again_test,
+                        merge_values_test,
                         NULL };
     test_fn t;
     int i = 0;
