@@ -110,7 +110,7 @@ int is_just_spaces(const char *str, uint32_t len)
 
 
 /* Destroy parser object */
-void parser_destroy(struct parser_obj *po)
+static void parser_destroy(struct parser_obj *po)
 {
     TRACE_FLOW_ENTRY();
 
@@ -133,14 +133,14 @@ void parser_destroy(struct parser_obj *po)
  * It assumes that the ini collection
  * has been precreated.
  */
-int parser_create(FILE *file,
-                  const char *config_filename,
-                  struct collection_item *ini_config,
-                  int error_level,
-                  uint32_t collision_flags,
-                  struct collection_item *error_list,
-                  uint32_t boundary,
-                  struct parser_obj **po)
+static int parser_create(FILE *file,
+                         const char *config_filename,
+                         struct collection_item *ini_config,
+                         int error_level,
+                         uint32_t collision_flags,
+                         struct collection_item *error_list,
+                         uint32_t boundary,
+                         struct parser_obj **po)
 {
     int error = EOK;
     struct parser_obj *new_po = NULL;
@@ -217,7 +217,7 @@ int parser_create(FILE *file,
 }
 
 /* Function to read next line from the file */
-int parser_read(struct parser_obj *po)
+static int parser_read(struct parser_obj *po)
 {
     int error = EOK;
     char *buffer = NULL;
@@ -297,6 +297,36 @@ int parser_read(struct parser_obj *po)
 
     TRACE_FLOW_EXIT();
     return EOK;
+}
+
+/* Function to read next line from the file */
+static int parser_save_section(struct parser_obj *po)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    if (po->sec) {
+
+        /* For now just add as we did.
+         * Add merge code here !!!!
+         */
+        error = col_add_collection_to_collection(po->top,
+                                                 NULL, NULL,
+                                                 po->sec,
+                                                 COL_ADD_MODE_EMBED);
+
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to embed section", error);
+            return error;
+        }
+
+        po->sec = NULL;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+
 }
 
 /* Complete value processing */
@@ -721,18 +751,11 @@ static int handle_section(struct parser_obj *po, uint32_t *action)
         }
     }
 
-    /* Do we have an active section? */
-    if (po->sec) {
-        /* Save it */
-        error = col_add_collection_to_collection(po->top,
-                                                 NULL, NULL,
-                                                 po->sec,
-                                                 COL_ADD_MODE_EMBED);
-        if (error) {
-            TRACE_ERROR_NUMBER("Failed to save section", error);
-            return error;
-        }
-        po->sec = NULL;
+    /* Save section if we have one*/
+    error = parser_save_section(po);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to save section", error);
+        return error;
     }
 
     /* Dup the name */
@@ -779,6 +802,9 @@ static int handle_section(struct parser_obj *po, uint32_t *action)
         free(dupval);
         return error;
     }
+
+    /* Save the line number of the last found key */
+    po->keylinenum = po->linenum;
 
     /* Complete processing of this value */
     error = complete_value_processing(po);
@@ -887,16 +913,11 @@ static int parser_post(struct parser_obj *po)
     }
 
     /* If we are done save the section */
-    error = col_add_collection_to_collection(po->top,
-                                                NULL, NULL,
-                                                po->sec,
-                                                COL_ADD_MODE_EMBED);
+    error = parser_save_section(po);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to save section", error);
         return error;
     }
-
-    po->sec = NULL;
 
     /* Move to the next action */
     error = col_enqueue_unsigned_property(po->queue,
@@ -973,15 +994,23 @@ static int parser_error(struct parser_obj *po)
     }
     else {
         /* If we are done save the section */
-        error = col_add_collection_to_collection(po->top,
-                                                 NULL, NULL,
-                                                 po->sec,
-                                                 COL_ADD_MODE_EMBED);
+        error = parser_save_section(po);
         if (error) {
             TRACE_ERROR_NUMBER("Failed to save section", error);
-            return error;
+            /* If merging sections should produce error and we got error
+             * or if we merge sections but dup values produce error and
+             * we got error then it is not a fatal error so we need to handle
+             * it nicely. We check for reverse condition and return error,
+             * otherwise fall through.
+             */
+            if (!((((po->collision_flags & INI_MS_MASK) == INI_MS_ERROR) &&
+                 (error == EEXIST)) ||
+                (((po->collision_flags & INI_MS_MASK) == INI_MS_MERGE) &&
+                 ((po->collision_flags & INI_MV2S_MASK) == INI_MV2S_ERROR) &&
+                 (error == EEXIST)))) {
+                return error;
+            }
         }
-        po->sec = NULL;
     }
 
     /* Move to the next action */
