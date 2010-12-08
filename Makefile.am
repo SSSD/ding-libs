@@ -270,7 +270,7 @@ if GIT_CHECKOUT
 prerelease-srpm:
 	cp $(srcdir)/version.m4 $(srcdir)/version.m4.orig
 	sed -e "s/m4_define(\[PRERELEASE_VERSION_NUMBER\], \[.*\])/m4_define(\[PRERELEASE_VERSION_NUMBER\], \[.`date +%Y%m%d%H`git`git log -1 --pretty=format:%h`\])/" < $(srcdir)/version.m4.orig > $(srcdir)/version.m4
-	$(MAKE) srpms
+	$(MAKE) srpm
 	mv $(srcdir)/version.m4.orig $(srcdir)/version.m4
 endif
 
