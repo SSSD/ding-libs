@@ -249,6 +249,7 @@ dist_noinst_DATA += \
     ini/ini.d/real.conf \
     ini/ini.d/test.conf \
     ini/ini.d/ipa.conf \
+    ini/ini.d/foo.conf \
     ini/ini.d/mysssd.conf
 
 check_PROGRAMS += \
