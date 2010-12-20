@@ -134,7 +134,7 @@ int test_one_file(const char *in_filename,
     ff = fopen(out_filename, "w");
     if(!ff) {
         error = errno;
-        printf("Failed to open file for writing. Error %d.\n", error);
+        printf("Failed to open file for writing [%s]. Error %d.\n", out_filename, error);
         ini_config_destroy(ini_config);
         simplebuffer_free(sbobj);
         return error;
@@ -182,8 +182,7 @@ int read_save_test(void)
 
         sprintf(infile, "%s/ini/ini.d/%s.conf", (srcdir == NULL) ? "." : srcdir,
                                                 files[i]);
-        sprintf(outfile, "%s/%s.conf.out", (srcdir == NULL) ? "." : srcdir,
-                                           files[i]);
+        sprintf(outfile, "./%s.conf.out", files[i]);
         error = test_one_file(infile, outfile);
         INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
         i++;
@@ -199,7 +198,6 @@ int read_again_test(void)
     int i = 0;
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
-    char *srcdir;
     char command[PATH_MAX * 3];
     const char *files[] = { "real",
                             "mysssd",
@@ -208,14 +206,10 @@ int read_again_test(void)
                             NULL };
 
 
-    srcdir = getenv("srcdir");
-
     while(files[i]) {
 
-        sprintf(infile, "%s/%s.conf.out", (srcdir == NULL) ? "." : srcdir,
-                                          files[i]);
-        sprintf(outfile, "%s/%s.conf.2.out", (srcdir == NULL) ? "." : srcdir,
-                                             files[i]);
+        sprintf(infile, "./%s.conf.out", files[i]);
+        sprintf(outfile, "./%s.conf.2.out", files[i]);
         error = test_one_file(infile, outfile);
         INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
         if (error) break;
@@ -315,15 +309,13 @@ int merge_values_test(void)
                            "ALLOW" };
 
     char filename[PATH_MAX];
-    char resname[PATH_MAX];
-    char checkname[PATH_MAX];
+    const char *resname = "./merge.conf.out";
+    const char *checkname = "./expect.conf.out";
     char command[PATH_MAX * 3];
     char *srcdir;
 
     srcdir = getenv("srcdir");
     sprintf(filename, "%s/ini/ini.d/foo.conf", (srcdir == NULL) ? "." : srcdir);
-    sprintf(resname, "%s/merge.conf", (srcdir == NULL) ? "." : srcdir);
-    sprintf(checkname, "%s/expect.conf", (srcdir == NULL) ? "." : srcdir);
 
     error = simplebuffer_alloc(&sbobj);
     if (error) {
