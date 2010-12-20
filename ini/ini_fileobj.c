@@ -81,7 +81,7 @@ void ini_config_file_close(struct ini_cfgfile *file_ctx)
         free(file_ctx->filename);
         col_destroy_collection(file_ctx->error_list);
         col_destroy_collection(file_ctx->metadata);
-        fclose(file_ctx->file);
+        if(file_ctx->file) fclose(file_ctx->file);
         free(file_ctx);
     }
 
@@ -110,7 +110,6 @@ int ini_config_file_open(const char *filename,
         return EINVAL;
     }
 
-
     /* Allocate structure */
     errno = 0;
     new_ctx = malloc(sizeof(struct ini_cfgfile));
@@ -119,6 +118,23 @@ int ini_config_file_open(const char *filename,
         TRACE_ERROR_NUMBER("Failed to allocate file ctx.", error);
         return error;
     }
+
+
+    new_ctx->filename = NULL;
+    new_ctx->file = NULL;
+    new_ctx->error_list = NULL;
+    new_ctx->metadata = NULL;
+
+    /* TBD - decide whether we actually need an FD.
+       It will be done when we move the metadata
+       processing into this function. */
+    new_ctx->fd = -1;
+
+    /* Store flags */
+    new_ctx->error_level = error_level;
+    new_ctx->collision_flags = collision_flags;
+    new_ctx->metadata_flags = metadata_flags;
+    new_ctx->count = 0;
 
     /* Construct the full file path */
     errno = 0;
@@ -143,7 +159,6 @@ int ini_config_file_open(const char *filename,
     /* Open file */
     TRACE_INFO_STRING("File", new_ctx->filename);
     errno = 0;
-    new_ctx->file = NULL;
     new_ctx->file = fopen(new_ctx->filename, "r");
     if (!(new_ctx->file)) {
         error = errno;
@@ -151,12 +166,6 @@ int ini_config_file_open(const char *filename,
         ini_config_file_close(new_ctx);
         return error;
     }
-
-    /* Store flags */
-    new_ctx->error_level = error_level;
-    new_ctx->collision_flags = collision_flags;
-    new_ctx->metadata_flags = metadata_flags;
-    new_ctx->count = 0;
 
     /* Create internal collections */
     error = col_create_collection(&(new_ctx->error_list),
@@ -176,6 +185,9 @@ int ini_config_file_open(const char *filename,
         ini_config_file_close(new_ctx);
         return error;
     }
+
+
+    /* TBD - Add metadata processing here */
 
     *file_ctx = new_ctx;
     TRACE_FLOW_EXIT();
