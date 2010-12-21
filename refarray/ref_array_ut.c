@@ -586,7 +586,7 @@ int ref_array_copy_test(void)
     struct ref_array *ra;
     struct ref_array *ra2;
     int error = EOK;
-    uint32_t len = 0;
+    uint32_t len = 6;
     char text[] = "Deleting: ";
 
     error = ref_array_create(&ra, sizeof(char *), 1, NULL, NULL);
@@ -661,13 +661,13 @@ int ref_array_copy_test(void)
     }
 
     for (i = 0; i < len; i++) {
-        if (strcmp(ref_array_get(ra, i, NULL),
-                   ref_array_get(ra2, i, NULL)) != 0) {
+        if (strcmp(*((char **)ref_array_get(ra, i, NULL)),
+                   *((char **)ref_array_get(ra2, i, NULL))) != 0) {
             printf("\nRetrieved strings were expected to be same,\n");
             printf("but they are not:\n");
             printf("First:[%s]\nSecond:[%s]\n",
-                    (char *)ref_array_get(ra, i, NULL),
-                    (char *)ref_array_get(ra2, i, NULL));
+                    *((char **)ref_array_get(ra, i, NULL)),
+                    *((char **)ref_array_get(ra2, i, NULL)));
             ref_array_destroy(ra);
             ref_array_destroy(ra2);
             return EFAULT;
@@ -693,7 +693,7 @@ int ref_array_copy_num_test(void)
     struct ref_array *ra;
     struct ref_array *ra2;
     int error = EOK;
-    uint32_t len = 0;
+    uint32_t len = 5;
 
     error = ref_array_create(&ra, sizeof(uint32_t), 1, NULL, NULL);
     if (error) {
@@ -703,7 +703,7 @@ int ref_array_copy_num_test(void)
 
     RAOUT(ref_array_debug(ra, 1));
 
-    for (i=0; i<5; i++) {
+    for (i = 0; i < len; i++) {
         error = ref_array_append(ra, &i);
         if (error) {
             ref_array_destroy(ra);
