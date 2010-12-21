@@ -946,6 +946,48 @@ int get_test(void)
 
     free_string_config_array(strarray);
 
+    /**********************************************************/
+
+    COLOUT(printf("Get bad string array \n"));
+
+    item = NULL;
+    error = get_config_item("domains", "badarray", ini_config, &item);
+    if(error) {
+        printf("Expected success but got error! %d\n",error);
+        free_ini_config(ini_config);
+        return error;
+    }
+
+    /* Item should be found */
+    if (item == NULL) {
+        printf("Expected success but got NULL.\n");
+        free_ini_config(ini_config);
+        return -1;
+    }
+
+    COLOUT(col_debug_item(item));
+
+    COLOUT(printf("Get bad str array without size.\n"));
+
+    error = 0;
+    strarray = get_string_config_array(item, ",", NULL, &error);
+    if (error) {
+        printf("Expect success got error %d.\n", error);
+        free_ini_config(ini_config);
+        return error;
+    }
+
+    /* Can be used with this cycle */
+    strptr = strarray;
+    while (*strptr != NULL) {
+        COLOUT(printf("[%s]\n",*strptr));
+        strptr++;
+    }
+
+    free_string_config_array(strarray);
+
+    /**********************************************************/
+
     COLOUT(printf("Get long array item\n"));
 
     item = NULL;
