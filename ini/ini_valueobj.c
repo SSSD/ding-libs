@@ -1017,11 +1017,8 @@ extern void ref_array_debug(struct ref_array *ra, int num);
 
             if (ptr) {
                 /* Get its length */
+                len = 0;
                 ref_array_get(vo->raw_lengths, i, (void *)&len);
-                if (error) {
-                    TRACE_ERROR_NUMBER("Failed to add string", error);
-                    return error;
-                }
 
                 part = *((char **)(ptr));
 
