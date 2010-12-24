@@ -367,6 +367,7 @@ int value_create_from_refarray(struct ref_array *raw_lines,
                          &(new_vo->unfolded));
     if (error) {
         TRACE_ERROR_NUMBER("Failed to unfold", error);
+        value_destroy(new_vo);
         return error;
     }
 
