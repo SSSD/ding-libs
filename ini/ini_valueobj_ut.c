@@ -532,6 +532,7 @@ int vo_copy_test(void)
     if (error) {
         printf("Failed to save value to file %d.\n", error);
         value_destroy(vo);
+        fclose(ff);
         return error;
     }
 
@@ -601,6 +602,7 @@ int vo_copy_test(void)
     }
 
     value_destroy(vo);
+    fclose(ff);
     TRACE_FLOW_EXIT();
     return EOK;
 }
