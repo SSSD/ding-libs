@@ -623,12 +623,12 @@ int mixed_collection_test(void)
 
 int iterator_test(void)
 {
-    struct collection_item *peer;
-    struct collection_item *initial;
+    struct collection_item *peer = NULL;
+    struct collection_item *initial = NULL;
 
-    struct collection_item *socket1;
-    struct collection_item *socket2;
-    struct collection_item *socket3;
+    struct collection_item *socket1 = NULL;
+    struct collection_item *socket2 = NULL;
+    struct collection_item *socket3 = NULL;
     struct collection_iterator *iterator = NULL;
     int error = EOK;
     struct collection_item *item = NULL;
