@@ -300,18 +300,23 @@ static int ini_comment_modify(struct ini_comment *ic,
             if (length == 0) input_len = strlen(input);
             else input_len = length;
 
+            error = simplebuffer_add_str(elem,
+                                         input,
+                                         input_len,
+                                         INI_COMMENT_LEN);
+        }
+        else {
+            error = simplebuffer_add_str(elem,
+                                         "",
+                                         0,
+                                         INI_COMMENT_LEN);
         }
 
-        error = simplebuffer_add_str(elem,
-                                     input,
-                                     input_len,
-                                     INI_COMMENT_LEN);
         if (error) {
             TRACE_ERROR_NUMBER("Allocate buffer for the comment", error);
             simplebuffer_free(elem);
             return error;
         }
-
     }
 
     /* Do action depending on mode */
