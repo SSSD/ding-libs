@@ -405,6 +405,7 @@ static int complete_value_processing(struct parser_obj *po)
 
         if (error) {
             TRACE_ERROR_NUMBER("Failed searching for dup", error);
+            value_destroy(vo);
             return error;
         }
 
@@ -418,6 +419,7 @@ static int complete_value_processing(struct parser_obj *po)
                                            sizeof(struct value_obj *));
             if (error) {
                 TRACE_ERROR_NUMBER("Failed updating the value", error);
+                value_destroy(vo);
                 return error;
             }
             /* If we failed to update it is better to leak then crash,
