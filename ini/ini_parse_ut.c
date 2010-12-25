@@ -225,7 +225,7 @@ int read_again_test(void)
     return error;
 }
 
-int create_expect(char *checkname)
+int create_expect(const char *checkname)
 {
     FILE *ff;
     int error = EOK;
