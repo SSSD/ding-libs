@@ -108,6 +108,8 @@
 #define INI_MV1S_PRESERVE  0x0002
 /** @brief Duplicates are allowed */
 #define INI_MV1S_ALLOW     0x0003
+/** @brief Duplicates are allowed but errors are logged */
+#define INI_MV1S_DETECT    0x0004
 
 /**
  * @}
@@ -133,6 +135,8 @@
 #define INI_MV2S_PRESERVE  0x0020
 /** @brief Duplicates are allowed */
 #define INI_MV2S_ALLOW     0x0030
+/** @brief Duplicates are allowed but errors are logged */
+#define INI_MV2S_DETECT    0x0040
 
 /**
  * @}
@@ -159,6 +163,8 @@
 #define INI_MS_PRESERVE  0x0300
 /** @brief Duplicates are allowed */
 #define INI_MS_ALLOW     0x0400
+/** @brief Duplicates are allowed but errors are logged */
+#define INI_MS_DETECT    0x0500
 
 /**
  * @}

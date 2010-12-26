@@ -44,7 +44,8 @@ static int valid_collision_flags(uint32_t collision_flags)
     if ((flag != INI_MV1S_OVERWRITE) &&
         (flag != INI_MV1S_ERROR) &&
         (flag != INI_MV1S_PRESERVE) &&
-        (flag != INI_MV1S_ALLOW)) {
+        (flag != INI_MV1S_ALLOW) &&
+        (flag != INI_MV1S_DETECT)) {
         TRACE_ERROR_STRING("Invalid value collision flag","");
         return 0;
     }
@@ -53,7 +54,8 @@ static int valid_collision_flags(uint32_t collision_flags)
     if ((flag != INI_MV2S_OVERWRITE) &&
         (flag != INI_MV2S_ERROR) &&
         (flag != INI_MV2S_PRESERVE) &&
-        (flag != INI_MV2S_ALLOW)) {
+        (flag != INI_MV2S_ALLOW) &&
+        (flag != INI_MV2S_DETECT)) {
         TRACE_ERROR_STRING("Invalid value cross-section collision flag","");
         return 0;
     }
@@ -63,7 +65,8 @@ static int valid_collision_flags(uint32_t collision_flags)
         (flag != INI_MS_OVERWRITE) &&
         (flag != INI_MS_ERROR) &&
         (flag != INI_MS_PRESERVE) &&
-        (flag != INI_MS_ALLOW)) {
+        (flag != INI_MS_ALLOW) &&
+        (flag != INI_MS_DETECT)) {
         TRACE_ERROR_STRING("Invalid section collision flag","");
         return 0;
     }
