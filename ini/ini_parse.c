@@ -1447,7 +1447,18 @@ int parser_run(struct parser_obj *po)
         col_delete_item(item);
 
         if (action == PARSE_DONE) {
+
             TRACE_INFO_NUMBER("We are done", error);
+
+            /* Report merge error in detect mode
+             * if no other error was detected. */
+            if ((po->ret == 0) &&
+                (po->merge_error != 0) &&
+                ((po->collision_flags & INI_MV1S_DETECT) ||
+                 (po->collision_flags & INI_MV2S_DETECT) ||
+                 (po->collision_flags & INI_MS_DETECT)))
+                po->ret = po->merge_error;
+
             error = po->ret;
             break;
         }
