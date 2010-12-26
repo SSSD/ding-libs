@@ -72,13 +72,15 @@
 #define ERR_READ            8
 /** @brief Line starts with space when it should not (Error). */
 #define ERR_SPACE           9
+/** @brief Duplicate key is not allowed (Error). */
+#define ERR_DUPKEY          10
+/** @brief Duplicate key is detected while merging sections (Error). */
+#define ERR_DUPKEYSEC       11
+/** @brief Duplicate section is not allowed (Error). */
+#define ERR_DUPSECTION      12
 
 /** @brief Size of the error array. */
-#define ERR_MAXPARSE        ERR_SPACE
-
-/**
- * @}
- */
+#define ERR_MAXPARSE        ERR_DUPSECTION
 
 
 /**

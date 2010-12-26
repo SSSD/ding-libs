@@ -31,7 +31,8 @@
 #include "collection.h"
 #include "collection_tools.h"
 #include "ini_defines.h"
-#include "ini_config.h"
+#include "ini_config_priv.h"
+#include "ini_configobj.h"
 
 
 /*============================================================*/
@@ -42,6 +43,16 @@
  * check that the class IDs did not get reused over time by
  * other classes.
  */
+/**
+ * @brief Collection of error collections.
+ *
+ * When multiple files are read during one call
+ * each file has its own set of parsing errors
+ * and warnings. This is the collection
+ * of such sets.
+ */
+#define COL_CLASS_INI_PESET       COL_CLASS_INI_BASE + 3
+
 /** @brief Collection of grammar errors.
  *
  * Reserved for future use.
@@ -52,6 +63,37 @@
  * Reserved for future use.
  */
 #define COL_CLASS_INI_VERROR      COL_CLASS_INI_BASE + 6
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup gramerr Grammar errors and warnings
+ *
+ * Placeholder for now. Reserved for future use.
+ *
+ * @{
+ */
+#define ERR_MAXGRAMMAR      0
+/**
+ * @}
+ */
+
+/**
+ * @defgroup valerr Validation errors and warnings
+ *
+ * Placeholder for now. Reserved for future use.
+ *
+ * @{
+ */
+#define ERR_MAXVALID        0
+
+
+/**
+ * @}
+ */
+
 
 #ifdef HAVE_VALIDATION
 
@@ -78,7 +120,11 @@ static const char *parsing_error_str(int parsing_error)
                                 _("Property name is too long."),
                                 _("Failed to read line."),
                                 _("Invalid space character at the "
-                                  "beginning of the line.")
+                                  "beginning of the line."),
+                                _("Duplicate key is not allowed."),
+                                _("Duplicate key is detected while "
+                                  "merging sections."),
+                                _("Duplicate section is not allowed.")
     };
 
     /* Check the range */
@@ -208,7 +254,7 @@ static void print_error_list(FILE *file,
     struct collection_iterator *iterator;
     int error;
     struct collection_item *item = NULL;
-    struct parse_error *pe;
+    struct ini_parse_error *pe;
     unsigned int count;
 
     TRACE_FLOW_STRING("print_error_list", "Entry");
@@ -256,7 +302,7 @@ static void print_error_list(FILE *file,
         }
         else {
             /* Put error into provided format */
-            pe = (struct parse_error *)(col_get_item_data(item));
+            pe = (struct ini_parse_error *)(col_get_item_data(item));
             fprintf(file, line_format,
                     col_get_item_property(item, NULL), /* Error or warning */
                     pe->error,                         /* Error */
