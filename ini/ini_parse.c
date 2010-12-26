@@ -1069,9 +1069,12 @@ static int handle_section(struct parser_obj *po, uint32_t *action)
     }
 
     /* Save the line number of the last found key */
-    po->keylinenum = po->linenum;
+    po->seclinenum = po->linenum;
 
-    /* Complete processing of this value */
+    /* Complete processing of this value.
+     * A new section will be created inside and a special
+     * value will be added.
+     */
     error = complete_value_processing(po);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to complete value processing", error);
