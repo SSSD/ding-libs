@@ -318,6 +318,183 @@ static int parser_read(struct parser_obj *po)
     return EOK;
 }
 
+/* Find if there is a collistion */
+static int check_section_collision(struct parser_obj *po)
+{
+    int error = EOK;
+    struct collection_item *item = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    TRACE_INFO_STRING("Searching for:", col_get_item_property(po->sec, NULL));
+
+    error = col_get_item(po->top,
+                         col_get_item_property(po->sec, NULL),
+                         COL_TYPE_ANY,
+                         COL_TRAVERSE_DEFAULT,
+                         &item);
+
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed searching for dup", error);
+        return error;
+    }
+
+    /* Check if there is a dup */
+    if (item) {
+        TRACE_INFO_STRING("Collision found:",
+                          col_get_item_property(item, NULL));
+        /* Get the actual section collection instead of reference */
+        po->merge_sec = *((struct collection_item **)
+                          (col_get_item_data(item)));
+    }
+    else {
+        TRACE_INFO_STRING("Collision not found.", "");
+        po->merge_sec = NULL;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Clean all items in the section */
+static int empty_section(struct collection_item *sec)
+{
+    int error = EOK;
+    struct collection_item *item = NULL;
+    struct collection_item *save_item = NULL;
+    struct value_obj *vo = NULL;
+    int work_to_do = 1;
+
+    TRACE_FLOW_ENTRY();
+
+    do {
+        item = NULL;
+        error = col_extract_item_from_current(sec,
+                                              COL_DSP_FRONT,
+                                              NULL,
+                                              0,
+                                              COL_TYPE_ANY,
+                                              &item);
+        if ((error) && (error != ENOENT)) {
+            TRACE_ERROR_NUMBER("Failed to extract item.", error);
+            return error;
+        }
+
+        if (item) {
+            TRACE_INFO_STRING("Item found:",
+                              col_get_item_property(item, NULL));
+
+            if (strncmp(col_get_item_property(item, NULL),
+                        INI_SECTION_KEY, 1) == 0) {
+                /* Just ignore the first item */
+                save_item = item;
+                continue;
+            }
+
+            vo = *((struct value_obj **)(col_get_item_data(item)));
+            value_destroy(vo);
+            col_delete_item(item);
+        }
+        else {
+            TRACE_INFO_STRING("No more items:", "");
+            /* Restore saved item */
+            error = col_insert_item(sec,
+                                    NULL,
+                                    save_item,
+                                    COL_DSP_END,
+                                    NULL,
+                                    0,
+                                    COL_INSERT_NOCHECK);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to restore item.", error);
+                return error;
+            }
+
+            work_to_do = 0;
+        }
+    }
+    while (work_to_do);
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Merge contents of the section */
+static int merge_section(struct parser_obj *po)
+{
+    int error = EOK;
+    struct collection_item *item = NULL;
+    struct value_obj *vo = NULL;
+    int work_to_do = 1;
+    const char *key;
+
+    TRACE_FLOW_ENTRY();
+
+    do {
+        TRACE_INFO_STRING("Top of the merge loop", "");
+
+        item = NULL;
+        error = col_extract_item_from_current(po->sec,
+                                              COL_DSP_FRONT,
+                                              NULL,
+                                              0,
+                                              COL_TYPE_ANY,
+                                              &item);
+        if ((error) && (error != ENOENT)) {
+            TRACE_ERROR_NUMBER("Failed to extract item.", error);
+            return error;
+        }
+
+        if (item) {
+
+            TRACE_INFO_STRING("Item found:", col_get_item_property(item, NULL));
+
+            if (strncmp(col_get_item_property(item, NULL),
+                        INI_SECTION_KEY, 1) == 0) {
+                /* Just ignore the first item */
+                vo = *((struct value_obj **)(col_get_item_data(item)));
+                value_destroy(vo);
+                col_delete_item(item);
+                continue;
+            }
+
+            po->merge_vo = *((struct value_obj **)(col_get_item_data(item)));
+            key = col_get_item_property(item, NULL);
+            /* To be able to use po->merge_key in the loop
+             * we have to overcome constraints imposed by
+             * the "const" declaration.
+             */
+            memcpy(&(po->merge_key), &key, sizeof(char *));
+
+            /* Use the value processing function to inser the value */
+            error = complete_value_processing(po);
+
+            /* In case of error value is already cleaned */
+            po->merge_vo = NULL;
+            po->merge_key = NULL;
+            col_delete_item(item);
+            /* Now we can check the error */
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to merge item.", error);
+                return error;
+            }
+        }
+        else {
+            TRACE_INFO_STRING("No more items:", "");
+            work_to_do = 0;
+        }
+    }
+    while (work_to_do);
+
+    /* If we reached this place the incoming section is empty.
+     * but just to be safe clean with callback. */
+    col_destroy_collection_with_cb(po->sec, ini_cleanup_cb, NULL);
+    po->sec = NULL;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
 /* Function to read next line from the file */
 static int parser_save_section(struct parser_obj *po)
 {
