@@ -529,6 +529,7 @@ static int parser_save_section(struct parser_obj *po)
 static int complete_value_processing(struct parser_obj *po)
 {
     int error = EOK;
+    int error2 = EOK;
     struct value_obj *vo = NULL;
     struct value_obj *vo_old = NULL;
     unsigned insertmode;
@@ -536,12 +537,19 @@ static int complete_value_processing(struct parser_obj *po)
     int suppress = 0;
     int doinsert = 0;
     struct collection_item *item = NULL;
+    struct collection_item *section = NULL;
+    int merging = 0;
 
     TRACE_FLOW_ENTRY();
 
-    /* If there is not open section create a default one */
-    if(!(po->sec)) {
-        /* Create a new section */
+    if (po->merge_sec) {
+        TRACE_INFO_STRING("Processing value in merge mode", "");
+        section = po->merge_sec;
+        merging = 1;
+    }
+    else if(!(po->sec)) {
+        TRACE_INFO_STRING("Creating default section", "");
+        /* If there is not open section create a default one */
         error = col_create_collection(&po->sec,
                                       INI_DEFAULT_SECTION,
                                       COL_CLASS_INI_SECTION);
@@ -549,29 +557,44 @@ static int complete_value_processing(struct parser_obj *po)
             TRACE_ERROR_NUMBER("Failed to create default section", error);
             return error;
         }
+        section = po->sec;
+    }
+    else {
+        TRACE_INFO_STRING("Processing value in normal mode", "");
+        section = po->sec;
     }
 
-    /* Construct value object from what we have */
-    error = value_create_from_refarray(po->raw_lines,
-                                       po->raw_lengths,
-                                       po->keylinenum,
-                                       INI_VALUE_READ,
-                                       po->key_len,
-                                       po->boundary,
-                                       po->ic,
-                                       &vo);
-
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to create value object", error);
-        return error;
+    if (merging) {
+        TRACE_INFO_STRING("Using merge key:", po->merge_key);
+        vo = po->merge_vo;
+        /* We are adding to the merge section so use MV2S flags.
+         * But flags are done in such a way that deviding MV2S by MV1S mask
+         * will translate MV2S flags into MV1S so we can use
+         * MV1S constants. */
+        TRACE_INFO_NUMBER("Collisions flags:", po->collision_flags);
+        mergemode = (po->collision_flags & INI_MV2S_MASK) / INI_MV1S_MASK;
     }
+    else {
+        /* Construct value object from what we have */
+        error = value_create_from_refarray(po->raw_lines,
+                                           po->raw_lengths,
+                                           po->keylinenum,
+                                           INI_VALUE_READ,
+                                           po->key_len,
+                                           po->boundary,
+                                           po->ic,
+                                           &vo);
 
-    /* Forget about the arrays. They are now owned by the value object */
-    po->ic = NULL;
-    po->raw_lines = NULL;
-    po->raw_lengths = NULL;
-
-    mergemode = po->collision_flags & INI_MV1S_MASK;
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to create value object", error);
+            return error;
+        }
+        /* Forget about the arrays. They are now owned by the value object */
+        po->ic = NULL;
+        po->raw_lines = NULL;
+        po->raw_lengths = NULL;
+        mergemode = po->collision_flags & INI_MV1S_MASK;
+    }
 
     switch (mergemode) {
     case INI_MV1S_ERROR:     insertmode = COL_INSERT_DUPERROR;
@@ -585,16 +608,18 @@ static int complete_value_processing(struct parser_obj *po)
                              doinsert = 1;
                              break;
     case INI_MV1S_OVERWRITE: /* Special handling */
+    case INI_MV1S_DETECT:
     default:
                              break;
     }
 
     /* Do not insert but search for dups first */
     if (!doinsert) {
-        TRACE_INFO_STRING("Ovewrite mode. Lokking for:", po->key);
+        TRACE_INFO_STRING("Overwrite mode. Looking for:",
+                          (char *)(merging ? po->merge_key : po->key));
 
-        error = col_get_item(po->sec,
-                             po->key,
+        error = col_get_item(section,
+                             merging ? po->merge_key : po->key,
                              COL_TYPE_BINARY,
                              COL_TRAVERSE_DEFAULT,
                              &item);
@@ -607,21 +632,42 @@ static int complete_value_processing(struct parser_obj *po)
 
         /* Check if there is a dup */
         if (item) {
-            /* Dup exists - update it */
-            vo_old = *((struct value_obj **)(col_get_item_data(item)));
-            error = col_modify_binary_item(item,
-                                           NULL,
-                                           &vo,
-                                           sizeof(struct value_obj *));
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed updating the value", error);
-                value_destroy(vo);
-                return error;
+            /* Check if we are in the detect mode */
+            if (mergemode == INI_MV1S_DETECT) {
+                po->merge_error = EEXIST;
+                /* There is a dup - inform user about it and continue */
+                error = save_error(po->el,
+                                   merging ? po->seclinenum : po->keylinenum,
+                                   merging ? ERR_DUPKEYSEC : ERR_DUPKEY,
+                                   ERROR_TXT);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to save error", error);
+                    value_destroy(vo);
+                    return error;
+                }
+                doinsert = 1;
+                insertmode = COL_INSERT_NOCHECK;
+
             }
-            /* If we failed to update it is better to leak then crash,
-             * so desctroy original value only on the successful update.
-             */
-            value_destroy(vo_old);
+            else {
+
+                /* Dup exists - update it */
+                vo_old = *((struct value_obj **)(col_get_item_data(item)));
+                error = col_modify_binary_item(item,
+                                               NULL,
+                                               &vo,
+                                               sizeof(struct value_obj *));
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed updating the value", error);
+                    value_destroy(vo);
+                    return error;
+                }
+
+                /* If we failed to update it is better to leak then crash,
+                 * so destroy original value only on the successful update.
+                 */
+                value_destroy(vo_old);
+            }
         }
         else {
             /* No dup found so we can insert with no check */
@@ -632,31 +678,52 @@ static int complete_value_processing(struct parser_obj *po)
 
     if (doinsert) {
         /* Add value to collection */
-        error = col_insert_binary_property(po->sec,
+        error = col_insert_binary_property(section,
                                            NULL,
                                            COL_DSP_END,
                                            NULL,
                                            0,
                                            insertmode,
-                                           po->key,
+                                           merging ? po->merge_key : po->key,
                                            &vo,
                                            sizeof(struct value_obj *));
         if (error) {
+            value_destroy(vo);
+
             if ((suppress) && (error == EEXIST)) {
-                TRACE_INFO_STRING("Preseved exisitng value", po->key);
-                value_destroy(vo);
+                TRACE_INFO_STRING("Preseved exisitng value",
+                                  (char *)(merging ? po->merge_key : po->key));
             }
             else {
-                TRACE_ERROR_NUMBER("Failed to add value object to the section", error);
-                value_destroy(vo);
-                return error;
+                /* Check if this is a critical error or not */
+                if ((mergemode == INI_MV1S_ERROR) && (error == EEXIST)) {
+                    TRACE_ERROR_NUMBER("Failed to add value object "
+                                       "to the section", error);
+                    error2 = save_error(po->el,
+                                       merging ? po->seclinenum : po->keylinenum,
+                                       merging ? ERR_DUPKEYSEC : ERR_DUPKEY,
+                                       ERROR_TXT);
+                    if (error2) {
+                        TRACE_ERROR_NUMBER("Failed to save error", error2);
+                        return error2;
+                    }
+                    return error;
+                }
+                else {
+                    TRACE_ERROR_NUMBER("Failed to add value object"
+                                       " to the section", error);
+                    return error;
+                }
             }
         }
     }
 
-    free(po->key);
-    po->key = NULL;
-    po->key_len = 0;
+    if (!merging) {
+        free(po->key);
+        po->key = NULL;
+        po->key_len = 0;
+    }
+
     TRACE_FLOW_EXIT();
     return EOK;
 }
