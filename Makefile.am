@@ -250,7 +250,9 @@ dist_noinst_DATA += \
     ini/ini.d/test.conf \
     ini/ini.d/ipa.conf \
     ini/ini.d/foo.conf \
-    ini/ini.d/mysssd.conf
+    ini/ini.d/mysssd.conf \
+    ini/ini.d/smerge.conf \
+    ini/ini.d/sexpect.conf
 
 check_PROGRAMS += \
     ini_config_ut \
