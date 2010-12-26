@@ -173,6 +173,7 @@ int read_save_test(void)
                             "mysssd",
                             "ipa",
                             "test",
+                            "smerge",
                             NULL };
 
 
@@ -203,6 +204,7 @@ int read_again_test(void)
                             "mysssd",
                             "ipa",
                             "test",
+                            "smerge",
                             NULL };
 
 
@@ -279,13 +281,24 @@ int create_expect(const char *checkname)
     fprintf(ff,"#Second value\n");
     fprintf(ff,"bar = second value\n");
     fprintf(ff,"#End of section\n");
+    /* Detect */
+    fprintf(ff,"#Hoho section\n");
+    fprintf(ff,"[hoho]\n");
+    fprintf(ff,"#Hoho value\n");
+    fprintf(ff,"val = hoho\n");
+    fprintf(ff,"#End of hoho\n");
+    fprintf(ff,"#Start of section\n");
+    fprintf(ff,"[foo]\n");
+    fprintf(ff,"#First value\n");
+    fprintf(ff,"bar = first value\n");
+    fprintf(ff,"#Second value\n");
+    fprintf(ff,"bar = second value\n");
+    fprintf(ff,"#End of section\n");
 
     fclose(ff);
 
     return EOK;
 }
-
-
 
 /* Check merge modes */
 int merge_values_test(void)
@@ -301,12 +314,14 @@ int merge_values_test(void)
     uint32_t mflags[] = { INI_MV1S_OVERWRITE,
                           INI_MV1S_ERROR,
                           INI_MV1S_PRESERVE,
-                          INI_MV1S_ALLOW };
+                          INI_MV1S_ALLOW,
+                          INI_MV1S_DETECT };
 
     const char *mstr[] = { "OVERWRITE",
                            "ERROR",
                            "PRESERVE",
-                           "ALLOW" };
+                           "ALLOW",
+                           "DETECT" };
 
     char filename[PATH_MAX];
     const char *resname = "./merge.conf.out";
@@ -323,7 +338,7 @@ int merge_values_test(void)
         return error;
     }
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 5; i++) {
 
         INIOUT(printf("<==== Testing mode %s  ====>\n", mstr[i]));
 
@@ -360,8 +375,9 @@ int merge_values_test(void)
                 ini_config_free_errors(error_list);
             }
 
-            if ((mflags[i] != INI_MV1S_ERROR) ||
-                ((mflags[i] = INI_MV1S_ERROR) && (error != EEXIST))) {
+            if (((mflags[i] != INI_MV1S_ERROR) && (mflags[i]!= INI_MV1S_DETECT)) ||
+                ((mflags[i] = INI_MV1S_ERROR) && (error != EEXIST)) ||
+                ((mflags[i] = INI_MV1S_DETECT) && (error != EEXIST))) {
                 printf("This is unexpected error %d in mode %d\n", error, mflags[i]);
 	            ini_config_destroy(ini_config);
 		        simplebuffer_free(sbobj);
