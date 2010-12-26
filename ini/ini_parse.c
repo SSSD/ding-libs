@@ -69,8 +69,11 @@ struct parser_obj {
     uint32_t linenum;
     /* Line number of the last found key */
     uint32_t keylinenum;
+    /* Line number of the last found section */
+    uint32_t seclinenum;
     /* Internal variables */
     struct collection_item *sec;
+    struct collection_item *merge_sec;
     struct ini_comment *ic;
     char *last_read;
     uint32_t last_read_len;
@@ -78,11 +81,14 @@ struct parser_obj {
     uint32_t key_len;
     struct ref_array *raw_lines;
     struct ref_array *raw_lengths;
+    char *merge_key;
+    struct value_obj *merge_vo;
+    /* Merge error */
+    uint32_t merge_error;
     int ret;
 };
 
 typedef int (*action_fn)(struct parser_obj *);
-
 
 #define PARSE_ACTION       "action"
 
@@ -181,9 +187,12 @@ static int parser_create(FILE *file,
 
     /* Initialize internal varibles */
     new_po->sec = NULL;
+    new_po->merge_sec = NULL;
     new_po->ic = NULL;
     new_po->last_error = 0;
     new_po->linenum = 0;
+    new_po->keylinenum = 0;
+    new_po->seclinenum = 0;
     new_po->last_read = NULL;
     new_po->last_read_len = 0;
     new_po->key = NULL;
@@ -191,6 +200,9 @@ static int parser_create(FILE *file,
     new_po->raw_lines = NULL;
     new_po->raw_lengths = NULL;
     new_po->ret = EOK;
+    new_po->merge_key = NULL;
+    new_po->merge_vo = NULL;
+    new_po->merge_error = 0;
 
     /* Create a queue */
     new_po->queue = NULL;
