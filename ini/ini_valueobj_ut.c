@@ -403,6 +403,7 @@ int vo_basic_test(void)
             return error;
         }
 
+        vo = NULL;
         error = value_create_new(strvalue,
                                  strlen(strvalue),
                                  INI_VALUE_CREATED,
@@ -542,6 +543,7 @@ int vo_copy_test(void)
 
         TRACE_INFO_NUMBER("Iteration:", wrap);
 
+        vo_copy = NULL;
         error = value_copy(vo, &vo_copy);
         if (error) {
             printf("Failed to create a new value object %d.\n", error);
@@ -560,6 +562,7 @@ int vo_copy_test(void)
         }
 
         /* Get comment from the value */
+        ic = NULL;
         error = value_extract_comment(vo_copy, &ic);
         if (error) {
             printf("Failed to extract comment %d.\n", error);

@@ -343,6 +343,7 @@ int merge_values_test(void)
         INIOUT(printf("<==== Testing mode %s  ====>\n", mstr[i]));
 
         /* Create config collection */
+        ini_config = NULL;
         error = ini_config_create(&ini_config);
         if (error) {
             printf("Failed to create collection. Error %d.\n", error);
@@ -350,6 +351,7 @@ int merge_values_test(void)
             return error;
         }
 
+        file_ctx = NULL;
         error = ini_config_file_open(filename,
                                      INI_STOP_ON_ANY,
                                      mflags[i],
@@ -517,6 +519,7 @@ int merge_section_test(void)
             }
 
             /* Create config collection */
+            ini_config = NULL;
             error = ini_config_create(&ini_config);
             if (error) {
                 printf("Failed to create collection. "
@@ -525,6 +528,7 @@ int merge_section_test(void)
                 return error;
             }
 
+            file_ctx = NULL;
             error = ini_config_file_open(filename,
                                          INI_STOP_ON_ANY,
                                          msecflags[i] | mflags[j],

@@ -214,7 +214,7 @@ int ini_config_copy(struct ini_cfgobj *ini_config,
                     struct ini_cfgobj **ini_new)
 {
     int error = EOK;
-    struct ini_cfgobj *new_co;
+    struct ini_cfgobj *new_co = NULL;
 
     TRACE_FLOW_ENTRY();
 
