@@ -300,10 +300,7 @@ int ini_config_copy(struct ini_cfgobj *ini_config,
                     struct ini_cfgobj **ini_new);
 
 /* Function to print errors from the list */
-void ini_print_errors(FILE *file, char **error_list);
-
-
-
+void ini_config_print_errors(FILE *file, char **error_list);
 
 /* Merge two configurations together creating a new one */
 int ini_config_merge(struct ini_cfgobj *first,

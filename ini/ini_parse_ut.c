@@ -85,7 +85,7 @@ int test_one_file(const char *in_filename,
             INIOUT(printf("Errors detected while parsing: %s\n",
                    ini_config_get_filename(file_ctx)));
             ini_config_get_errors(file_ctx, &error_list);
-            INIOUT(ini_print_errors(stdout, error_list));
+            INIOUT(ini_config_print_errors(stdout, error_list));
             ini_config_free_errors(error_list);
         }
         /* We do not return here intentionally */
@@ -371,7 +371,7 @@ int merge_values_test(void)
                 INIOUT(printf("Errors detected while parsing: %s\n",
                        ini_config_get_filename(file_ctx)));
                 ini_config_get_errors(file_ctx, &error_list);
-                INIOUT(ini_print_errors(stdout, error_list));
+                INIOUT(ini_config_print_errors(stdout, error_list));
                 ini_config_free_errors(error_list);
             }
 
@@ -548,7 +548,7 @@ int merge_section_test(void)
                     INIOUT(printf("Errors detected while parsing: %s\n",
                            ini_config_get_filename(file_ctx)));
                     ini_config_get_errors(file_ctx, &error_list);
-                    INIOUT(ini_print_errors(stdout, error_list));
+                    INIOUT(ini_config_print_errors(stdout, error_list));
                     ini_config_free_errors(error_list);
                 }
 
@@ -719,7 +719,7 @@ int startup_test(void)
             INIOUT(printf("Errors detected while parsing: %s\n",
                    ini_config_get_filename(file_ctx)));
             ini_config_get_errors(file_ctx, &error_list);
-            INIOUT(ini_print_errors(stdout, error_list));
+            INIOUT(ini_config_print_errors(stdout, error_list));
             ini_config_free_errors(error_list);
         }
         /* We do not return here intentionally */

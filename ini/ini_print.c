@@ -459,9 +459,8 @@ void print_config_parsing_errors(FILE *file,
     TRACE_FLOW_STRING("print_config_parsing_errors", "Exit");
 }
 
-
 /* Function to print errors from the list */
-void ini_print_errors(FILE *file, char **error_list)
+void ini_config_print_errors(FILE *file, char **error_list)
 {
     unsigned count = 0;
 
