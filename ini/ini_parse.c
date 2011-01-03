@@ -357,7 +357,7 @@ static int check_section_collision(struct parser_obj *po)
 }
 
 /* Clean all items in the section */
-static int empty_section(struct collection_item *sec)
+int empty_section(struct collection_item *sec)
 {
     int error = EOK;
     struct collection_item *item = NULL;

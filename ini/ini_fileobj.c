@@ -34,7 +34,7 @@
 
 
 /* Check if collision flags are valid */
-static int valid_collision_flags(uint32_t collision_flags)
+int valid_collision_flags(uint32_t collision_flags)
 {
     uint32_t flag;
 

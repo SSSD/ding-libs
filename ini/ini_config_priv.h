@@ -82,4 +82,12 @@ void ini_cleanup_cb(const char *property,
 /* Get parsing error */
 const char *ini_get_error_str(int parsing_error, int family);
 
+/* Check if collision flags are valid */
+int valid_collision_flags(uint32_t collision_flags);
+
+/* Empty section */
+int empty_section(struct collection_item *sec);
+
+
+
 #endif
