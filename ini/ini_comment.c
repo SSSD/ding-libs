@@ -433,6 +433,7 @@ static int ini_comment_modify(struct ini_comment *ic,
     default :
 
         TRACE_ERROR_STRING("Coding error", "");
+        simplebuffer_free(elem);
         return EINVAL;
 
     }
