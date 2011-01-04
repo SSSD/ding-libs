@@ -1554,8 +1554,19 @@ int main(int argc, char *argv[])
 
     srcdir = getenv("srcdir");
     if(srcdir) {
+
+        errno = 0;
         rundir = malloc(strlen(srcdir) + sizeof(inidir));
+        if (!rundir) {
+            error = errno;
+            printf("Failed to allocate memory to store path"
+                   " to the test files %d.\n", error);
+            return -1;
+        }
+
         sprintf(rundir, "%s%s", srcdir, inidir);
+
+        errno = 0;
         if(chdir(rundir) != 0) {
             error = errno;
             free(rundir);
