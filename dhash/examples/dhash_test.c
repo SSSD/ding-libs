@@ -35,10 +35,21 @@ int verbose = 0;
 
 const char *error_string(int error)
 {
+    const char *str;
+
     if (IS_HASH_ERROR(error))
         return hash_error_string(error);
 
-    return strerror(error);
+    if (error < 0) {
+        return "Negative error codes are not supported.";
+    }
+
+    str = strerror(error);
+    if (str == NULL) {
+        return "strerror() returned NULL.";
+    }
+
+    return str;
 }
 
 char *key_string(hash_key_t *key)
