@@ -245,7 +245,7 @@ static int ini_comment_modify(struct ini_comment *ic,
             /* Fill in empty lines */
             for (i = 0; i < (idx-len); i++) {
                 empty = strdup("");
-                if (empty) {
+                if (!empty) {
                     TRACE_ERROR_NUMBER("Memory problem", ENOMEM);
                     return ENOMEM;
                 }
