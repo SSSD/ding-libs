@@ -247,11 +247,13 @@ static int ini_comment_modify(struct ini_comment *ic,
                 empty = strdup("");
                 if (!empty) {
                     TRACE_ERROR_NUMBER("Memory problem", ENOMEM);
+                    free(elem);
                     return ENOMEM;
                 }
                 error = ref_array_append(ic->ra, &empty);
                 if (error) {
                     TRACE_ERROR_NUMBER("Append problem", error);
+                    free(elem);
                     free(empty);
                     return error;
                 }
