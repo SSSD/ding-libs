@@ -132,7 +132,9 @@ typedef struct test_val_t {
 int main(int argc, char **argv)
 {
     test_val_t *test = NULL;
-    long i, k;
+    long i, j, k;
+    bool duplicate;
+    long val;
     int status;
     hash_value_t value;
     hash_value_t old_value;
@@ -141,8 +143,10 @@ int main(int argc, char **argv)
     char buf[1024];
     hash_table_t *table = NULL;
     unsigned long callback_count = 0;
-    unsigned int directory_bits = HASH_DEFAULT_DIRECTORY_BITS;
-    unsigned int segment_bits = HASH_DEFAULT_SEGMENT_BITS;
+    unsigned long table_size = 0;
+    unsigned int seed = time(0);
+    unsigned int directory_bits = 0;
+    unsigned int segment_bits = 0;
     unsigned long min_load_factor = HASH_DEFAULT_MIN_LOAD_FACTOR;
     unsigned long max_load_factor = HASH_DEFAULT_MAX_LOAD_FACTOR;
 
@@ -153,26 +157,31 @@ int main(int argc, char **argv)
             {"count", 1, 0, 'c'},
             {"verbose", 1, 0, 'v'},
             {"quiet", 1, 0, 'q'},
+            {"table-size", 1, 0, 't'},
             {"directory-bits", 1, 0, 'd'},
             {"segment-bits", 1, 0, 's'},
             {"min-load-factor", 1, 0, 'l'},
             {"max-load-factor", 1, 0, 'h'},
+            {"seed", 1, 0, 'r'},
             {0, 0, 0, 0}
         };
 
-        arg = getopt_long(argc, argv, "c:vqd:s:l:h:",
+        arg = getopt_long(argc, argv, "c:vqt:d:s:l:h:r:",
                           long_options, &option_index);
         if (arg == -1) break;
 
         switch (arg) {
         case 'c':
-            max_test = atol(optarg);
+            max_test = strtoul(optarg, NULL, 0);
             break;
         case 'v':
             verbose = 1;
             break;
         case 'q':
             verbose = 0;
+            break;
+        case 't':
+            table_size = strtoul(optarg, NULL, 0);
             break;
         case 'd':
             directory_bits = atoi(optarg);
@@ -181,10 +190,13 @@ int main(int argc, char **argv)
             segment_bits = atoi(optarg);
             break;
         case 'l':
-            min_load_factor = atol(optarg);
+            min_load_factor = strtoul(optarg, NULL, 0);
             break;
         case 'h':
-            max_load_factor = atol(optarg);
+            max_load_factor = strtoul(optarg, NULL, 0);
+            break;
+        case 'r':
+            seed = strtoul(optarg, NULL, 0);
             break;
         }
     }
@@ -204,10 +216,11 @@ int main(int argc, char **argv)
 
 
     /* Initialize the random number generator */
-    srandom(time(0));
+    srandom(seed);
+    printf("random seed: %#x\n", seed);
 
     /* Create the hash table as small as possible to exercise growth */
-    if ((status = hash_create_ex(1, &table,
+    if ((status = hash_create_ex(table_size, &table,
                                  directory_bits, segment_bits,
                                  min_load_factor, max_load_factor,
                                  NULL, NULL, NULL,
@@ -218,7 +231,19 @@ int main(int argc, char **argv)
 
     /* Initialize the array of test values */
     for (i = 0; i < max_test; i++) {
-        test[i].val = random();
+        /* Get random value, make sure it's unique */
+        duplicate = true;
+        while (duplicate) {
+            duplicate = false;
+            val = random();
+            for (j = 0; j < i; j++) {
+                if (test[j].val == val) {
+                    duplicate = true;
+                    break;
+                }
+            }
+        }
+        test[i].val = val;
         /* If the value is odd we'll use a string as the key,
          * otherwise we'll use an unsigned long as the key */
         if (test[i].val & 1) {
@@ -227,6 +252,8 @@ int main(int argc, char **argv)
             test[i].str = strdup(buf);
         }
     }
+
+    printf("Completed building test values, beginning test ...\n");
 
     /* Enter all the test values into the hash table */
     for (i = 0; i < max_test; i++) {
