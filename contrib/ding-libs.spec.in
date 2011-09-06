@@ -83,8 +83,7 @@ Utility functions to manipulate filesystem pathnames
 %files -n libpath_utils
 %defattr(-,root,root,-)
 %doc COPYING COPYING.LESSER
-%{_libdir}/libpath_utils.so.1
-%{_libdir}/libpath_utils.so.1.0.0
+%{_libdir}/libpath_utils.so.*
 
 %files -n libpath_utils-devel
 %defattr(-,root,root,-)
@@ -126,8 +125,7 @@ time properties
 %files -n libdhash
 %defattr(-,root,root,-)
 %doc COPYING COPYING.LESSER
-%{_libdir}/libdhash.so.1
-%{_libdir}/libdhash.so.1.0.0
+%{_libdir}/libdhash.so.*
 
 %files -n libdhash-devel
 %defattr(-,root,root,-)
@@ -170,8 +168,7 @@ and serialization
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libcollection.so.2
-%{_libdir}/libcollection.so.2.0.0
+%{_libdir}/libcollection.so.*
 
 %files -n libcollection-devel
 %defattr(-,root,root,-)
@@ -214,8 +211,7 @@ A dynamically-growing, reference-counted array
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libref_array.so.1
-%{_libdir}/libref_array.so.1.0.0
+%{_libdir}/libref_array.so.*
 
 %files -n libref_array-devel
 %defattr(-,root,root,-)
@@ -258,8 +254,7 @@ structure
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libini_config.so.2
-%{_libdir}/libini_config.so.2.0.0
+%{_libdir}/libini_config.so.*
 
 %files -n libini_config-devel
 %defattr(-,root,root,-)
