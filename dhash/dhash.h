@@ -203,13 +203,40 @@ const char* hash_error_string(int error);
  * Create a new hash table with room for n initial entries.  hash_create returns
  * an opaque pointer to the new hash table in the table parameter. Functions
  * operating on the hash table pass in this hash table pointer. This means you
- * may have as many concurrent hash tables as you want. The delete_callback
- * parameter is a pointer to a function which will be called just prior to a
- * hash entry being deleted. This is useful when the hash value has items which
- * may need to be disposed of. The delete_callback may be NULL.
- * The delete_private_data is data passed to the delete_callback, this way
- * custom callbacks can have a private context to reach data they need to use
- * before performning their operations. delete_private_data may be NULL.
+ * may have as many concurrent hash tables as you want.
+
+ * If the table creation is successful tbl is set to the new table and
+ * HASH_SUCCESS is returned, otherwise tbl will be set to NULL and the
+ * return value will be a HASH error code.
+ *
+ * count
+ *     Expected number of entries in the table. This is a tuning
+ *     parameter because a dynamic hash table dynamically adjusts it's
+ *     internal data strucuture to optimize for the actual number of
+ *     entries. The count parameter allows for some more optimization,
+ *     however it's not critical to get it right, the table will still
+ *     perform well. If you have no idea of how many entries to expect
+ *     then pass 0, a reasonable default will be selected.
+ * tbl
+ *     Pointer to a hash_table_t variable which is initialized to the
+ *     new hash table (i.e. the returned table). If the table fails to
+ *     be created due to errors the tbl parameter will be set to NULL
+ *     and the return value will be a HASH error code.
+ * delete_callback
+ *     Pointer to a function which will be called just prior to a hash
+ *     entry being deleted. This is useful when the hash value has
+ *     items which may need to be disposed of. The delete_callback may
+ *     be NULL.
+ * delete_private_data
+ *     Void pointer passed to the delete_callback, this way delete
+ *     callbacks can have a private context to reach data they need to
+ *     use before performning their operations. delete_private_data
+ *     may be NULL.
+ *
+ * hash_create is identical to calling:
+ *
+ * hash_create_ex(count, tbl, 0, 0, 0, 0, NULL, NULL, NULL,
+ *                delete_callback, delete_private_data);
  */
 int hash_create(unsigned long count, hash_table_t **tbl,
                 hash_delete_callback *delete_callback,
@@ -217,22 +244,32 @@ int hash_create(unsigned long count, hash_table_t **tbl,
 
 /*
  * Create a new hash table and fine tune it's configurable parameters.
- * Refer to CACM article for explanation of parameters.
+ * Refer to CACM article for explanation of parameters. See
+ * hash_create for other parameters and return values.
  *
- * directory_bits: number of address bits allocated to top level directory array.
- * segment_bits: number of address bits allocated to segment array.
- * min_load_factor: table contracted when the ratio of entry count to bucket count
- *                  is less than the min_load_factor the table is contracted.
- * max_load_factor: table expanded when the ratio of entry count to bucket count
- *                  is greater than the max_load_factor the table is expanded.
- * alloc_func: function pointer for allocation
- * free_func: funciton pointer for freeing memory allocated with alloc_func
- * alloc_private data: data passed to the alloc and free functions so that
- *                     custom functions can refernce other private data they may
- *                     need during their execution without having to use global
- *                     variables.
+ * directory_bits
+ *     Number of address bits allocated to top level directory array.
+ *     If directory_bits or segment_bits is zero then directory_bits
+ *     and segment_bits will be computed based on the count parameter.
+ * segment_bits
+ *     number of address bits allocated to segment array.
+ * min_load_factor
+ *     The table contracted when the ratio of entry count to bucket count
+ *     is less than the min_load_factor the table is contracted.
+ * max_load_factor
+ *     The table expanded when the ratio of entry count to bucket count
+ *     is greater than the max_load_factor the table is expanded.
+ * alloc_func
+ *     Function pointer for allocation.
+ * free_func
+ *     Function pointer for freeing memory allocated with alloc_func.
+ * alloc_private_data
+ *     Data pointer passed to the alloc and free functions so that
+ *     custom functions can refernce other private data they may need
+ *     during their execution without having to use global variables.
  *
- * Note directory_bits + segment_bits must be <= number of bits in unsigned long
+ * Note directory_bits + segment_bits must be <= number of bits in
+ * unsigned long
  */
 int hash_create_ex(unsigned long count, hash_table_t **tbl,
                    unsigned int directory_bits,
