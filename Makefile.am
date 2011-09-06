@@ -89,7 +89,7 @@ dist_include_HEADERS += dhash/dhash.h
 
 libdhash_la_SOURCES = dhash/dhash.c
 libdhash_la_LDFLAGS = \
-    -version-info 1:0:0
+    -version-info 1:1:0
 
 check_PROGRAMS += dhash_test dhash_example
 TESTS += dhash_test dhash_example
