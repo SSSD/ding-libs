@@ -1588,11 +1588,13 @@ static int col_find_item_and_do(struct collection_item *ci,
 
     /* Make sure that there is anything to search */
     type &= COL_TYPE_ANY;
-    if (((property_to_find == NULL) && (type == 0)) ||
-        ((*property_to_find == '\0') && (type == 0))) {
+    if ((type == 0) && 
+        ((property_to_find == NULL) || 
+         ((property_to_find != NULL) && (*property_to_find == '\0')))) {
         TRACE_ERROR_NUMBER("No item search criteria specified - returning error!", ENOENT);
         return ENOENT;
     }
+
     /* Prepare data for traversal */
     traverse_data = (struct find_name *)malloc(sizeof(struct find_name));
     if (traverse_data == NULL) {

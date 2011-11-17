@@ -1630,6 +1630,34 @@ int search_test(void)
 
     found = 0;
     error = 0;
+    error = col_is_item_in_collection(level1, NULL, COL_TYPE_INTEGER, COL_TRAVERSE_DEFAULT, &found);
+    if ((error) || (!found)) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2);
+        col_destroy_collection(level3);
+        col_destroy_collection(level4);
+        printf("Failed to find first int item [level1!level2!level3!level4!id]. Error %d\n", error);
+        return error ? error : ENOENT;
+    }
+    else COLOUT(printf("Expected item is found\n"));
+
+
+    found = 0;
+    error = 0;
+    error = col_is_item_in_collection(level1, "", COL_TYPE_INTEGER, COL_TRAVERSE_DEFAULT, &found);
+    if ((error) || (!found)) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2);
+        col_destroy_collection(level3);
+        col_destroy_collection(level4);
+        printf("Failed to find first int item [level1!level2!level3!level4!id]. Error %d\n", error);
+        return error ? error : ENOENT;
+    }
+    else COLOUT(printf("Expected item is found\n"));
+
+
+    found = 0;
+    error = 0;
     error = col_is_item_in_collection(level1, "level3!level4!id", COL_TYPE_ANY, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1679,6 +1707,45 @@ int search_test(void)
         return error ? error : ENOENT;
     }
     else COLOUT(printf("Expected item is found\n"));
+
+    /* Negative tests */
+    found = 0;
+    error = 0;
+    error = col_is_item_in_collection(level1, NULL, 0, COL_TRAVERSE_DEFAULT, &found);
+    if ((error != ENOENT) || (found)) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2);
+        col_destroy_collection(level3);
+        col_destroy_collection(level4);
+        if (error) {
+            printf("Unexpected error with NULL & 0 test %d\n", error);
+        }
+        else {
+            printf("Found unexpected item with NULL & 0. Error %d\n", error);
+            error = EINVAL; 
+        }
+        return error;
+    }
+    else COLOUT(printf("No item is found as expected.\n"));
+
+    found = 0;
+    error = 0;
+    error = col_is_item_in_collection(level1, "", 0, COL_TRAVERSE_DEFAULT, &found);
+    if ((error != ENOENT) || (found)) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2);
+        col_destroy_collection(level3);
+        col_destroy_collection(level4);
+        if (error) {
+            printf("Unexpected error with \"\" & 0 tests %d\n", error);
+        }
+        else {
+            printf("Found unexpected item with \"\" & 0. Error %d\n", error);
+            error = EINVAL; 
+        }
+        return error;
+    }
+    else COLOUT(printf("No item is found as expected.\n"));
 
     col_destroy_collection(level1);
     col_destroy_collection(level2);
