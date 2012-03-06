@@ -182,7 +182,6 @@ static int ini_copy_cb(struct collection_item *item,
 
     TRACE_FLOW_ENTRY();
 
-    ext_data = NULL;
     *skip = 0;
 
     /* Banary items are the values */

@@ -28,6 +28,7 @@
 #include "ref_array.h"
 #include "ini_comment.h"
 #include "ini_defines.h"
+#include "ini_valueobj.h"
 #include "trace.h"
 
 struct value_obj {
