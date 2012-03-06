@@ -202,14 +202,22 @@ int path_concat(char *path, size_t path_size, const char *head, const char *tail
 
     if (head && *head) {
         for (p = head; *p; p++);                /* walk to end of head */
-        for (p--; p >= head && *p == '/'; p--); /* skip any trailing slashes in head */
+        for (p--; p > head && *p == '/'; p--); /* skip any trailing slashes in head */
         if ((p - head) > path_size-1) return ENOBUFS;
         for (src = head; src <= p && dst < dst_end;) *dst++ = *src++; /* copy head */
     }
     if (tail && *tail) {
         for (p = tail; *p && *p == '/'; p++);   /* skip any leading slashes in tail */
         if (dst > path)
-            if (dst < dst_end) *dst++ = '/';    /* insert single slash between head & tail */
+            /* insert single slash between head & tail
+             * Making sure not to add an extra if the
+             * preceding character is also a slash
+             * (such as the case where head was the
+             * special-case "/".
+             */
+            if (dst < dst_end && *(dst-1) != '/') {
+                *dst++ = '/';
+            }
         for (src = p; *src && dst < dst_end;) *dst++ = *src++; /* copy tail */
         if (*src) return ENOBUFS; /* failed to copy everything */
     }

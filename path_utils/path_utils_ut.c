@@ -229,6 +229,15 @@ START_TEST(test_path_concat)
     fail_unless(path_concat(p, PATH_MAX, "", "foo") == SUCCESS);
     fail_unless_str_equal(p, "foo");
 
+    fail_unless(path_concat(p, PATH_MAX, "/", "foo") == SUCCESS);
+    fail_unless_str_equal(p, "/foo");
+
+    fail_unless(path_concat(p, PATH_MAX, "/foo", "/") == SUCCESS);
+    fail_unless_str_equal(p, "/foo/");
+
+    fail_unless(path_concat(p, PATH_MAX, "/foo", "bar/") == SUCCESS);
+    fail_unless_str_equal(p, "/foo/bar/");
+
     fail_unless(path_concat(p, PATH_MAX, NULL, "foo") == SUCCESS);
     fail_unless_str_equal(p, "foo");
 
