@@ -241,16 +241,26 @@ END_TEST
 START_TEST(test_path_concat_neg)
 {
     char small[3];
-    char small2[4];
-    char p2[8];
+    char small2[5];
+    char small3[7];
+    char p2[9];
 
     /* these two test different conditions */
+
+    /* Test if head is longer than the buffer */
     fail_unless(path_concat(small, 3, "/foo", "bar") == ENOBUFS);
-    fail_unless(path_concat(small2, 4, "/foo", "bar") == ENOBUFS);
+
+    /* Test if head is the same length as the buffer */
+    fail_unless(path_concat(small2, 5, "/foo", "bar") == ENOBUFS);
+
+    /* Test if head+tail is the longer than the buffer */
+    fail_unless(path_concat(small3, 7, "/foo", "bar") == ENOBUFS);
 
     /* off-by-one */
+    p2[8] = 1; /* Check whether we've written too far */
     fail_unless(path_concat(p2, 8, "/foo", "bar") == ENOBUFS);
-    fail_unless_str_equal(p2, "/foo/bar");
+    fail_unless(p2[8] == 1); /* This should be untouched */
+    fail_unless_str_equal(p2, "/foo/ba");
 }
 END_TEST
 
