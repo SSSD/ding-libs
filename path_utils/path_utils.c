@@ -210,7 +210,7 @@ int path_concat(char *path, size_t path_size, const char *head, const char *tail
         for (p = tail; *p && *p == '/'; p++);   /* skip any leading slashes in tail */
         if (dst > path)
             if (dst < dst_end) *dst++ = '/';    /* insert single slash between head & tail */
-        for (src = p; *src && dst <= dst_end;) *dst++ = *src++; /* copy tail */
+        for (src = p; *src && dst < dst_end;) *dst++ = *src++; /* copy tail */
         if (*src) return ENOBUFS; /* failed to copy everything */
     }
     *dst = 0;
