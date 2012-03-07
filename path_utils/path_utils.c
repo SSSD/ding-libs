@@ -192,6 +192,7 @@ bool is_absolute_path(const char *path)
 
 int path_concat(char *path, size_t path_size, const char *head, const char *tail)
 {
+    int ret;
     const char *p, *src;
     char *dst, *dst_end;
 
@@ -201,13 +202,27 @@ int path_concat(char *path, size_t path_size, const char *head, const char *tail
     dst_end = path + path_size - 1;             /* -1 allows for NULL terminator */
 
     if (head && *head) {
-        for (p = head; *p; p++);                /* walk to end of head */
-        for (p--; p > head && *p == '/'; p--); /* skip any trailing slashes in head */
-        if ((p - head) > path_size-1) return ENOBUFS;
-        for (src = head; src <= p && dst < dst_end;) *dst++ = *src++; /* copy head */
+        /* walk to end of head */
+        for (p = head; *p; p++);
+
+        /* skip any trailing slashes in head */
+        for (p--; p > head && *p == '/'; p--);
+
+        /* If the length of head exceeds the buffer size, fail */
+        if ((p - head) > path_size-1) {
+            ret = ENOBUFS;
+            goto fail;
+        }
+
+        /* Copy head into path */
+        for (src = head; src <= p && dst < dst_end;) {
+            *dst++ = *src++;
+        }
     }
     if (tail && *tail) {
-        for (p = tail; *p && *p == '/'; p++);   /* skip any leading slashes in tail */
+        /* skip any leading slashes in tail */
+        for (p = tail; *p && *p == '/'; p++);
+
         if (dst > path)
             /* insert single slash between head & tail
              * Making sure not to add an extra if the
@@ -218,15 +233,28 @@ int path_concat(char *path, size_t path_size, const char *head, const char *tail
             if (dst < dst_end && *(dst-1) != '/') {
                 *dst++ = '/';
             }
-        for (src = p; *src && dst < dst_end;) *dst++ = *src++; /* copy tail */
-        if (*src) return ENOBUFS; /* failed to copy everything */
+
+        /* Copy the tail into the path */
+        for (src = p; *src && dst < dst_end;) {
+            *dst++ = *src++;
+        }
+
+        /* If we got past dst_end and there is more data
+         * in the src buffer, we should return ENOBUFS
+         */
+        if (*src) {
+            ret = ENOBUFS; /* failed to copy everything */
+            goto fail;
+        }
     }
     *dst = 0;
-    if (dst > dst_end) {
-        return ENOBUFS;
-    }
+
     return SUCCESS;
 
+fail:
+    /* On failure, set the buffer to the empty string for safety */
+    *path = '\0';
+    return ret;
 }
 
 int make_path_absolute(char *absolute_path, size_t absolute_path_size, const char *path)
