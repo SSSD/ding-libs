@@ -252,24 +252,35 @@ START_TEST(test_path_concat_neg)
     char small[3];
     char small2[5];
     char small3[7];
-    char p2[9];
+    char p2[10];
 
     /* these two test different conditions */
 
     /* Test if head is longer than the buffer */
     fail_unless(path_concat(small, 3, "/foo", "bar") == ENOBUFS);
+    /* On ENOBUFS, path should be empty */
+    fail_unless_str_equal(small, "");
 
     /* Test if head is the same length as the buffer */
     fail_unless(path_concat(small2, 5, "/foo", "bar") == ENOBUFS);
+    /* On ENOBUFS, path should be empty */
+    fail_unless_str_equal(small2, "");
 
     /* Test if head+tail is the longer than the buffer */
     fail_unless(path_concat(small3, 7, "/foo", "bar") == ENOBUFS);
+    /* On ENOBUFS, path should be empty */
+    fail_unless_str_equal(small3, "");
 
     /* off-by-one */
-    p2[8] = 1; /* Check whether we've written too far */
+    /* Fill with garbage data for now */
+    memset(p2, 'Z', 9);
+    p2[9] = '\0';
+
     fail_unless(path_concat(p2, 8, "/foo", "bar") == ENOBUFS);
-    fail_unless(p2[8] == 1); /* This should be untouched */
-    fail_unless_str_equal(p2, "/foo/ba");
+    /* Make sure we don't write past the end of the buffer */
+    fail_unless(p2[8] == 'Z', "Got [%d]", p2[8]);
+    /* On ENOBUFS, path should be empty */
+    fail_unless_str_equal(p2, "");
 }
 END_TEST
 

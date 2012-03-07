@@ -198,7 +198,8 @@ bool is_absolute_path(const char *path);
  * @param[in]    tail           The second component of the path
  *
  * @return \c SUCCESS if successful, non-zero error code otherwise.
- * \li \c ENOBUFS      If the buffer space is too small
+ * \li \c ENOBUFS      If the buffer space is too small. In this case,
+ *                     path will be set to an empty string.
  */
 int path_concat(char *path, size_t path_size, const char *head, const char *tail);
 
