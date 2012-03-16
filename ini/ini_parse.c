@@ -699,20 +699,29 @@ static int complete_value_processing(struct parser_obj *po)
     }
 
     switch (mergemode) {
-    case INI_MV1S_ERROR:     insertmode = COL_INSERT_DUPERROR;
-                             doinsert = 1;
-                             break;
-    case INI_MV1S_PRESERVE:  insertmode = COL_INSERT_DUPERROR;
-                             doinsert = 1;
-                             suppress = 1;
-                             break;
-    case INI_MV1S_ALLOW:     insertmode = COL_INSERT_NOCHECK;
-                             doinsert = 1;
-                             break;
+    case INI_MV1S_ERROR:
+
+        insertmode = COL_INSERT_DUPERROR;
+        doinsert = 1;
+        break;
+
+    case INI_MV1S_PRESERVE:
+
+        insertmode = COL_INSERT_DUPERROR;
+        doinsert = 1;
+        suppress = 1;
+        break;
+
+    case INI_MV1S_ALLOW:
+
+        insertmode = COL_INSERT_NOCHECK;
+        doinsert = 1;
+        break;
+
     case INI_MV1S_OVERWRITE: /* Special handling */
     case INI_MV1S_DETECT:
     default:
-                             break;
+        break;
     }
 
     /* Do not insert but search for dups first */
