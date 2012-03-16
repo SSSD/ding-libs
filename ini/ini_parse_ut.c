@@ -346,7 +346,7 @@ int merge_values_test(void)
         error = ini_config_create(&ini_config);
         if (error) {
             printf("Failed to create collection. Error %d.\n", error);
-	        simplebuffer_free(sbobj);
+            simplebuffer_free(sbobj);
             return error;
         }
 
@@ -358,7 +358,7 @@ int merge_values_test(void)
         if (error) {
             printf("Failed to open file for reading. Error %d.\n",  error);
             ini_config_destroy(ini_config);
-	        simplebuffer_free(sbobj);
+            simplebuffer_free(sbobj);
             return error;
         }
 
@@ -379,9 +379,9 @@ int merge_values_test(void)
                 ((mflags[i] = INI_MV1S_ERROR) && (error != EEXIST)) ||
                 ((mflags[i] = INI_MV1S_DETECT) && (error != EEXIST))) {
                 printf("This is unexpected error %d in mode %d\n", error, mflags[i]);
-	            ini_config_destroy(ini_config);
-		        simplebuffer_free(sbobj);
-		        ini_config_file_close(file_ctx);
+                ini_config_destroy(ini_config);
+                simplebuffer_free(sbobj);
+                ini_config_file_close(file_ctx);
                 return error;
             }
             /* We do not return here intentionally */
@@ -391,16 +391,16 @@ int merge_values_test(void)
 
         INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
 
-	    error = ini_config_serialize(ini_config, sbobj);
-	    if (error != EOK) {
-	        printf("Failed to serialize configuration. Error %d.\n", error);
-	        ini_config_destroy(ini_config);
-	        simplebuffer_free(sbobj);
-	        return error;
-	    }
+        error = ini_config_serialize(ini_config, sbobj);
+        if (error != EOK) {
+            printf("Failed to serialize configuration. Error %d.\n", error);
+            ini_config_destroy(ini_config);
+            simplebuffer_free(sbobj);
+            return error;
+        }
 
         ini_config_destroy(ini_config);
-	}
+    }
 
     errno = 0;
     ff = fopen(resname, "w");
@@ -438,6 +438,193 @@ int merge_values_test(void)
                   resname, checkname, error));
 
     return error;
+}
+
+/* Check merge modes */
+int merge_section_test(void)
+{
+    int error = EOK;
+    int i, j;
+    struct ini_cfgfile *file_ctx = NULL;
+    FILE *ff = NULL;
+    struct ini_cfgobj *ini_config = NULL;
+    char **error_list = NULL;
+    struct simplebuffer *sbobj = NULL;
+    uint32_t left = 0;
+    uint32_t msecflags[] = { INI_MS_MERGE,
+                             INI_MS_ERROR,
+                             INI_MS_OVERWRITE,
+                             INI_MS_PRESERVE,
+                             INI_MS_ALLOW,
+                             INI_MS_DETECT };
+
+    uint32_t mflags[] = { INI_MV2S_OVERWRITE,
+                          INI_MV2S_ERROR,
+                          INI_MV2S_PRESERVE,
+                          INI_MV2S_ALLOW,
+                          INI_MV2S_DETECT };
+
+    const char *secmstr[] = { "MERGE",
+                              "ERROR",
+                              "OVERWRITE",
+                              "PRESERVE",
+                              "ALLOW",
+                              "DETECT" };
+
+    const char *mstr[] = { "OVERWRITE",
+                           "ERROR",
+                           "PRESERVE",
+                           "ALLOW",
+                           "DETECT" };
+
+    char filename[PATH_MAX];
+    char checkname[PATH_MAX];
+    const char *resname = "./smerge.conf.out";
+    char command[PATH_MAX * 3];
+    char mode[100];
+    char *srcdir;
+
+    srcdir = getenv("srcdir");
+    sprintf(filename, "%s/ini/ini.d/smerge.conf",
+                      (srcdir == NULL) ? "." : srcdir);
+    sprintf(checkname, "%s/ini/ini.d/sexpect.conf",
+                      (srcdir == NULL) ? "." : srcdir);
+
+    error = simplebuffer_alloc(&sbobj);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate dynamic string.", error);
+        return error;
+    }
+
+    for (i = 0; i < 6; i++) {
+        for (j = 0; j < 5; j++) {
+
+            INIOUT(printf("<==== Testing mode %s + %s ====>\n",
+                          secmstr[i], mstr[j]));
+
+            sprintf(mode, "# Section mode: %s, value mode: %s\n",
+                          secmstr[i], mstr[j]);
+
+            error = simplebuffer_add_str(sbobj,
+                                         mode,
+                                         strlen(mode),
+                                         100);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to add string.",
+                                   error);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            /* Create config collection */
+            error = ini_config_create(&ini_config);
+            if (error) {
+                printf("Failed to create collection. "
+                       "Error %d.\n", error);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            error = ini_config_file_open(filename,
+                                         INI_STOP_ON_ANY,
+                                         msecflags[i] | mflags[j],
+                                         0, /* TBD */
+                                         &file_ctx);
+            if (error) {
+                printf("Failed to open file for reading. "
+                       "Error %d.\n",  error);
+                ini_config_destroy(ini_config);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            error = ini_config_parse(file_ctx,
+                                     ini_config);
+            if (error) {
+                INIOUT(printf("Failed to parse configuration. "
+                              "Error %d.\n", error));
+
+                if (ini_config_error_count(file_ctx)) {
+                    INIOUT(printf("Errors detected while parsing: %s\n",
+                           ini_config_get_filename(file_ctx)));
+                    ini_config_get_errors(file_ctx, &error_list);
+                    INIOUT(ini_print_errors(stdout, error_list));
+                    ini_config_free_errors(error_list);
+                }
+
+                if (((msecflags[i] == INI_MS_ERROR) &&
+                     (error == EEXIST)) ||
+                    ((msecflags[i] == INI_MS_DETECT) &&
+                     (error == EEXIST)) ||
+                    ((msecflags[i] == INI_MS_MERGE) &&
+                     ((mflags[j] == INI_MV2S_ERROR) ||
+                      (mflags[j] == INI_MV2S_DETECT)) &&
+                      (error == EEXIST))) {
+                    INIOUT(printf("This is an expected error "
+                                  "%d in mode %d + %d\n",
+                                  error,
+                                  msecflags[i],
+                                  mflags[j]));
+                    /* We do not return here intentionally */
+                }
+                else {
+                    printf("This is unexpected error %d in mode %d + %d\n",
+                            error, msecflags[i], mflags[j]);
+                    ini_config_destroy(ini_config);
+                    simplebuffer_free(sbobj);
+                    ini_config_file_close(file_ctx);
+                    return error;
+                }
+            }
+
+            ini_config_file_close(file_ctx);
+
+            INIOUT(col_debug_collection(ini_config->cfg,
+                   COL_TRAVERSE_DEFAULT));
+
+            error = ini_config_serialize(ini_config, sbobj);
+            if (error != EOK) {
+                printf("Failed to serialize configuration. "
+                       "Error %d.\n", error);
+                ini_config_destroy(ini_config);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            ini_config_destroy(ini_config);
+        }
+    }
+
+    errno = 0;
+    ff = fopen(resname, "w");
+    if(!ff) {
+        error = errno;
+        printf("Failed to open file for writing. Error %d.\n", error);
+        simplebuffer_free(sbobj);
+        return error;
+    }
+
+    /* Save */
+    left = simplebuffer_get_len(sbobj);
+    while (left > 0) {
+        error = simplebuffer_write(fileno(ff), sbobj, &left);
+        if (error) {
+            printf("Failed to write back the configuration %d.\n", error);
+            simplebuffer_free(sbobj);
+            fclose(ff);
+            return error;
+        }
+    }
+
+    simplebuffer_free(sbobj);
+    fclose(ff);
+
+    sprintf(command,"diff -q %s %s", resname, checkname);
+    error = system(command);
+    INIOUT(printf("Comparison of %s %s returned: %d\n",
+                  resname, checkname, error));
+
+    return error;
 
 
 }
@@ -449,6 +636,7 @@ int main(int argc, char *argv[])
     test_fn tests[] = { read_save_test,
                         read_again_test,
                         merge_values_test,
+                        merge_section_test,
                         NULL };
     test_fn t;
     int i = 0;
