@@ -499,25 +499,127 @@ static int merge_section(struct parser_obj *po)
 static int parser_save_section(struct parser_obj *po)
 {
     int error = EOK;
+    uint32_t mergemode;
+    int add = 0;
+    int merge = 0;
 
     TRACE_FLOW_ENTRY();
 
     if (po->sec) {
 
-        /* For now just add as we did.
-         * Add merge code here !!!!
-         */
-        error = col_add_collection_to_collection(po->top,
-                                                 NULL, NULL,
-                                                 po->sec,
-                                                 COL_ADD_MODE_EMBED);
+        TRACE_INFO_STRING("Section exists.", "");
 
+        /* First detect if we have collision */
+        error = check_section_collision(po);
         if (error) {
-            TRACE_ERROR_NUMBER("Failed to embed section", error);
+            TRACE_ERROR_NUMBER("Failed to check for collision", error);
             return error;
         }
 
-        po->sec = NULL;
+        if (po->merge_sec) {
+
+            TRACE_INFO_STRING("Merge collision detected", "");
+
+            mergemode = po->collision_flags & INI_MS_MASK;
+
+            switch (mergemode) {
+            case INI_MS_ERROR:
+                /* Report error and return */
+                TRACE_INFO_STRING("Reporting error", "duplicate section");
+                error = save_error(po->el,
+                                   po->seclinenum,
+                                   ERR_DUPSECTION,
+                                   ERROR_TXT);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to "
+                                       "save error",
+                                        error);
+                    return error;
+                }
+                /* Return error */
+                TRACE_FLOW_RETURN(EEXIST);
+                return EEXIST;
+
+            case INI_MS_PRESERVE:
+                /* Delete new section */
+                TRACE_INFO_STRING("Preserve mode", "");
+                col_destroy_collection_with_cb(
+                                        po->sec,
+                                        ini_cleanup_cb,
+                                        NULL);
+                po->sec = NULL;
+                break;
+
+            case INI_MS_ALLOW:
+                TRACE_INFO_STRING("Allow mode", "");
+                add = 1;
+                break;
+
+            case INI_MS_OVERWRITE:
+                /* Empty existing section */
+                TRACE_INFO_STRING("Ovewrite mode", "");
+                error = empty_section(po->merge_sec);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to "
+                                       "empty section",
+                                        error);
+                    return error;
+                }
+                merge = 1;
+                break;
+
+            case INI_MS_DETECT:
+                /* Detect mode */
+                TRACE_INFO_STRING("Detect mode", "");
+                po->merge_error = EEXIST;
+                error = save_error(po->el,
+                                   po->seclinenum,
+                                   ERR_DUPSECTION,
+                                   ERROR_TXT);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to "
+                                       "save error",
+                                        error);
+                    return error;
+                }
+                merge = 1;
+                break;
+
+            case INI_MS_MERGE:
+                /* Merge */
+            default:
+                TRACE_INFO_STRING("Merge mode", "");
+                merge = 1;
+                break;
+            }
+
+            if (merge) {
+                error = merge_section(po);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to merge section", error);
+                    return error;
+                }
+            }
+
+            po->merge_sec = NULL;
+        }
+        else add = 1;
+
+        if (add) {
+            /* Add section to configuration */
+            TRACE_INFO_STRING("Now adding collection", "");
+            error = col_add_collection_to_collection(po->top,
+                                                     NULL, NULL,
+                                                     po->sec,
+                                                     COL_ADD_MODE_EMBED);
+
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to embed section", error);
+                return error;
+            }
+
+            po->sec = NULL;
+        }
     }
 
     TRACE_FLOW_EXIT();
