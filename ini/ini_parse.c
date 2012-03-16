@@ -99,6 +99,13 @@ typedef int (*action_fn)(struct parser_obj *);
 #define PARSE_ERROR     3 /* Handle error */
 #define PARSE_DONE      4 /* We are done */
 
+/* Declarations of the reusble functions: */
+static int complete_value_processing(struct parser_obj *po);
+static int save_error(struct collection_item *el,
+                      unsigned line,
+                      int error,
+                      const char *err_txt);
+
 
 int is_just_spaces(const char *str, uint32_t len)
 {
@@ -945,6 +952,27 @@ static int parser_post(struct parser_obj *po)
     TRACE_FLOW_EXIT();
     return EOK;
 }
+
+
+static int save_error(struct collection_item *el,
+                      unsigned line,
+                      int inerr,
+                      const char *err_txt)
+{
+    int error = EOK;
+    struct ini_parse_error pe;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Clear the warning bit */
+    pe.error = inerr;
+    pe.line = line;
+    error = col_add_binary_property(el, NULL,
+                                    err_txt, &pe, sizeof(pe));
+    TRACE_FLOW_RETURN(error);
+    return error;
+}
+
 
 /* Error and warning processing */
 static int parser_error(struct parser_obj *po)
