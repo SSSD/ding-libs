@@ -979,20 +979,19 @@ static int parser_error(struct parser_obj *po)
 {
     int error = EOK;
     uint32_t action;
-    int idx = 0;
-    const char *errtxt[] = { ERROR_TXT, WARNING_TXT };
-    struct ini_parse_error pe;
+    const char *err_str;
 
     TRACE_FLOW_ENTRY();
 
-    pe.line = po->linenum;
-    /* Clear the warning bit */
-    pe.error = po->last_error & ~INI_WARNING;
-    if (po->last_error & INI_WARNING) idx = 1;
-    error = col_add_binary_property(po->el, NULL,
-                                    errtxt[idx], &pe, sizeof(pe));
+    if (po->last_error & INI_WARNING) err_str = WARNING_TXT;
+    else err_str = ERROR_TXT;
+
+    error = save_error(po->el,
+                       po->linenum,
+                       po->last_error & ~INI_WARNING,
+                       err_str);
     if (error) {
-        TRACE_ERROR_NUMBER("Failed to add error to collection",
+        TRACE_ERROR_NUMBER("Failed to add error to error list",
                             error);
         return error;
     }
@@ -1042,7 +1041,9 @@ static int parser_error(struct parser_obj *po)
             /* If merging sections should produce error and we got error
              * or if we merge sections but dup values produce error and
              * we got error then it is not a fatal error so we need to handle
-             * it nicely. We check for reverse condition and return error,
+             * it nicely and suppress it here. We already in the procees
+             * of handling another error and merge error does not matter here.
+             * We check for reverse condition and return error,
              * otherwise fall through.
              */
             if (!((((po->collision_flags & INI_MS_MASK) == INI_MS_ERROR) &&
