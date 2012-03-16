@@ -233,7 +233,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
     if (strncmp(fullstr, expected, strlen(expected) + 1) != 0) {
         printf("The expected value is different.\n%s\n", fullstr);
         value_destroy(new_vo);
-        return error;
+        return EINVAL;
     }
 
     /* Get value's origin */
@@ -247,7 +247,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
     if (origin != INI_VALUE_READ) {
         printf("The expected origin is different.\n%d\n", origin);
         value_destroy(new_vo);
-        return error;
+        return EINVAL;
     }
 
     /* Get value's line */
@@ -261,7 +261,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
     if (line != 1) {
         printf("The expected line is different.\n%d\n", origin);
         value_destroy(new_vo);
-        return error;
+        return EINVAL;
     }
 
     /* Get comment from the value */
@@ -300,7 +300,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
         /* But this should not happen anyways -
          * it will be coding error.
          */
-        return error;
+        return EINVAL;
     }
 
     /* Put comment back */
@@ -427,6 +427,8 @@ int vo_basic_test(void)
 
         value_destroy(vo);
     }
+
+    vo = NULL;
 
     /* Run other create test here */
     error = other_create_test(ff, &vo);
