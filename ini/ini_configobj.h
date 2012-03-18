@@ -104,6 +104,41 @@
  */
 
 /**
+ * @defgroup accesscheck Access control check flags
+ *
+ * @{
+ */
+
+/**
+ * @brief Validate access mode
+ *
+ * If this flag is specified the mode parameter
+ * will be matched against the permissions set on the file
+ * using the provided mask.
+ */
+#define INI_ACCESS_CHECK_MODE   0x00000001
+
+/**
+ * @brief Validate uid
+ *
+ * Provided uid will be checked against uid
+ * of the file.
+ */
+#define INI_ACCESS_CHECK_UID   0x00000002
+
+/**
+ * @brief Validate gid
+ *
+ * Provided gid will be checked against gid
+ * of the file.
+ */
+#define INI_ACCESS_CHECK_GID   0x00000004
+
+/**
+ * @}
+ */
+
+/**
  * @defgroup collisionflags Flags that define collision resolution logic.
  *
  * @{

@@ -409,3 +409,78 @@ const char *ini_config_get_filename(struct ini_cfgfile *file_ctx)
     TRACE_FLOW_EXIT();
     return ret;
 }
+
+
+/* Check access */
+int ini_config_access_check(struct ini_cfgfile *file_ctx,
+                            uint32_t flags,
+                            uid_t uid,
+                            gid_t gid,
+                            mode_t mode,
+                            mode_t mask)
+{
+    mode_t st_mode;
+
+    TRACE_FLOW_ENTRY();
+
+    flags &= INI_ACCESS_CHECK_MODE |
+             INI_ACCESS_CHECK_GID |
+             INI_ACCESS_CHECK_UID;
+
+    if ((file_ctx == NULL) || (flags == 0)) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+
+    }
+
+    /* Check mode */
+    if (flags & INI_ACCESS_CHECK_MODE) {
+
+        TRACE_INFO_NUMBER("File mode as saved.",
+                          file_ctx->file_stats.st_mode);
+
+        st_mode = file_ctx->file_stats.st_mode;
+        st_mode &= S_IRWXU | S_IRWXG | S_IRWXO;
+        TRACE_INFO_NUMBER("File mode adjusted.", st_mode);
+
+        TRACE_INFO_NUMBER("Mode as provided.", mode);
+        mode &= S_IRWXU | S_IRWXG | S_IRWXO;
+        TRACE_INFO_NUMBER("Mode adjusted.", mode);
+
+        /* Adjust mask */
+        if (mask == 0) mask = S_IRWXU | S_IRWXG | S_IRWXO;
+        else mask &= S_IRWXU | S_IRWXG | S_IRWXO;
+
+        if ((mode & mask) != (st_mode & mask)) {
+            TRACE_INFO_NUMBER("File mode:", (mode & mask));
+            TRACE_INFO_NUMBER("Mode adjusted.",
+                              (st_mode & mask));
+            TRACE_ERROR_NUMBER("Access denied.", EACCES);
+            return EACCES;
+        }
+    }
+
+    /* Check uid */
+    if (flags & INI_ACCESS_CHECK_UID) {
+        if (file_ctx->file_stats.st_uid != uid) {
+            TRACE_ERROR_NUMBER("GID:", file_ctx->file_stats.st_uid);
+            TRACE_ERROR_NUMBER("GID passed in.", uid);
+            TRACE_ERROR_NUMBER("Access denied.", EACCES);
+            return EACCES;
+        }
+    }
+
+    /* Check gid */
+    if (flags & INI_ACCESS_CHECK_GID) {
+        if (file_ctx->file_stats.st_gid != gid) {
+            TRACE_ERROR_NUMBER("GID:", file_ctx->file_stats.st_gid);
+            TRACE_ERROR_NUMBER("GID passed in.", gid);
+            TRACE_ERROR_NUMBER("Access denied.", EACCES);
+            return EACCES;
+        }
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+
+}
