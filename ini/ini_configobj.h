@@ -335,8 +335,8 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
  * - device ID
  * - i-node
  */
-int ini_config_changed(struct ini_cfgfile *file_ctx,
-                       struct ini_cfgfile *file_ctx_saved,
+int ini_config_changed(struct ini_cfgfile *file_ctx1,
+                       struct ini_cfgfile *file_ctx2,
                        int *changed);
 
 

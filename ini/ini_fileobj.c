@@ -484,3 +484,37 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
     return EOK;
 
 }
+
+/* Determins if two file contexts are different by comparing:
+ * - time stamp
+ * - device ID
+ * - i-node
+ */
+int ini_config_changed(struct ini_cfgfile *file_ctx1,
+                       struct ini_cfgfile *file_ctx2,
+                       int *changed)
+{
+    TRACE_FLOW_ENTRY();
+
+    if ((file_ctx1 == NULL) ||
+        (file_ctx2 == NULL) ||
+        (changed == NULL)) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    *changed = 0;
+
+    if((file_ctx1->file_stats.st_mtime !=
+        file_ctx2->file_stats.st_mtime) ||
+       (file_ctx1->file_stats.st_dev !=
+        file_ctx2->file_stats.st_dev) ||
+       (file_ctx1->file_stats.st_ino !=
+        file_ctx2->file_stats.st_ino)) {
+        TRACE_INFO_STRING("File changed!", "");
+        *changed = 1;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
