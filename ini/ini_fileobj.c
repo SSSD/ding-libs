@@ -99,12 +99,53 @@ void ini_config_file_destroy(struct ini_cfgfile *file_ctx)
     if(file_ctx) {
         free(file_ctx->filename);
         col_destroy_collection(file_ctx->error_list);
-        col_destroy_collection(file_ctx->metadata);
         if(file_ctx->file) fclose(file_ctx->file);
         free(file_ctx);
     }
 
     TRACE_FLOW_EXIT();
+}
+
+/* Internal common initialization part */
+static int common_file_init(struct ini_cfgfile *file_ctx)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Open file */
+    TRACE_INFO_STRING("File", file_ctx->filename);
+    errno = 0;
+    file_ctx->file = fopen(file_ctx->filename, "r");
+    if (!(file_ctx->file)) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to open file", error);
+        return error;
+    }
+
+    /* Create internal collections */
+    error = col_create_collection(&(file_ctx->error_list),
+                                  INI_ERROR,
+                                  COL_CLASS_INI_PERROR);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create error list", error);
+        return error;
+    }
+
+    /* Collect stats */
+    if (file_ctx->metadata_flags & INI_META_STATS) {
+        errno = 0;
+        if (fstat(fileno(file_ctx->file),
+                  &(file_ctx->file_stats)) < 0) {
+            error = errno;
+            TRACE_ERROR_NUMBER("Failed to get file stats.", error);
+            return error;
+        }
+    }
+    else memset(&(file_ctx->file_stats), 0, sizeof(struct stat));
+
+    TRACE_FLOW_EXIT();
+    return EOK;
 }
 
 /* Create a file object for parsing a config file */
@@ -138,16 +179,9 @@ int ini_config_file_open(const char *filename,
         return error;
     }
 
-
     new_ctx->filename = NULL;
     new_ctx->file = NULL;
     new_ctx->error_list = NULL;
-    new_ctx->metadata = NULL;
-
-    /* TBD - decide whether we actually need an FD.
-       It will be done when we move the metadata
-       processing into this function. */
-    new_ctx->fd = -1;
 
     /* Store flags */
     new_ctx->error_level = error_level;
@@ -175,38 +209,13 @@ int ini_config_file_open(const char *filename,
         return error;
     }
 
-    /* Open file */
-    TRACE_INFO_STRING("File", new_ctx->filename);
-    errno = 0;
-    new_ctx->file = fopen(new_ctx->filename, "r");
-    if (!(new_ctx->file)) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to open file", error);
+    /* Do common init */
+    error = common_file_init(new_ctx);
+    if(error) {
+        TRACE_ERROR_NUMBER("Failed to do common init", error);
         ini_config_file_destroy(new_ctx);
         return error;
     }
-
-    /* Create internal collections */
-    error = col_create_collection(&(new_ctx->error_list),
-                                  INI_ERROR,
-                                  COL_CLASS_INI_PERROR);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to create error list", error);
-        ini_config_file_destroy(new_ctx);
-        return error;
-    }
-
-    error = col_create_collection(&(new_ctx->metadata),
-                                  INI_METADATA,
-                                  COL_CLASS_INI_META);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to create metadata collection", error);
-        ini_config_file_destroy(new_ctx);
-        return error;
-    }
-
-
-    /* TBD - Add metadata processing here */
 
     *file_ctx = new_ctx;
     TRACE_FLOW_EXIT();
@@ -238,12 +247,6 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
 
     new_ctx->file = NULL;
     new_ctx->error_list = NULL;
-    new_ctx->metadata = NULL;
-
-    /* TBD - decide whether we actually need an FD.
-       It will be done when we move the metadata
-       processing into this function. */
-    new_ctx->fd = -1;
 
     /* Store flags */
     new_ctx->error_level = file_ctx_in->error_level;
@@ -261,38 +264,13 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
         return error;
     }
 
-    /* Open file */
-    TRACE_INFO_STRING("File", new_ctx->filename);
-    errno = 0;
-    new_ctx->file = fopen(new_ctx->filename, "r");
-    if (!(new_ctx->file)) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to open file", error);
+    /* Do common init */
+    error = common_file_init(new_ctx);
+    if(error) {
+        TRACE_ERROR_NUMBER("Failed to do common init", error);
         ini_config_file_destroy(new_ctx);
         return error;
     }
-
-    /* Create internal collections */
-    error = col_create_collection(&(new_ctx->error_list),
-                                  INI_ERROR,
-                                  COL_CLASS_INI_PERROR);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to create error list", error);
-        ini_config_file_destroy(new_ctx);
-        return error;
-    }
-
-    error = col_create_collection(&(new_ctx->metadata),
-                                  INI_METADATA,
-                                  COL_CLASS_INI_META);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to create metadata collection", error);
-        ini_config_file_destroy(new_ctx);
-        return error;
-    }
-
-
-    /* TBD - Add metadata processing here */
 
     *file_ctx_out = new_ctx;
     TRACE_FLOW_EXIT();

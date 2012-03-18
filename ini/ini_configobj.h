@@ -82,6 +82,26 @@
 /** @brief Size of the error array. */
 #define ERR_MAXPARSE        ERR_DUPSECTION
 
+/**
+ * @}
+ */
+
+/**
+ * @defgroup metacollect Constants that define what meta data to collect
+ *
+ * Constants in this section define what meta data to collect
+ *
+ *
+ * @{
+ */
+/** @brief Do not collect any data. */
+#define INI_META_NONE     0
+/** @brief Collect file stats. */
+#define INI_META_STATS    1
+
+/**
+ * @}
+ */
 
 /**
  * @defgroup collisionflags Flags that define collision resolution logic.

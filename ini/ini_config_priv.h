@@ -22,6 +22,9 @@
 #ifndef INI_CONFIG_PRIV_H
 #define INI_CONFIG_PRIV_H
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "collection.h"
 
 /* Configuration object */
@@ -45,21 +48,19 @@ struct ini_cfgfile {
     char *filename;
     /* File stream */
     FILE *file;
-    /* File descriptor that is passed in */
-    int fd;
     /* Error level */
     int error_level;
     /* Collision flags - define how to merge things */
     uint32_t collision_flags;
-    /* Collision flags - define how to merge things */
+    /* What meta data to collect */
     uint32_t metadata_flags;
     /**********************/
     /* Internal variables */
     /**********************/
     /* Collection of errors detected during parsing */
     struct collection_item *error_list;
-    /* Metadata about the file */
-    struct collection_item *metadata;
+    /* File stats */
+    struct stat file_stats;
     /* Count of error lines */
     unsigned count;
 };
