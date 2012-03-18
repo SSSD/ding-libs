@@ -213,6 +213,91 @@ int ini_config_file_open(const char *filename,
     return error;
 }
 
+/* Create a file object from existing one */
+int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
+                           struct ini_cfgfile **file_ctx_out)
+{
+    int error = EOK;
+    struct ini_cfgfile *new_ctx = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    if ((!file_ctx_in) || (!file_ctx_out)) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    /* Allocate structure */
+    errno = 0;
+    new_ctx = malloc(sizeof(struct ini_cfgfile));
+    if (!new_ctx) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to allocate file ctx.", error);
+        return error;
+    }
+
+    new_ctx->file = NULL;
+    new_ctx->error_list = NULL;
+    new_ctx->metadata = NULL;
+
+    /* TBD - decide whether we actually need an FD.
+       It will be done when we move the metadata
+       processing into this function. */
+    new_ctx->fd = -1;
+
+    /* Store flags */
+    new_ctx->error_level = file_ctx_in->error_level;
+    new_ctx->collision_flags = file_ctx_in->collision_flags;
+    new_ctx->metadata_flags = file_ctx_in->metadata_flags;
+    new_ctx->count = 0;
+
+    /* Copy full file path */
+    errno = 0;
+    new_ctx->filename = strndup(file_ctx_in->filename, PATH_MAX);
+    if (!(new_ctx->filename)) {
+        error = errno;
+        ini_config_file_destroy(new_ctx);
+        TRACE_ERROR_NUMBER("Failed to allocate memory for file path.", error);
+        return error;
+    }
+
+    /* Open file */
+    TRACE_INFO_STRING("File", new_ctx->filename);
+    errno = 0;
+    new_ctx->file = fopen(new_ctx->filename, "r");
+    if (!(new_ctx->file)) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to open file", error);
+        ini_config_file_destroy(new_ctx);
+        return error;
+    }
+
+    /* Create internal collections */
+    error = col_create_collection(&(new_ctx->error_list),
+                                  INI_ERROR,
+                                  COL_CLASS_INI_PERROR);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create error list", error);
+        ini_config_file_destroy(new_ctx);
+        return error;
+    }
+
+    error = col_create_collection(&(new_ctx->metadata),
+                                  INI_METADATA,
+                                  COL_CLASS_INI_META);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create metadata collection", error);
+        ini_config_file_destroy(new_ctx);
+        return error;
+    }
+
+
+    /* TBD - Add metadata processing here */
+
+    *file_ctx_out = new_ctx;
+    TRACE_FLOW_EXIT();
+    return error;
+}
 
 /* How many errors do we have in the list ? */
 unsigned ini_config_error_count(struct ini_cfgfile *file_ctx)

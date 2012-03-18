@@ -213,6 +213,10 @@ int ini_config_file_open(const char *filename,
                          uint32_t metadata_flags,
                          struct ini_cfgfile **file_ctx);
 
+/* Create a file object from existing one */
+int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
+                           struct ini_cfgfile **file_ctx_out);
+
 /* Close file context */
 void ini_config_file_close(struct ini_cfgfile *file_ctx);
 
