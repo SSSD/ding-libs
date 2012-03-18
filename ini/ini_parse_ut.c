@@ -91,7 +91,7 @@ int test_one_file(const char *in_filename,
         /* We do not return here intentionally */
     }
 
-    ini_config_file_close(file_ctx);
+    ini_config_file_destroy(file_ctx);
 
     INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
 
@@ -381,13 +381,13 @@ int merge_values_test(void)
                 printf("This is unexpected error %d in mode %d\n", error, mflags[i]);
                 ini_config_destroy(ini_config);
                 simplebuffer_free(sbobj);
-                ini_config_file_close(file_ctx);
+                ini_config_file_destroy(file_ctx);
                 return error;
             }
             /* We do not return here intentionally */
         }
 
-        ini_config_file_close(file_ctx);
+        ini_config_file_destroy(file_ctx);
 
         INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
 
@@ -572,12 +572,12 @@ int merge_section_test(void)
                             error, msecflags[i], mflags[j]);
                     ini_config_destroy(ini_config);
                     simplebuffer_free(sbobj);
-                    ini_config_file_close(file_ctx);
+                    ini_config_file_destroy(file_ctx);
                     return error;
                 }
             }
 
-            ini_config_file_close(file_ctx);
+            ini_config_file_destroy(file_ctx);
 
             INIOUT(col_debug_collection(ini_config->cfg,
                    COL_TRAVERSE_DEFAULT));

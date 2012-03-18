@@ -75,8 +75,24 @@ static int valid_collision_flags(uint32_t collision_flags)
     return 1;
 }
 
-/* Close file context and destroy the object */
+
+/* Close file but not destroy the object */
 void ini_config_file_close(struct ini_cfgfile *file_ctx)
+{
+    TRACE_FLOW_ENTRY();
+
+    if(file_ctx) {
+        if(file_ctx->file) {
+            fclose(file_ctx->file);
+            file_ctx->file = NULL;
+        }
+    }
+
+    TRACE_FLOW_EXIT();
+}
+
+/* Close file context and destroy the object */
+void ini_config_file_destroy(struct ini_cfgfile *file_ctx)
 {
     TRACE_FLOW_ENTRY();
 
@@ -144,7 +160,7 @@ int ini_config_file_open(const char *filename,
     new_ctx->filename = malloc(PATH_MAX + 1);
     if (!(new_ctx->filename)) {
         error = errno;
-        ini_config_file_close(new_ctx);
+        ini_config_file_destroy(new_ctx);
         TRACE_ERROR_NUMBER("Failed to allocate memory for file path.", error);
         return error;
     }
@@ -155,7 +171,7 @@ int ini_config_file_open(const char *filename,
                                           filename);
     if(error) {
         TRACE_ERROR_NUMBER("Failed to resolve path", error);
-        ini_config_file_close(new_ctx);
+        ini_config_file_destroy(new_ctx);
         return error;
     }
 
@@ -166,7 +182,7 @@ int ini_config_file_open(const char *filename,
     if (!(new_ctx->file)) {
         error = errno;
         TRACE_ERROR_NUMBER("Failed to open file", error);
-        ini_config_file_close(new_ctx);
+        ini_config_file_destroy(new_ctx);
         return error;
     }
 
@@ -176,7 +192,7 @@ int ini_config_file_open(const char *filename,
                                   COL_CLASS_INI_PERROR);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to create error list", error);
-        ini_config_file_close(new_ctx);
+        ini_config_file_destroy(new_ctx);
         return error;
     }
 
@@ -185,7 +201,7 @@ int ini_config_file_open(const char *filename,
                                   COL_CLASS_INI_META);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to create metadata collection", error);
-        ini_config_file_close(new_ctx);
+        ini_config_file_destroy(new_ctx);
         return error;
     }
 
