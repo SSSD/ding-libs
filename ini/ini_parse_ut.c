@@ -625,9 +625,290 @@ int merge_section_test(void)
                   resname, checkname, error));
 
     return error;
-
-
 }
+
+int startup_test(void)
+{
+    int error = EOK;
+    int error2 = EOK;
+    struct ini_cfgfile *file_ctx = NULL;
+    struct ini_cfgobj *ini_config = NULL;
+    char **error_list = NULL;
+    char filename[PATH_MAX];
+    char *srcdir;
+
+    srcdir = getenv("srcdir");
+    sprintf(filename, "%s/ini/ini.d/foo.conf",
+                      (srcdir == NULL) ? "." : srcdir);
+
+    INIOUT(printf("<==== Startup test ====>\n"));
+
+    /* Open config file */
+    error = ini_config_file_open(filename,
+                                 INI_STOP_ON_NONE,
+                                 0,
+                                 INI_META_STATS,
+                                 &file_ctx);
+    if (error) {
+        printf("Failed to open file for reading. Error %d.\n",  error);
+        return error;
+    }
+
+    /* We will check just permissions here. */
+    error = ini_config_access_check(file_ctx,
+                                INI_ACCESS_CHECK_MODE, /* add uid & gui flags
+                                                        * in real case
+                                                        */
+                                0, /* <- will be real uid in real case */
+                                0, /* <- will be real gid in real case */
+                                0440, /* Checking for r--r----- */
+                                0);
+    /* This check is expected to fail since
+     * the actual permissions on the test file are: rw-rw-r--
+     */
+
+    if (!error) {
+        printf("Expected error got success!\n");
+        ini_config_file_destroy(file_ctx);
+        return EACCES;
+    }
+
+    error = ini_config_access_check(
+                        file_ctx,
+                        INI_ACCESS_CHECK_MODE, /* add uid & gui flags
+                                                * in real case
+                                                */
+                        0, /* <- will be real uid in real case */
+                        0, /* <- will be real gid in real case */
+                        0664, /* Checkling for rw-rw-r-- */
+                        0);
+
+    if (error) {
+       /* In case the repo is created by root the permission is different */
+        error2 = ini_config_access_check(
+                            file_ctx,
+                            INI_ACCESS_CHECK_MODE, /* add uid & gui flags
+                                                    * in real case
+                                                    */
+                            0, /* <- will be real uid in real case */
+                            0, /* <- will be real gid in real case */
+                            0644, /* Checkling for rw-r-r-- */
+                            0);
+        if(error2) {
+            printf("Access check failed twice: %d %d!\n", error, error2);
+            ini_config_file_destroy(file_ctx);
+            return EACCES;
+        }
+        /* If this check passed we are OK! */
+    }
+
+    /* Create config object */
+    error = ini_config_create(&ini_config);
+    if (error) {
+        printf("Failed to create collection. Error %d.\n", error);
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+
+    error = ini_config_parse(file_ctx,
+                             ini_config);
+    if (error) {
+        INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
+
+        if (ini_config_error_count(file_ctx)) {
+            INIOUT(printf("Errors detected while parsing: %s\n",
+                   ini_config_get_filename(file_ctx)));
+            ini_config_get_errors(file_ctx, &error_list);
+            INIOUT(ini_print_errors(stdout, error_list));
+            ini_config_free_errors(error_list);
+        }
+        /* We do not return here intentionally */
+    }
+
+    ini_config_file_destroy(file_ctx);
+
+    INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
+
+    ini_config_destroy(ini_config);
+
+    return 0;
+}
+
+int reload_test(void)
+{
+    int error = EOK;
+    struct ini_cfgfile *file_ctx = NULL;
+    struct ini_cfgfile *file_ctx_new = NULL;
+    char infile[PATH_MAX];
+    char outfile[PATH_MAX];
+    const char *command = "cp";
+    char *srcdir;
+    char *builddir;
+    int changed = 0;
+
+    INIOUT(printf("<==== Reload test ====>\n"));
+
+    srcdir = getenv("srcdir");
+    sprintf(infile, "%s/ini/ini.d/foo.conf",
+                      (srcdir == NULL) ? "." : srcdir);
+    builddir = getenv("builddir");
+    sprintf(outfile, "%s/foo.conf",
+                      (builddir == NULL) ? "." : builddir);
+
+    INIOUT(printf("Running command 'cp %s %s'\n", infile, outfile));
+
+    errno = 0;
+    if(execlp(command, command, infile, outfile, NULL)) {
+        error = errno;
+        printf("Failed to run copy command %d.\n",  error);
+        return error;
+    }
+
+    INIOUT(printf("About to open file: %s'\n", outfile));
+
+    /* Open config file */
+    error = ini_config_file_open(outfile,
+                                 INI_STOP_ON_NONE,
+                                 0,
+                                 INI_META_STATS,
+                                 &file_ctx);
+    if (error) {
+        printf("Failed to open file for reading. Error %d.\n",  error);
+        return error;
+    }
+
+    INIOUT(printf("About to check access to the file.\n"));
+
+    error = ini_config_access_check(
+                    file_ctx,
+                    INI_ACCESS_CHECK_MODE, /* add uid & gui flags
+                                            * in real case
+                                            */
+                    0, /* <- will be real uid in real case */
+                    0, /* <- will be real gid in real case */
+                    0664, /* Checkling for rw-rw-r-- */
+                    0);
+
+    if (error) {
+        printf("Access check failed %d!\n", error);
+        ini_config_file_destroy(file_ctx);
+        return EACCES;
+    }
+
+    /* ... Create config object and read configuration - not shown here.
+     *     See other examples ... */
+
+    INIOUT(printf("About to close file.\n"));
+
+    /* Now close file but leave the context around */
+    ini_config_file_close(file_ctx);
+
+    INIOUT(printf("About to reopen file.\n"));
+
+    /* Some time passed and we received a signal to reload... */
+    error = ini_config_file_reopen(file_ctx, &file_ctx_new);
+    if (error) {
+        printf("Failed to open file for reading. Error %d.\n",  error);
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+
+    INIOUT(printf("About to check if the file changed.\n"));
+
+    changed = 0;
+    error = ini_config_changed(file_ctx,
+                               file_ctx_new,
+                               &changed);
+    if (error) {
+        printf("Failed to compare files. Error %d.\n",  error);
+        ini_config_file_destroy(file_ctx);
+        ini_config_file_destroy(file_ctx_new);
+        return error;
+    }
+
+    /* Check if file changed */
+    if (changed) {
+        printf("File changed when it shouldn't. This is unexpected error.\n");
+        ini_config_file_destroy(file_ctx);
+        ini_config_file_destroy(file_ctx_new);
+        return EINVAL;
+    }
+
+    INIOUT(printf("File did not change - expected. Close and force the change!.\n"));
+
+    /* Close file */
+    ini_config_file_destroy(file_ctx_new);
+
+    INIOUT(printf("To force the change delete the file: %s\n", outfile));
+
+    /* Emulate as if file changed */
+    errno = 0;
+    if (unlink(outfile)) {
+        error = errno;
+        printf("Failed to delete file %d.\n",  error);
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+
+    INIOUT(printf("Copy file again with command 'cp %s %s'\n", infile, outfile));
+
+    errno = 0;
+    if (execlp(command, command, infile, outfile, NULL)) {
+        error = errno;
+        printf("Failed to run copy command %d.\n",  error);
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+
+    INIOUT(printf("Read file again.\n"));
+
+    /* Read again */
+    file_ctx_new = NULL;
+    error = ini_config_file_reopen(file_ctx, &file_ctx_new);
+    if (error) {
+        printf("Failed to open file for reading. Error %d.\n",  error);
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+
+    INIOUT(printf("Check if it changed.\n"));
+
+    changed = 0;
+    error = ini_config_changed(file_ctx,
+                               file_ctx_new,
+                               &changed);
+    if (error) {
+        printf("Failed to compare files. Error %d.\n",  error);
+        ini_config_file_destroy(file_ctx);
+        ini_config_file_destroy(file_ctx_new);
+        return error;
+    }
+
+    /* Check if file changed */
+    if (!changed) {
+        printf("File did not change when it should. This is an error.\n");
+        ini_config_file_destroy(file_ctx);
+        ini_config_file_destroy(file_ctx_new);
+        return EINVAL;
+    }
+
+    INIOUT(printf("File changed!\n"));
+
+    /* We do not need original context any more. */
+    ini_config_file_destroy(file_ctx);
+
+    /* New context is now original context */
+    file_ctx = file_ctx_new;
+
+    /* ... Create config object and read configuration - not shown here.
+     *     See other examples ... */
+
+    ini_config_file_destroy(file_ctx);
+
+    return 0;
+}
+
+
 
 /* Main function of the unit test */
 int main(int argc, char *argv[])
@@ -637,6 +918,8 @@ int main(int argc, char *argv[])
                         read_again_test,
                         merge_values_test,
                         merge_section_test,
+                        startup_test,
+                        reload_test,
                         NULL };
     test_fn t;
     int i = 0;
