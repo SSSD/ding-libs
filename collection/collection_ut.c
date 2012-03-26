@@ -390,6 +390,7 @@ int mixed_collection_test(void)
         col_destroy_collection(host);
         col_destroy_collection(socket1);
         col_destroy_collection(socket2);
+        col_destroy_collection(event);
         printf("Failed to add collections. Error %d\n", error);
         return error;
     }
@@ -405,6 +406,7 @@ int mixed_collection_test(void)
         col_destroy_collection(host);
         col_destroy_collection(socket1);
         col_destroy_collection(socket2);
+        col_destroy_collection(event);
         printf("Failed to add collections. Error %d\n", error);
         return error;
     }
@@ -417,7 +419,7 @@ int mixed_collection_test(void)
     COLOUT(col_debug_collection(event, COL_TRAVERSE_DEFAULT));
     COLOUT(col_debug_collection(socket1, COL_TRAVERSE_DEFAULT));
 
-    COLOUT(printf("SOCKET1 MUST NO BE USED AFTER THIS POINT!!!\n"));
+    COLOUT(printf("SOCKET1 MUST NOT BE USED AFTER THIS POINT!!!\n"));
     socket1 = NULL;
 
     COLOUT(printf("Add collection PEER as PEER1 to subcollection SOCKET1 of the EVENT.\n"));
@@ -430,6 +432,7 @@ int mixed_collection_test(void)
         col_destroy_collection(host);
         /* No socket1 any more :) */
         col_destroy_collection(socket2);
+        col_destroy_collection(event);
         printf("Failed to add collections. Error %d\n", error);
         return error;
     }
@@ -445,6 +448,7 @@ int mixed_collection_test(void)
         col_destroy_collection(host);
         /* No socket1 any more :) */
         col_destroy_collection(socket2);
+        col_destroy_collection(event);
         printf("Failed to add property. Error %d\n", error);
         return error;
     }
@@ -459,6 +463,7 @@ int mixed_collection_test(void)
         col_destroy_collection(host);
         /* No socket1 any more :) */
         col_destroy_collection(socket2);
+        col_destroy_collection(event);
         printf("Failed to add property. Error %d\n", error);
         return error;
     }
@@ -476,6 +481,7 @@ int mixed_collection_test(void)
         col_destroy_collection(host);
         /* No socket1 any more :) */
         col_destroy_collection(socket2);
+        col_destroy_collection(event);
         printf("Failed to check property. Error %d\n", error);
         return error;
     }
@@ -500,6 +506,11 @@ int mixed_collection_test(void)
     if (verbose) {
         error = col_print_collection2(event);
         if (error) {
+            col_destroy_collection(peer);
+            col_destroy_collection(host);
+            /* No socket1 any more :) */
+            col_destroy_collection(socket2);
+            col_destroy_collection(event);
             printf("Error printing collection %d\n", error);
             return error;
         }
@@ -513,6 +524,7 @@ int mixed_collection_test(void)
         col_destroy_collection(host);
         /* No socket1 any more :) */
         col_destroy_collection(socket2);
+        col_destroy_collection(event);
         printf("Failed to delete property. Error %d\n", error);
         return error;
     }
@@ -523,6 +535,11 @@ int mixed_collection_test(void)
     if (verbose) {
         error = col_print_collection2(event);
         if (error) {
+            col_destroy_collection(peer);
+            col_destroy_collection(host);
+            /* No socket1 any more :) */
+            col_destroy_collection(socket2);
+            col_destroy_collection(event);
             printf("Error printing collection %d\n", error);
             return error;
         }
@@ -532,6 +549,11 @@ int mixed_collection_test(void)
     if (verbose) {
         error = col_debug_collection(event, COL_TRAVERSE_DEFAULT);
         if (error) {
+            col_destroy_collection(peer);
+            col_destroy_collection(host);
+            /* No socket1 any more :) */
+            col_destroy_collection(socket2);
+            col_destroy_collection(event);
             printf("Error printing collection %d\n", error);
             return error;
         }
