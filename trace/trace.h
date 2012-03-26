@@ -132,6 +132,7 @@ extern unsigned trace_level;
 #define TRACE_SLNUMBER(level, msg, num)
 #define TRACE_DOUBLE(level, msg, num)
 #define TRACE_RETURN(flow, val)
+#define TRACE_ASSERT(expression)
 #endif /* HAVE_TRACE */
 
 
