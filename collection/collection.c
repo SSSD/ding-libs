@@ -470,7 +470,7 @@ int col_insert_item_into_current(struct collection_item *collection,
                                 TRACE_INFO_STRING("Property:", item->property);
                                 TRACE_INFO_NUMBER("Type:", item->type);
                                 if (col_find_property(collection, item->property, 0, 1, item->type, &parent)) {
-                                    TRACE_INFO_NUMBER("Current:", (unsigned)(parent->next));
+                                    TRACE_INFO_LNUMBER("Current:", parent->next);
                                     current = parent->next;
                                     parent->next = current->next;
                                     if (header->last == current) header->last = parent;
