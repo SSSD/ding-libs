@@ -129,8 +129,11 @@ int col_debug_handle(const char *property,
                ((struct collection_header *)(data))->count,
                ((struct collection_header *)(data))->reference_count,
                ((struct collection_header *)(data))->cclass);
+/* Due to padding issues this is unsafe so ifdefed for now */
+#ifdef COL_PRINT_BINARY_HEADER
         for (i = 0; i < length; i++)
             printf("%02X", ((unsigned char *)(data))[i]);
+#endif
         printf(" (%d)\n", nest_level);
         break;
     case COL_TYPE_COLLECTIONREF:
