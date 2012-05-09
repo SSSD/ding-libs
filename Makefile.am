@@ -130,7 +130,7 @@ libcollection_la_SOURCES = \
     collection/collection_priv.h \
     trace/trace.h
 libcollection_la_LDFLAGS = \
-    -version-info 3:0:0
+    -version-info 3:0:1
 
 check_PROGRAMS += \
     collection_ut \
@@ -166,7 +166,7 @@ libref_array_la_SOURCES = \
     refarray/ref_array.c \
     trace/trace.h
 libref_array_la_LDFLAGS = \
-    -version-info 1:0:0
+    -version-info 2:0:1
 
 check_PROGRAMS += ref_array_ut
 TESTS += ref_array_ut
@@ -193,7 +193,7 @@ libbasicobjects_la_SOURCES = \
     basicobjects/simplebuffer.c \
     trace/trace.h
 libbasicobjects_la_LDFLAGS = \
-    -version-info 1:0:0
+    -version-info 0:0:0
 
 check_PROGRAMS += simplebuffer_ut
 TESTS += simplebuffer_ut
