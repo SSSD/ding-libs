@@ -289,6 +289,7 @@ endif
 clean-local-ini_config:
 	rm -f ./*.out
 	rm -f test.ini
+	rm -f ./foo.conf #From ini_parse_ut
 
 ##############################################################################
 # Additional rules

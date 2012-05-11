@@ -42,6 +42,8 @@ char *confdir = NULL;
         if (verbose) foo; \
     } while(0)
 
+#define FOO_CONF "./ini/ini.d/foo.conf"
+
 typedef int (*test_fn)(void);
 
 int test_one_file(const char *in_filename,
@@ -327,10 +329,8 @@ int merge_values_test(void)
     const char *resname = "./merge.conf.out";
     const char *checkname = "./expect.conf.out";
     char command[PATH_MAX * 3];
-    char *srcdir;
 
-    srcdir = getenv("srcdir");
-    sprintf(filename, "%s/ini/ini.d/foo.conf", (srcdir == NULL) ? "." : srcdir);
+    memcpy(filename, FOO_CONF, sizeof(FOO_CONF));
 
     error = simplebuffer_alloc(&sbobj);
     if (error) {
@@ -639,11 +639,8 @@ int startup_test(void)
     struct ini_cfgobj *ini_config = NULL;
     char **error_list = NULL;
     char filename[PATH_MAX];
-    char *srcdir;
 
-    srcdir = getenv("srcdir");
-    sprintf(filename, "%s/ini/ini.d/foo.conf",
-                      (srcdir == NULL) ? "." : srcdir);
+    memcpy(filename, FOO_CONF, sizeof(FOO_CONF));
 
     INIOUT(printf("<==== Startup test ====>\n"));
 
@@ -746,15 +743,12 @@ int reload_test(void)
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
     const char *command = "cp";
-    char *srcdir;
     char *builddir;
     int changed = 0;
 
     INIOUT(printf("<==== Reload test ====>\n"));
 
-    srcdir = getenv("srcdir");
-    sprintf(infile, "%s/ini/ini.d/foo.conf",
-                      (srcdir == NULL) ? "." : srcdir);
+    memcpy(infile, FOO_CONF, sizeof(FOO_CONF));
     builddir = getenv("builddir");
     sprintf(outfile, "%s/foo.conf",
                       (builddir == NULL) ? "." : builddir);
