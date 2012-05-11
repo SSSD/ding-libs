@@ -634,13 +634,15 @@ int merge_section_test(void)
 int startup_test(void)
 {
     int error = EOK;
-    int error2 = EOK;
     struct ini_cfgfile *file_ctx = NULL;
     struct ini_cfgobj *ini_config = NULL;
     char **error_list = NULL;
     char filename[PATH_MAX];
 
     memcpy(filename, FOO_CONF, sizeof(FOO_CONF));
+
+    /* Ensure that we start with the correct file mode */
+    chmod(filename, 0664);
 
     INIOUT(printf("<==== Startup test ====>\n"));
 
@@ -685,22 +687,9 @@ int startup_test(void)
                         0);
 
     if (error) {
-       /* In case the repo is created by root the permission is different */
-        error2 = ini_config_access_check(
-                            file_ctx,
-                            INI_ACCESS_CHECK_MODE, /* add uid & gui flags
-                                                    * in real case
-                                                    */
-                            0, /* <- will be real uid in real case */
-                            0, /* <- will be real gid in real case */
-                            0644, /* Checkling for rw-r-r-- */
-                            0);
-        if(error2) {
-            printf("Access check failed twice: %d %d!\n", error, error2);
-            ini_config_file_destroy(file_ctx);
-            return EACCES;
-        }
-        /* If this check passed we are OK! */
+        printf("Access check failed: %d!\n", error);
+        ini_config_file_destroy(file_ctx);
+        return EACCES;
     }
 
     /* Create config object */
