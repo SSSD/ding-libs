@@ -278,6 +278,9 @@ void ini_config_file_close(struct ini_cfgfile *file_ctx);
 /* Close file context and destroy the object */
 void ini_config_file_destroy(struct ini_cfgfile *file_ctx);
 
+/* Print the file object contents */
+void ini_config_file_print(struct ini_cfgfile *file_ctx);
+
 /* How many errors do we have in the list ? */
 unsigned ini_config_error_count(struct ini_cfgfile *file_ctx);
 

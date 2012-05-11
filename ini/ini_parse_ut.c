@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <sys/stat.h>
 #include "ini_defines.h"
 #include "ini_configobj.h"
 #include "ini_config_priv.h"
@@ -41,8 +42,6 @@ char *confdir = NULL;
     do { \
         if (verbose) foo; \
     } while(0)
-
-#define FOO_CONF "./ini/ini.d/foo.conf"
 
 typedef int (*test_fn)(void);
 
@@ -73,7 +72,8 @@ int test_one_file(const char *in_filename,
                                  0, /* TBD */
                                  &file_ctx);
     if (error) {
-        printf("Failed to open file for reading. Error %d.\n",  error);
+        printf("Failed to open file %s for reading. Error %d.\n",
+               in_filename, error);
         ini_config_destroy(ini_config);
         return error;
     }
@@ -136,7 +136,8 @@ int test_one_file(const char *in_filename,
     ff = fopen(out_filename, "w");
     if(!ff) {
         error = errno;
-        printf("Failed to open file for writing [%s]. Error %d.\n", out_filename, error);
+        printf("Failed to open file [%s] for writing. Error %d.\n",
+               out_filename, error);
         ini_config_destroy(ini_config);
         simplebuffer_free(sbobj);
         return error;
@@ -170,7 +171,7 @@ int read_save_test(void)
     int i = 0;
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
-    char *srcdir;
+    char *srcdir = NULL;
     const char *files[] = { "real",
                             "mysssd",
                             "ipa",
@@ -178,6 +179,7 @@ int read_save_test(void)
                             "smerge",
                             NULL };
 
+    INIOUT(printf("<==== Read save test ====>\n"));
 
     srcdir = getenv("srcdir");
 
@@ -190,6 +192,8 @@ int read_save_test(void)
         INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
         i++;
     }
+
+    INIOUT(printf("<==== Read save test end ====>\n"));
 
     return EOK;
 }
@@ -209,6 +213,7 @@ int read_again_test(void)
                             "smerge",
                             NULL };
 
+    INIOUT(printf("<==== Read again test ====>\n"));
 
     while(files[i]) {
 
@@ -226,6 +231,8 @@ int read_again_test(void)
         i++;
     }
 
+    INIOUT(printf("<==== Read again test end ====>\n"));
+
     return error;
 }
 
@@ -238,7 +245,8 @@ int create_expect(const char *checkname)
     ff = fopen(checkname, "w");
     if(!ff) {
         error = errno;
-        printf("Failed to open file for writing. Error %d.\n", error);
+        printf("Failed to open file %s for writing. Error %d.\n",
+               checkname, error);
         return error;
     }
 
@@ -329,8 +337,14 @@ int merge_values_test(void)
     const char *resname = "./merge.conf.out";
     const char *checkname = "./expect.conf.out";
     char command[PATH_MAX * 3];
+    char *srcdir = NULL;
 
-    memcpy(filename, FOO_CONF, sizeof(FOO_CONF));
+    INIOUT(printf("<==== Merge values test ====>\n"));
+
+    srcdir = getenv("srcdir");
+
+    sprintf(filename, "%s/ini/ini.d/foo.conf.in",
+            (srcdir == NULL) ? "." : srcdir);
 
     error = simplebuffer_alloc(&sbobj);
     if (error) {
@@ -358,7 +372,10 @@ int merge_values_test(void)
                                      0, /* TBD */
                                      &file_ctx);
         if (error) {
-            printf("Failed to open file for reading. Error %d.\n",  error);
+            printf("Failed to open file %s for reading. Error %d.\n",
+                   filename, error);
+            printf("Src dir is [%s].\n", (srcdir == NULL) ?
+                   "NOT DEFINED" : srcdir);
             ini_config_destroy(ini_config);
             simplebuffer_free(sbobj);
             return error;
@@ -439,6 +456,8 @@ int merge_values_test(void)
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   resname, checkname, error));
 
+    INIOUT(printf("<==== Merge values test end ====>\n"));
+
     return error;
 }
 
@@ -481,16 +500,23 @@ int merge_section_test(void)
 
     char filename[PATH_MAX];
     char checkname[PATH_MAX];
-    const char *resname = "./smerge.conf.out";
+    char resname[PATH_MAX];
     char command[PATH_MAX * 3];
     char mode[100];
-    char *srcdir;
+    char *srcdir = NULL;
+    char *builddir = NULL;
+
+
+    INIOUT(printf("<==== Merge section test ====>\n"));
 
     srcdir = getenv("srcdir");
+    builddir = getenv("builddir");
     sprintf(filename, "%s/ini/ini.d/smerge.conf",
                       (srcdir == NULL) ? "." : srcdir);
     sprintf(checkname, "%s/ini/ini.d/sexpect.conf",
                       (srcdir == NULL) ? "." : srcdir);
+    sprintf(resname, "%s/smerge.conf.out",
+                      (builddir == NULL) ? "." : builddir);
 
     error = simplebuffer_alloc(&sbobj);
     if (error) {
@@ -535,8 +561,10 @@ int merge_section_test(void)
                                          0, /* TBD */
                                          &file_ctx);
             if (error) {
-                printf("Failed to open file for reading. "
-                       "Error %d.\n",  error);
+                printf("Failed to open file %s for reading. "
+                       "Error %d.\n", filename, error);
+                printf("Source is %s.\n", (srcdir == NULL) ?
+                       "NOT Defined" : srcdir);
                 ini_config_destroy(ini_config);
                 simplebuffer_free(sbobj);
                 return error;
@@ -628,6 +656,8 @@ int merge_section_test(void)
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   resname, checkname, error));
 
+    INIOUT(printf("<==== Merge section test end ====>\n"));
+
     return error;
 }
 
@@ -637,23 +667,46 @@ int startup_test(void)
     struct ini_cfgfile *file_ctx = NULL;
     struct ini_cfgobj *ini_config = NULL;
     char **error_list = NULL;
-    char filename[PATH_MAX];
-
-    memcpy(filename, FOO_CONF, sizeof(FOO_CONF));
-
-    /* Ensure that we start with the correct file mode */
-    chmod(filename, 0664);
+    char infile[PATH_MAX];
+    char outfile[PATH_MAX];
+    char command[PATH_MAX * 2 + 3];
+    char *srcdir = NULL;
+    char *builddir;
 
     INIOUT(printf("<==== Startup test ====>\n"));
 
+    srcdir = getenv("srcdir");
+    sprintf(infile, "%s/ini/ini.d/foo.conf.in", (srcdir == NULL) ? "." : srcdir);
+    builddir = getenv("builddir");
+    sprintf(outfile, "%s/foo.conf",
+                      (builddir == NULL) ? "." : builddir);
+
+    sprintf(command, "cp %s %s", infile, outfile);
+    INIOUT(printf("Running command '%s'\n", command));
+
+    error = system(command);
+    if(error) {
+        printf("Failed to run copy command %d.\n",  error);
+        return error;
+    }
+
+    INIOUT(printf("Running chmod 660 on file '%s'\n", outfile));
+    error = chmod(outfile, S_IRUSR | S_IWUSR);
+    if(error) {
+        error = errno;
+        printf("Failed to run chmod command %d.\n",  error);
+        return error;
+    }
+
     /* Open config file */
-    error = ini_config_file_open(filename,
+    error = ini_config_file_open(outfile,
                                  INI_STOP_ON_NONE,
                                  0,
                                  INI_META_STATS,
                                  &file_ctx);
     if (error) {
-        printf("Failed to open file for reading. Error %d.\n",  error);
+        printf("Failed to open file %s for reading. Error %d.\n",
+               outfile, error);
         return error;
     }
 
@@ -667,7 +720,7 @@ int startup_test(void)
                                 0440, /* Checking for r--r----- */
                                 0);
     /* This check is expected to fail since
-     * the actual permissions on the test file are: rw-rw-r--
+     * the actual permissions on the test file are: rw-------
      */
 
     if (!error) {
@@ -683,11 +736,11 @@ int startup_test(void)
                                                 */
                         0, /* <- will be real uid in real case */
                         0, /* <- will be real gid in real case */
-                        0664, /* Checkling for rw-rw-r-- */
+                        0600, /* Checkling for rw------- */
                         0);
 
     if (error) {
-        printf("Access check failed: %d!\n", error);
+        printf("Access check failed %d!\n", error);
         ini_config_file_destroy(file_ctx);
         return EACCES;
     }
@@ -721,6 +774,8 @@ int startup_test(void)
 
     ini_config_destroy(ini_config);
 
+    INIOUT(printf("<==== Startup test end ====>\n"));
+
     return 0;
 }
 
@@ -731,23 +786,34 @@ int reload_test(void)
     struct ini_cfgfile *file_ctx_new = NULL;
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
-    const char *command = "cp";
+    char command[PATH_MAX * 2 + 3];
+    char *srcdir;
     char *builddir;
     int changed = 0;
 
     INIOUT(printf("<==== Reload test ====>\n"));
 
-    memcpy(infile, FOO_CONF, sizeof(FOO_CONF));
+    srcdir = getenv("srcdir");
+    sprintf(infile, "%s/ini/ini.d/foo.conf.in",
+                   (srcdir == NULL) ? "." : srcdir);
     builddir = getenv("builddir");
     sprintf(outfile, "%s/foo.conf",
-                      (builddir == NULL) ? "." : builddir);
+                     (builddir == NULL) ? "." : builddir);
 
-    INIOUT(printf("Running command 'cp %s %s'\n", infile, outfile));
+    sprintf(command, "cp %s %s", infile, outfile);
+    INIOUT(printf("Running command '%s'\n", command));
 
-    errno = 0;
-    if(execlp(command, command, infile, outfile, NULL)) {
-        error = errno;
+    error = system(command);
+    if(error) {
         printf("Failed to run copy command %d.\n",  error);
+        return error;
+    }
+
+    INIOUT(printf("Running chmod 660 on file '%s'\n", outfile));
+    error = chmod(outfile, S_IRUSR | S_IWUSR);
+    if(error) {
+        error = errno;
+        printf("Failed to run chmod command %d.\n",  error);
         return error;
     }
 
@@ -760,7 +826,8 @@ int reload_test(void)
                                  INI_META_STATS,
                                  &file_ctx);
     if (error) {
-        printf("Failed to open file for reading. Error %d.\n",  error);
+        printf("Failed to open file %s for reading. Error %d.\n",
+               outfile, error);
         return error;
     }
 
@@ -773,7 +840,7 @@ int reload_test(void)
                                             */
                     0, /* <- will be real uid in real case */
                     0, /* <- will be real gid in real case */
-                    0664, /* Checkling for rw-rw-r-- */
+                    0600, /* Checkling for rw------- */
                     0);
 
     if (error) {
@@ -795,7 +862,7 @@ int reload_test(void)
     /* Some time passed and we received a signal to reload... */
     error = ini_config_file_reopen(file_ctx, &file_ctx_new);
     if (error) {
-        printf("Failed to open file for reading. Error %d.\n",  error);
+        printf("Failed to re-open file for reading. Error %d.\n", error);
         ini_config_file_destroy(file_ctx);
         return error;
     }
@@ -816,6 +883,8 @@ int reload_test(void)
     /* Check if file changed */
     if (changed) {
         printf("File changed when it shouldn't. This is unexpected error.\n");
+        ini_config_file_print(file_ctx);
+        ini_config_file_print(file_ctx_new);
         ini_config_file_destroy(file_ctx);
         ini_config_file_destroy(file_ctx_new);
         return EINVAL;
@@ -837,11 +906,13 @@ int reload_test(void)
         return error;
     }
 
-    INIOUT(printf("Copy file again with command 'cp %s %s'\n", infile, outfile));
+    sleep(1);
 
-    errno = 0;
-    if (execlp(command, command, infile, outfile, NULL)) {
-        error = errno;
+    sprintf(command, "cp %s %s", infile, outfile);
+    INIOUT(printf("Copy file again with command '%s'\n", command));
+
+    error = system(command);
+    if(error) {
         printf("Failed to run copy command %d.\n",  error);
         ini_config_file_destroy(file_ctx);
         return error;
@@ -853,7 +924,7 @@ int reload_test(void)
     file_ctx_new = NULL;
     error = ini_config_file_reopen(file_ctx, &file_ctx_new);
     if (error) {
-        printf("Failed to open file for reading. Error %d.\n",  error);
+        printf("Failed to re-open file for reading. Error %d.\n", error);
         ini_config_file_destroy(file_ctx);
         return error;
     }
@@ -871,15 +942,21 @@ int reload_test(void)
         return error;
     }
 
+    INIOUT(printf("Changed value is %d.\n", changed));
+
     /* Check if file changed */
     if (!changed) {
         printf("File did not change when it should. This is an error.\n");
+        ini_config_file_print(file_ctx);
+        ini_config_file_print(file_ctx_new);
         ini_config_file_destroy(file_ctx);
         ini_config_file_destroy(file_ctx_new);
         return EINVAL;
     }
 
     INIOUT(printf("File changed!\n"));
+    INIOUT(ini_config_file_print(file_ctx));
+    INIOUT(ini_config_file_print(file_ctx_new));
 
     /* We do not need original context any more. */
     ini_config_file_destroy(file_ctx);
@@ -892,6 +969,7 @@ int reload_test(void)
 
     ini_config_file_destroy(file_ctx);
 
+    INIOUT(printf("<==== Reload test end ====>\n"));
     return 0;
 }
 
@@ -922,6 +1000,7 @@ int main(int argc, char *argv[])
 
     while ((t = tests[i++])) {
         error = t();
+        fflush(NULL);
         if (error) {
             INIOUT(printf("Failed with error %d!\n", error));
             return error;

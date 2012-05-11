@@ -485,7 +485,7 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
 
 }
 
-/* Determins if two file contexts are different by comparing:
+/* Determines if two file contexts are different by comparing:
  * - time stamp
  * - device ID
  * - i-node
@@ -505,6 +505,13 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
 
     *changed = 0;
 
+    /* Unfortunately the time is not granular enough
+     * to detect the change if run during the unit test.
+     * In future when a more granular version of stat
+     * is available we should switch to it and update
+     * the unit test.
+     */
+
     if((file_ctx1->file_stats.st_mtime !=
         file_ctx2->file_stats.st_mtime) ||
        (file_ctx1->file_stats.st_dev !=
@@ -517,4 +524,36 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
 
     TRACE_FLOW_EXIT();
     return EOK;
+}
+
+/* Print the file object contents */
+void ini_config_file_print(struct ini_cfgfile *file_ctx)
+{
+    TRACE_FLOW_ENTRY();
+    if (file_ctx == NULL) {
+        printf("No file object\n.");
+    }
+    else {
+        printf("File name: %s\n", (file_ctx->filename) ? file_ctx->filename : "NULL");
+        printf("File is %s\n", (file_ctx->file) ? "open" : "closed");
+        printf("Error level is %d\n", file_ctx->error_level);
+        printf("Collision flags %u\n", file_ctx->collision_flags);
+        printf("Metadata flags %u\n", file_ctx->metadata_flags);
+        if (file_ctx->error_list) col_print_collection(file_ctx->error_list);
+        else printf("Error list is empty.");
+        printf("Stats flag st_dev %li\n", file_ctx->file_stats.st_dev);
+        printf("Stats flag st_ino %li\n", file_ctx->file_stats.st_ino);
+        printf("Stats flag st_mode %u\n", file_ctx->file_stats.st_mode);
+        printf("Stats flag st_nlink %li\n", file_ctx->file_stats.st_nlink);
+        printf("Stats flag st_uid %u\n", file_ctx->file_stats.st_uid);
+        printf("Stats flag st_gid %u\n", file_ctx->file_stats.st_gid);
+        printf("Stats flag st_rdev %li\n", file_ctx->file_stats.st_rdev);
+        printf("Stats flag st_size %lu\n", file_ctx->file_stats.st_size);
+        printf("Stats flag st_blocks %li\n", file_ctx->file_stats.st_blocks);
+        printf("Stats flag st_atime %ld\n", file_ctx->file_stats.st_atime);
+        printf("Stats flag st_mtime %ld\n", file_ctx->file_stats.st_mtime);
+        printf("Stats flag st_ctime %ld\n", file_ctx->file_stats.st_ctime);
+        printf("Count %u\n", file_ctx->count);
+    }
+    TRACE_FLOW_EXIT();
 }
