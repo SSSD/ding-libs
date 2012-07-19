@@ -1,9 +1,10 @@
 /*
     INI LIBRARY
 
-    Header file for the ini collection object.
+    Header file for the ini configuration interface.
+    THIS IS THE PREFERRED INTERFACE TO USE.
 
-    Copyright (C) Dmitri Pal <dpal@redhat.com> 2010
+    Copyright (C) Dmitri Pal <dpal@redhat.com> 2010 - 2012
 
     INI Library is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,6 +20,7 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #ifndef INI_CONFIGOBJ_H
 #define INI_CONFIGOBJ_H
 
@@ -28,6 +30,103 @@
 #include <limits.h>
 #include <stdio.h>
 #include "simplebuffer.h"
+#include "ini_valueobj.h"
+
+/** @mainpage The INI configuration interface
+ *
+ * The goal of the this interface is to allow applications
+ * to read configuration from an INI file.
+ *
+ * So why yet another library to read data from an INI file?
+ * As we started the SSSD project we looked around for a
+ * open source library that would meet the following
+ * requirements:
+ * - Is written in C (not C++)
+ * - Is lightweight.
+ * - Has an live community.
+ * - Supported on multiple platforms .
+ * - Can evolve as we build SSSD solution.
+ * - Can deal with different types of values including arrays.
+ * - Can deal with sections that are related to each other
+ *   and can form a hierarchy of sections.
+ * - Has a compatible license we can use.
+ *
+ * We have seen several solutions but none was able to fully address
+ * our requirements. As a result we started developing our own
+ * INI parsing library.
+ *
+ * Currently INI parser allows reading and merging INI files
+ * and getting a resulting configuration in one object.
+ *
+ * One of the main advantages of this interface is that
+ * the library is created with the idea of reading the configuration
+ * data, not managing it. Thus currently you will not find
+ * any function that alters the configuration data read from the files.
+ * There is a set of proposed enhancements to be able to manipulate
+ * the configuration data and save it back but there has been no real
+ * driver for it. This API is focused on letting applications read data
+ * from a file (or files) and interpret it, not to generate configuration
+ * files. There are all sorts of different tools that already do that.
+ *
+ * The INI configuration interface uses COLLECTION (see libcollection
+ * interface) to store data internally.
+ *
+ * Concepts:
+ * - INI file consists of the key value pairs.
+ * - Keys and values are separated by the equal sign.
+ *   Spaces around equal sign are trimmed. Everything before the equal
+ *   sign is the key, everything after is the value.
+ * - Comments are the lines that start with ";" or "#" in the first
+ *   position of the line.
+ * - Library now supports multi-line values. Values that span across multiple
+ *   lines should start with a single space on every new line.
+ * - After being read both keys and values are stored in the internal
+ *   objects.
+ * - Application configuration can consist from multiple files.
+ *   For example, there can be a generic file in /etc containing
+ *   configuration for all applications of a particular class running
+ *   on a box and then there might be a special file
+ *   with parameters specific for each application in the
+ *   /etc/whatever.d directory. Interface does not allow reading
+ *   multiple files in one call. Instead files need to be read separately
+ *   and then merged together. A helper function to do so might be added
+ *   later.
+ * - If there is no section in the file or there are key value pairs
+ *   declared before the first section, those pairs will be placed into
+ *   the default section with the name "default".
+ * - All values are treated as strings. Spaces are trimmed at the beginning
+ *   and the end of the value. The value ends at the end of the line.
+ *   If values is too long, an error will be returned.
+ * - Parsing of a value happens when a caller tries to interpret
+ *   the value. The caller can use different functions to do this.
+ *   The value can be treated as numeric, logical, string, binary,
+ *   array of strings or array of numbers. In case of arrays parsing functions
+ *   accept separators that will be used to slice the value into the array
+ *   of elements.
+ * - If there is any error parsing section and key values it can be
+ *   intercepted by the caller. There are different modes that the library
+ *   supports regarding error handling. See details in the description
+ *   of individual functions.
+ * - The library allows ini files with fragmented sections. This means that
+ *   a section can be scattered across the file. Flags control what to
+ *   do in such situation.
+ * - The library allows storing and retrieving multiple key value pairs with
+ *   the same key in one section.
+ *
+ *   <i>There is a deprecated interface that can be found in ini_config.h.
+ *   This interface is supported only for backwards compatibility and should
+ *   not be used.</i>
+ */
+
+/**
+ * @defgroup structures Structures
+ *
+ * All structures used in the interface should be treated as internal opaque objects.
+ *
+ * @{
+ *
+ * @}
+ */
 
 
 /**
@@ -51,6 +150,8 @@
 
 /**
  * @defgroup parseerr Parsing errors and warnings
+ *
+ * Parsing errors and warnings
  *
  * @{
  */
@@ -78,8 +179,7 @@
 #define ERR_DUPKEYSEC       11
 /** @brief Duplicate section is not allowed (Error). */
 #define ERR_DUPSECTION      12
-
-/** @brief Size of the error array. */
+/** @brief Special value. Size of the error array. */
 #define ERR_MAXPARSE        ERR_DUPSECTION
 
 /**
@@ -155,7 +255,7 @@
  * @{
  */
 
-/** @brief Value with same key is ovewritten */
+/** @brief Value with same key is overwritten */
 #define INI_MV1S_OVERWRITE 0x0000
 /** @brief Collision causes error */
 #define INI_MV1S_ERROR     0x0001
@@ -182,7 +282,7 @@
  *
  * @{
  */
-/** @brief Value with same key is ovewritten */
+/** @brief Value with same key is overwritten */
 #define INI_MV2S_OVERWRITE 0x0000
 /** @brief Collision causes error */
 #define INI_MV2S_ERROR     0x0010
@@ -224,10 +324,45 @@
 /**
  * @}
  */
+
 /**
  * @}
  */
 
+/**
+ * @defgroup searchmode Constants that define how to look for a value
+ *
+ * Configuration file can allow several keys with the same name
+ * in one section. Use the constants below to define which
+ * value you are looking for.
+ * You can search for the next value only if you are looking
+ * for the same section and key as in the previous search. If you
+ * specify INI_GET_NEXT_VALUE but the section or key is
+ * different from the values that were used in the previous search
+ * the value will be ignored and the function will act as if
+ * INI_GET_FIRST_VALUE is specified.
+ * This functionality allows creating an attribute list and
+ * actually fetching every value including duplicate values
+ * in a single loop.
+ *
+ * @{
+ */
+/** @brief Get the first value (default). */
+#define INI_GET_FIRST_VALUE     0
+/** @brief Look for the next value in the section */
+#define INI_GET_NEXT_VALUE      1
+
+/**
+ * @}
+ */
+
+/**
+ * @brief Name of the default section.
+ *
+ * This is the name of the implied section where orphan key-value
+ * pairs will be put.
+ */
+#define INI_DEFAULT_SECTION "default"
 
 /**
  * @defgroup structures Structures
@@ -249,80 +384,235 @@ struct ini_parse_error;
  */
 
 
-/********************************************************************/
-/* THIS IS A BEGINNING OF THE THE NEW CONFIG OBJECT INTERFACE - TBD */
-/* It will be moved to the ini_config.h when it is ready            */
-/********************************************************************/
+/**
+ * @defgroup ini_core Core interface functions
+ *
+ * Functions in this section allow manipulation with the configuration file,
+ * parsing data from the configuration file and storing it in a configuration
+ * object, merging configuration objects and other operations.
+ *
+ * This interface is currently incomplete as it does not allow:
+ * - constructing configuration in memory
+ * - altering existing configuration by adding, modifying or removing sections
+ *   and keys.
+ *
+ * @{
+ *
+ */
 
-
-/* Create a configuration object */
+/**
+ * @brief Create a configuration object.
+ *
+ * Allocates an object that will store configuration data.
+ * Configuration object is populated by parsing a file.
+ *
+ * @param[out] ini_config       Configuration object.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
 int ini_config_create(struct ini_cfgobj **ini_config);
 
-/* Destroy a configuration object */
+/**
+ * @brief Destroy a configuration object.
+ *
+ * Frees configuration data.
+ *
+ * @param[in] ini_config       Configuration object.
+ *
+ */
 void ini_config_destroy(struct ini_cfgobj *ini_config);
 
-/* Create a file object for parsing a config file */
+/**
+ * @brief Flush cached search data.
+ *
+ * Frees cached search data. This will cause
+ * any iteration over the same keys to start over.
+ *
+ * @param[in] ini_config       Configuration object.
+ *
+ */
+void ini_config_clean_state(struct ini_cfgobj *ini_config);
+
+/**
+ * @brief Create a configuration file object.
+ *
+ * Create a file object for parsing a configuration file.
+ *
+ * A "configuration file object" is different from
+ * a "configuration object". The former stores metadata
+ * about a file the configuration data is read from,
+ * while the latter holds the configuration itself.
+ *
+ * @param[in]  filename         Name or path to the ini file.
+ *                              This argument can contain
+ *                              a short or a fully qualified
+ *                              file name. If a short name is
+ *                              specified the full path
+ *                              will be resolved internally.
+ * @param[in]  error_level      Flags that control actions
+ *                              in case of parsing error.
+ * @param[in]  collision_flags  Flags that control handling
+ *                              of the duplicate sections or keys.
+ * @param[in]  metadata_flags   Flags that specify what additional
+ *                              data if any needs to be collected
+ *                              about the ini file.
+ * @param[out] file_ctx         Configuration file object.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
 int ini_config_file_open(const char *filename,
                          int error_level,
                          uint32_t collision_flags,
                          uint32_t metadata_flags,
                          struct ini_cfgfile **file_ctx);
 
-/* Create a file object from existing one */
+/**
+ * @brief Close configuration file after parsing
+ *
+ * Closes file but keeps the context. File can be reopened
+ * and reread using \ref ini_config_file_reopen function.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ *
+ */
+void ini_config_file_close(struct ini_cfgfile *file_ctx);
+
+
+/**
+ * @brief Reopen the configuration file
+ *
+ * Creates a new file object from the original one.
+ * The file configuration objects then can be compared
+ * to determine whether the file actually changed.
+ *
+ * @param[in]  file_ctx_in      Original configuration file object.
+ * @param[out] file_ctx_out     A new configuration file object.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
 int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
                            struct ini_cfgfile **file_ctx_out);
 
-/* Close file context */
-void ini_config_file_close(struct ini_cfgfile *file_ctx);
 
-/* Close file context and destroy the object */
+/**
+ * @brief Close configuration file and free all data
+ *
+ * Closes file and frees the context.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ *
+ */
 void ini_config_file_destroy(struct ini_cfgfile *file_ctx);
 
-/* Print the file object contents */
-void ini_config_file_print(struct ini_cfgfile *file_ctx);
-
-/* How many errors do we have in the list ? */
+/**
+ * @brief Check parsing errors count
+ *
+ * Query the configuration file object about
+ * how many parsing errors were found during last
+ * parsing operation.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ *
+ * @return Number of errors.
+ */
 unsigned ini_config_error_count(struct ini_cfgfile *file_ctx);
 
-/* Get the list of error strings */
+/**
+ * @brief Get array of parsing errors
+ *
+ * Function returns a newly allocated array of strings
+ * that should be later freed by the \ref ini_config_free_errors
+ * function.
+ * Array can be referenced as a normal array of strings.
+ * The NULL entry indicates the end of the array.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ * @param[out] errors           Array of error strings.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
 int ini_config_get_errors(struct ini_cfgfile *file_ctx,
                           char ***errors);
 
-/* Get the fully resolved file name */
-const char *ini_config_get_filename(struct ini_cfgfile *file_ctx);
-
-/* Free error strings */
+/**
+ * @brief Free array of parsing errors
+ *
+ * Free array of parsing errors previously allocated
+ * by using \ref ini_config_get_errors function.
+ *
+ * @param[in]  errors           Array of error strings.
+ *
+ */
 void ini_config_free_errors(char **errors);
 
-/* Parse the file and create a config object */
-int ini_config_parse(struct ini_cfgfile *file_ctx,
-                     struct ini_cfgobj *ini_config);
-
-/* Copy configuration */
-int ini_config_copy(struct ini_cfgobj *ini_config,
-                    struct ini_cfgobj **ini_new);
-
-/* Function to print errors from the list */
+/**
+ * @brief Print errors to a file
+ *
+ * Prints array of parsing errors previously allocated
+ * by using \ref ini_config_get_errors function into
+ * a provided file.
+ *
+ * @param[in]  file             File or stream to send errors to.
+ * @param[in]  errors           Array of error strings.
+ *
+ */
 void ini_config_print_errors(FILE *file, char **error_list);
 
-/* Merge two configurations together creating a new one */
-int ini_config_merge(struct ini_cfgobj *first,
-                     struct ini_cfgobj *second,
-                     uint32_t collision_flags,
-                     struct ini_cfgobj **result);
-
-/* Set the folding boundary for multiline values.
- * Use before serializing and saving to a file if the
- * default boundary of 80 characters does not work for you.
+/**
+ * @brief Get the fully resolved file name
+ *
+ * Returns the full name to the configuration file
+ * that was resolved by the library.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ *
+ * @return Full file name.
  */
-int ini_config_set_wrap(struct ini_cfgobj *ini_config,
-                        uint32_t boundary);
+const char *ini_config_get_filename(struct ini_cfgfile *file_ctx);
 
-/* Serialize configuration object into provided buffer */
-int ini_config_serialize(struct ini_cfgobj *ini_config,
-                         struct simplebuffer *sbobj);
 
-/* Check access */
+/**
+ * @brief Print file context
+ *
+ * Function is useful for debugging purposes only.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ *
+ */
+void ini_config_file_print(struct ini_cfgfile *file_ctx);
+
+/**
+ * @brief Check file properties
+ *
+ * Before parsing it makes sense to make sure
+ * that the file you are trying to read is properly
+ * owned and has proper permissions.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ * @param[in]  flags            Define what to check.
+ *                              One can check file
+ *                              permissions with mask,
+ *                              uid, and gid of the file.
+ * @param[in]  uid              Expected uid of the file.
+ * @param[in]  gid              Expected gid of the file.
+ * @param[in]  mode             Expected mode of the file.
+ * @param[in]  mask             Mask to use in the mode check.
+ *                              Mask is always adjusted to
+ *                              include at least S_IRWXU,
+ *                              S_IRWXG and S_IRWXO
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return EACCES - File attributes do no match expectations.
+ */
 int ini_config_access_check(struct ini_cfgfile *file_ctx,
                             uint32_t flags,
                             uid_t uid,
@@ -330,19 +620,152 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
                             mode_t mode,
                             mode_t mask);
 
-/* Determins if two file context different by comparing
+/**
+ * @brief Check if file has changed
+ *
+ * Compares two configuration file objects.
+ * Determines if two objects are different
+ * by comparing:
  * - time stamp
  * - device ID
  * - i-node
+ *
+ * Function can be used to check if the file
+ * has changed since last time the it was read.
+ *
+ * <i> Note:</i> If the file was deleted and quickly
+ * re-created the kernel seems to restore the same i-node.
+ * The stat structure keeps time granularity of seconds.
+ * As a result if the file is quickly recreated
+ * with the same contents like in the unit test the check
+ * would assume that file did not change.
+ * This is why the unit test has a one second delay.
+ *
+ * @param[in]  file_ctx1        First configuration file object.
+ * @param[in]  file_ctx2        Second configuration file object.
+ * @param[out] changed          A value will be set to 0 if
+ *                              the objects are same and to 1
+ *                              if they are different.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return EACCES - File attributes do no match expectations.
  */
 int ini_config_changed(struct ini_cfgfile *file_ctx1,
                        struct ini_cfgfile *file_ctx2,
                        int *changed);
 
+/**
+ * @brief Parse the file and populate a configuration object
+ *
+ * Function parses the file. It is assumed that
+ * the configuration object was just created.
+ * Using one configuration object in more than one
+ * parsing operation would lead to undetermined results.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ * @param[out] ini_config       Configuration object.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
+int ini_config_parse(struct ini_cfgfile *file_ctx,
+                     struct ini_cfgobj *ini_config);
 
-/****************************************************/
-/* VALUE MANAGEMENT                                 */
-/****************************************************/
+/**
+ * @brief Create a copy of the configuration object
+ *
+ * Function creates a deep copy of all the configuration data.
+ *
+ * @param[in]  ini_config       Original configuration object.
+ * @param[out] ini_new          A new configuration object.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
+int ini_config_copy(struct ini_cfgobj *ini_config,
+                    struct ini_cfgobj **ini_new);
+
+/**
+ * @brief Merge two configuration objects
+ *
+ * Function merges configuration objects and creates
+ * a new resulting object out of the two.
+ *
+ * @param[in]  first            A base object
+ *                              the other object will
+ *                              be merged with.
+ * @param[in]  second           The object that will
+ *                              be merged to the first one.
+ * @param[in]  collision_flags  Flags that control handling
+ *                              of the duplicate sections or keys.
+ * @param[out] result           A new configuration object,
+ *                              the result of the merge.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
+int ini_config_merge(struct ini_cfgobj *first,
+                     struct ini_cfgobj *second,
+                     uint32_t collision_flags,
+                     struct ini_cfgobj **result);
+
+/**
+ * @brief Set the folding boundary
+ *
+ * Set the folding boundary for multiline values.
+ * Use before serializing and saving to a file if the
+ * default boundary of 80 characters does not work for you.
+ *
+ * @param[in]  ini_config       Configuration object.
+ * @param[in]  boundary         Wrapping boundary.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ */
+int ini_config_set_wrap(struct ini_cfgobj *ini_config,
+                        uint32_t boundary);
+
+/**
+ * @brief Serialize configuration object
+ *
+ * Serialize configuration object into provided buffer.
+ * Use buffer object functions to manipulate or save
+ * the buffer to a file/stream.
+ *
+ * @param[in]  ini_config       Configuration object.
+ * @param[out] sbobj            Serialized configuration.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
+int ini_config_serialize(struct ini_cfgobj *ini_config,
+                         struct simplebuffer *sbobj);
+
+
+/* TODO: Functions that add, modify or delete sections and values in
+ * the configuration object.
+ */
+
+/**
+ * @}
+ */
+
+
+/**
+ * @defgroup ini_section_and_attr Section and attribute management
+ *
+ * Functions in this section allow getting the lists of
+ * sections in the configuration file and keys in a section
+ * as arrays of strings.
+ *
+ * @{
+ *
+ */
 
 /**
  * @brief Get list of sections.
@@ -350,7 +773,7 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
  * Get list of sections from the configuration object
  * as an array of strings.
  * Function allocates memory for the array of the sections.
- * Use \ref free_section_list() to free allocated memory.
+ * Use \ref ini_free_section_list() to free allocated memory.
  *
  * @param[in]  ini_config       Configuration object.
  * @param[out] size             If not NULL parameter will
@@ -364,27 +787,27 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
  *
  * @return Array of strings.
  */
-char **get_section_list(struct ini_cfgobj *ini_config,
-                        int *size,
-                        int *error);
+char **ini_get_section_list(struct ini_cfgobj *ini_config,
+                            int *size,
+                            int *error);
 
 /**
  * @brief Free list of sections.
  *
- * The section array created by \ref get_section_list()
+ * The section array created by \ref ini_get_section_list()
  * should be freed using this function.
  *
  * @param[in] section_list       Array of strings returned by
- *                               \ref get_section_list() function.
+ *                               \ref ini_get_section_list() function.
  */
-void free_section_list(char **section_list);
+void ini_free_section_list(char **section_list);
 
 /**
  * @brief Get list of attributes.
  *
  * Get list of attributes in a section as an array of strings.
  * Function allocates memory for the array of attributes.
- * Use \ref free_attribute_list() to free allocated memory.
+ * Use \ref ini_free_attribute_list() to free allocated memory.
  *
  * @param[in]  ini_config       Configuration object.
  * @param[in]  section          Section name.
@@ -399,115 +822,89 @@ void free_section_list(char **section_list);
  *
  * @return Array of strings.
  */
-char **get_attribute_list(struct ini_cfgobj *ini_config,
-                          const char *section,
-                          int *size,
-                          int *error);
+char **ini_get_attribute_list(struct ini_cfgobj *ini_config,
+                              const char *section,
+                              int *size,
+                              int *error);
 
 /**
  * @brief Free list of attributes.
  *
- * The attribute array created by \ref get_attribute_list()
+ * The attribute array created by \ref ini_get_attribute_list()
  * should be freed using this function.
  *
  * @param[in] attr_list          Array of strings returned by
- *                               \ref get_attribute_list() function.
+ *                               \ref ini_get_attribute_list() function.
  */
-void free_attribute_list(char **attr_list);
+void ini_free_attribute_list(char **attr_list);
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup ini_value Value management
+ *
+ * This section contains value management functions. These functions
+ * can be used to interpret values that are stored in the configuration
+ * object in memory.
+ *
+ * @{
+ *
+ */
 
 
 /**
- * @brief Get an integer value from the configuration.
+ * @brief Retrieve a value object form the configuration.
  *
- * Function looks up the section and key in
- * in the configuration object and tries to convert
- * into an integer number.
- * The results can be different depending upon
- * how the caller tries to interpret the value.
- * If "strict" parameter is non zero the function will fail
- * if there are more characters after the last digit.
- * The value range is from INT_MIN to INT_MAX.
+ * Check return error code first. If the function returns
+ * an error there is a serious problem.
+ * Then check if object is found. Function will set
+ * vo parameter to NULL if no attribute with
+ * provided name is found in the collection.
  *
- * @param[in]  ini_config       Configuration object.
- * @param[in]  section          Section of the configuration file.
- * @param[in]  name             Key to look up inside the section.
- * @param[in]  strict           Fail the function if
- *                              the symbol after last digit
- *                              is not valid.
- * @param[in]  def              Default value to use if
- *                              conversion failed.
- * @param[out] value            Fetched value or default
- *
- * In case of failure the function assignes default value
- * to the resulting value and returns corresponging error code.
- *
+ * @param[in]  section          Section name.
+ *                              If NULL assumed default.
+ * @param[in]  name             Attribute name to find.
+ * @param[in]  ini_config       Configuration object to search.
+ * @param[in]  mode             See \ref searchmode "search mode"
+ *                              section for more info.
+ * @param[out] vo               Value object.
+ *                              Will be set to NULL if
+ *                              element with the given name
+ *                              is not found.
  * @return 0 - Success.
- * @return EINVAL - Argument is invalid.
- * @return EIO - Conversion failed due invalid characters.
- * @return ERANGE - Value is out of range.
- * @return ENOKEY - Value is not found.
+ * @return EINVAL - Invalid parameter.
  * @return ENOMEM - No memory.
+ *
  */
-int get_int_config_value(struct ini_cfgobj *ini_config,
-                         const char *section,
-                         const char *name,
-                         int strict,
-                         int def,
-                         int *value);
 
-/* Similar functions are below */
-int get_long_config_value(struct ini_cfgobj *ini_config,
-                          const char *section,
-                          const char *name,
-                          int strict,
-                          long def,
-                          long *value);
-
-int get_unsigned_config_value(struct ini_cfgobj *ini_config,
-                              const char *section,
-                              const char *name,
-                              int strict,
-                              unsigned def,
-                              unsigned *value);
-
-int get_ulong_config_value(struct ini_cfgobj *ini_config,
-                           const char *section,
-                           const char *name,
-                           int strict,
-                           unsigned long def,
-                           unsigned long *value);
-
-
-
-
-
-
-
-#ifdef THE_PART_I_HAVE_PROCESSED
-
-
-
+int ini_get_config_valueobj(const char *section,
+                            const char *name,
+                            struct ini_cfgobj *ini_config,
+                            int mode,
+                            struct value_obj **vo);
 
 
 
 /**
- * @brief Convert item value to integer number.
+ * @brief Convert value to integer number.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
- * into an int32_t number. Any of the conversion
+ * and stored in the configuration element
+ * into an int number. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
- * The results can be different depending upon
+ * stored as a string inside the value object.
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
  * The value range is from INT_MIN to INT_MAX.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
  *                              the symbol after last digit
  *                              is not valid.
@@ -530,13 +927,197 @@ int get_ulong_config_value(struct ini_cfgobj *ini_config,
  * In case of failure the function returns default value and
  * sets error code into the provided variable.
  */
-int32_t get_int32_config_value(struct collection_item *item,
+int ini_get_int_config_value(struct value_obj *vo,
+                             int strict,
+                             int def,
+                             int *error);
+
+/**
+ * @brief Convert item value to unsigned number.
+ *
+ * This is a conversion function.
+ * It converts the value read from the INI file
+ * and stored in the configuration item
+ * into an unsigned number. Any of the conversion
+ * functions can be used to try to convert the value
+ * stored as a string inside the item.
+ * The result can be different depending upon
+ * how the caller tries to interpret the value.
+ * If "strict" parameter is non zero the function will fail
+ * if there are more characters after the last digit.
+ * The value range is from 0 to UINT_MAX.
+ *
+ * @param[in]  item             Item to interpret.
+ *                              It must be retrieved using
+ *                              \ref ini_get_config_valueobj().
+ * @param[in]  strict           Fail the function if
+ *                              the symbol after last digit
+ *                              is not valid.
+ * @param[in]  def              Default value to use if
+ *                              conversion failed.
+ * @param[out] error            Variable will get the value
+ *                              of the error code if
+ *                              error happened.
+ *                              Can be NULL. In this case
+ *                              function does not set
+ *                              the code.
+ *                              Codes:
+ *                              - 0 - Success.
+ *                              - EINVAL - Argument is invalid.
+ *                              - EIO - Conversion failed due
+ *                                invalid characters.
+ *                              - ERANGE - Value is out of range.
+ *
+ * @return Converted value.
+ * In case of failure the function returns default value and
+ * sets error code into the provided variable.
+ */
+
+unsigned ini_get_unsigned_config_value(struct value_obj *vo,
+                                       int strict,
+                                       unsigned def,
+                                       int *error);
+
+/**
+ * @brief Convert value to long number.
+ *
+ * This is a conversion function.
+ * It converts the value read from the INI file
+ * and stored in the configuration element
+ * into a long number. Any of the conversion
+ * functions can be used to try to convert the value
+ * stored as a string inside the value object.
+ * The result can be different depending upon
+ * how the caller tries to interpret the value.
+ * If "strict" parameter is non zero the function will fail
+ * if there are more characters after the last digit.
+ * The value range is from LONG_MIN to LONG_MAX.
+ *
+ * @param[in]  vo               Value object to interpret.
+ *                              It must be retrieved using
+ *                              \ref ini_get_config_valueobj().
+ * @param[in]  strict           Fail the function if
+ *                              the symbol after last digit
+ *                              is not valid.
+ * @param[in]  def              Default value to use if
+ *                              conversion failed.
+ * @param[out] error            Variable will get the value
+ *                              of the error code if
+ *                              error happened.
+ *                              Can be NULL. In this case
+ *                              function does not set
+ *                              the code.
+ *                              Codes:
+ *                              - 0 - Success.
+ *                              - EINVAL - Argument is invalid.
+ *                              - EIO - Conversion failed due
+ *                                invalid characters.
+ *                              - ERANGE - Value is out of range.
+ *
+ * @return Converted value.
+ * In case of failure the function returns default value and
+ * sets error code into the provided variable.
+ */
+
+long ini_get_long_config_value(struct value_obj *vo,
                                int strict,
-                               int32_t def,
+                               long def,
                                int *error);
 
 /**
- * @brief Convert item value to integer number.
+ * @brief Convert value to unsigned long number.
+ *
+ * This is a conversion function.
+ * It converts the value read from the INI file
+ * and stored in the configuration element
+ * into an unsigned long number. Any of the conversion
+ * functions can be used to try to convert the value
+ * stored as a string inside the value object.
+ * The result can be different depending upon
+ * how the caller tries to interpret the value.
+ * If "strict" parameter is non zero the function will fail
+ * if there are more characters after the last digit.
+ * The value range is from 0 to ULONG_MAX.
+ *
+ * @param[in]  vo               Value object to interpret.
+ *                              It must be retrieved using
+ *                              \ref ini_get_config_valueobj().
+ * @param[in]  strict           Fail the function if
+ *                              the symbol after last digit
+ *                              is not valid.
+ * @param[in]  def              Default value to use if
+ *                              conversion failed.
+ * @param[out] error            Variable will get the value
+ *                              of the error code if
+ *                              error happened.
+ *                              Can be NULL. In this case
+ *                              function does not set
+ *                              the code.
+ *                              Codes:
+ *                              - 0 - Success.
+ *                              - EINVAL - Argument is invalid.
+ *                              - EIO - Conversion failed due
+ *                                invalid characters.
+ *                              - ERANGE - Value is out of range.
+ *
+ * @return Converted value.
+ * In case of failure the function returns default value and
+ * sets error code into the provided variable.
+ */
+
+unsigned long ini_get_ulong_config_value(struct value_obj *vo,
+                                         int strict,
+                                         unsigned long def,
+                                         int *error);
+
+
+/**
+ * @brief Convert value to int32_t number.
+ *
+ * This is a conversion function.
+ * It converts the value read from the INI file
+ * and stored in the configuration element
+ * into an int32_t number. Any of the conversion
+ * functions can be used to try to convert the value
+ * stored as a string inside the value object.
+ * The result can be different depending upon
+ * how the caller tries to interpret the value.
+ * If "strict" parameter is non zero the function will fail
+ * if there are more characters after the last digit.
+ * The value range is from INT_MIN to INT_MAX.
+ *
+ * @param[in]  vo               Value object to interpret.
+ *                              It must be retrieved using
+ *                              \ref ini_get_config_valueobj().
+ * @param[in]  strict           Fail the function if
+ *                              the symbol after last digit
+ *                              is not valid.
+ * @param[in]  def              Default value to use if
+ *                              conversion failed.
+ * @param[out] error            Variable will get the value
+ *                              of the error code if
+ *                              error happened.
+ *                              Can be NULL. In this case
+ *                              function does not set
+ *                              the code.
+ *                              Codes:
+ *                              - 0 - Success.
+ *                              - EINVAL - Argument is invalid.
+ *                              - EIO - Conversion failed due
+ *                                invalid characters.
+ *                              - ERANGE - Value is out of range.
+ *
+ * @return Converted value.
+ * In case of failure the function returns default value and
+ * sets error code into the provided variable.
+ */
+int32_t ini_get_int32_config_value(struct value_obj *vo,
+                                   int strict,
+                                   int32_t def,
+                                   int *error);
+
+/**
+ * @brief Convert item value to uint32_t number.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
@@ -544,7 +1125,7 @@ int32_t get_int32_config_value(struct collection_item *item,
  * into an uint32_t number. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
@@ -552,7 +1133,7 @@ int32_t get_int32_config_value(struct collection_item *item,
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
  *                              the symbol after last digit
  *                              is not valid.
@@ -575,10 +1156,10 @@ int32_t get_int32_config_value(struct collection_item *item,
  * In case of failure the function returns default value and
  * sets error code into the provided variable.
  */
-uint32_t get_uint32_config_value(struct collection_item *item,
-                                 int strict,
-                                 uint32_t def,
-                                 int *error);
+uint32_t ini_get_uint32_config_value(struct value_obj *vo,
+                                     int strict,
+                                     uint32_t def,
+                                     int *error);
 
 /**
  * @brief Convert item value to integer number.
@@ -589,7 +1170,7 @@ uint32_t get_uint32_config_value(struct collection_item *item,
  * into an int64_t number. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
@@ -597,7 +1178,7 @@ uint32_t get_uint32_config_value(struct collection_item *item,
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
  *                              the symbol after last digit
  *                              is not valid.
@@ -620,10 +1201,10 @@ uint32_t get_uint32_config_value(struct collection_item *item,
  * In case of failure the function returns default value and
  * sets error code into the provided variable.
  */
-int64_t get_int64_config_value(struct collection_item *item,
-                               int strict,
-                               int64_t def,
-                               int *error);
+int64_t ini_get_int64_config_value(struct value_obj *vo,
+                                   int strict,
+                                   int64_t def,
+                                   int *error);
 
 /**
  * @brief Convert item value to integer number.
@@ -634,7 +1215,7 @@ int64_t get_int64_config_value(struct collection_item *item,
  * into an uint64_t number. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
@@ -642,7 +1223,7 @@ int64_t get_int64_config_value(struct collection_item *item,
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
  *                              the symbol after last digit
  *                              is not valid.
@@ -665,10 +1246,10 @@ int64_t get_int64_config_value(struct collection_item *item,
  * In case of failure the function returns default value and
  * sets error code into the provided variable.
  */
-uint64_t get_uint64_config_value(struct collection_item *item,
-                                 int strict,
-                                 uint64_t def,
-                                 int *error);
+uint64_t ini_get_uint64_config_value(struct value_obj *vo,
+                                     int strict,
+                                     uint64_t def,
+                                     int *error);
 
 /**
  * @brief Convert item value to floating point number.
@@ -679,14 +1260,14 @@ uint64_t get_uint64_config_value(struct collection_item *item,
  * into a floating point number. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
  *                              the symbol after last digit
  *                              is not valid.
@@ -708,10 +1289,10 @@ uint64_t get_uint64_config_value(struct collection_item *item,
  * In case of failure the function returns default value and
  * sets error code into the provided variable.
  */
-double get_double_config_value(struct collection_item *item,
-                               int strict,
-                               double def,
-                               int *error);
+double ini_get_double_config_value(struct value_obj *vo,
+                                   int strict,
+                                   double def,
+                                   int *error);
 
 /**
  * @brief Convert item value into a logical value.
@@ -722,12 +1303,12 @@ double get_double_config_value(struct collection_item *item,
  * into a Boolean. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  def              Default value to use if
  *                              conversion failed.
  * @param[out] error            Variable will get the value
@@ -746,9 +1327,9 @@ double get_double_config_value(struct collection_item *item,
  * In case of failure the function returns default value and
  * sets error code into the provided variable.
  */
-unsigned char get_bool_config_value(struct collection_item *item,
-                                    unsigned char def,
-                                    int *error);
+unsigned char ini_get_bool_config_value(struct value_obj *vo,
+                                        unsigned char def,
+                                        int *error);
 
 /**
  * @brief Get string configuration value
@@ -759,7 +1340,7 @@ unsigned char get_bool_config_value(struct collection_item *item,
  *
  * @param[in]  item             Item to use.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[out] error            Variable will get the value
  *                              of the error code if
  *                              error happened.
@@ -773,8 +1354,8 @@ unsigned char get_bool_config_value(struct collection_item *item,
  *
  * @return Copy of the string or NULL.
  */
-char *get_string_config_value(struct collection_item *item,
-                              int *error);
+char *ini_get_string_config_value(struct value_obj *vo,
+                                  int *error);
 /**
  * @brief Function returns the string stored in the item.
  *
@@ -784,7 +1365,7 @@ char *get_string_config_value(struct collection_item *item,
  *
  * @param[in]  item             Item to use.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[out] error            Variable will get the value
  *                              of the error code if
  *                              error happened.
@@ -797,8 +1378,8 @@ char *get_string_config_value(struct collection_item *item,
  *
  * @return String from the item.
  */
-const char *get_const_string_config_value(struct collection_item *item,
-                                          int *error);
+const char *ini_get_const_string_config_value(struct value_obj *vo,
+                                              int *error);
 
 /**
  * @brief Convert item value into a binary sequence.
@@ -810,12 +1391,12 @@ const char *get_const_string_config_value(struct collection_item *item,
  * Any of the conversion functions
  * can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
  * The function allocates memory.
  * It is the responsibility of the caller to free it after use.
- * Use \ref free_bin_config_value() for this purpose.
+ * Use \ref ini_free_bin_config_value() for this purpose.
  * Functions will return NULL if conversion failed.
  *
  * Function assumes that the value being interpreted
@@ -829,7 +1410,7 @@ const char *get_const_string_config_value(struct collection_item *item,
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[out] length           Variable that optionally receives
  *                              the length of the binary
  *                              sequence.
@@ -849,19 +1430,19 @@ const char *get_const_string_config_value(struct collection_item *item,
  * @return Converted value.
  * In case of failure the function returns NULL.
  */
-char *get_bin_config_value(struct collection_item *item,
-                           int *length,
-                           int *error);
+char *ini_get_bin_config_value(struct value_obj *vo,
+                               int *length,
+                               int *error);
 
 /**
  * @brief Free binary buffer
  *
- * Free binary value returned by \ref get_bin_config_value().
+ * Free binary value returned by \ref ini_get_bin_config_value().
  *
  * @param[in] bin              Binary buffer to free.
  *
  */
-void free_bin_config_value(char *bin);
+void ini_free_bin_config_value(char *bin);
 
 /**
  * @brief Convert value to an array of strings.
@@ -872,7 +1453,7 @@ void free_bin_config_value(char *bin);
  * into an array of strings. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
  * Separator string includes up to three different separators.
@@ -886,7 +1467,7 @@ void free_bin_config_value(char *bin);
  *
  * The length of the allocated array is returned in "size".
  * Size and error parameters can be NULL.
- * Use \ref free_string_config_array() to free the array after use.
+ * Use \ref ini_free_string_config_array() to free the array after use.
  *
  * The array is always NULL terminated so
  * it is safe not to get size and just loop until
@@ -894,7 +1475,7 @@ void free_bin_config_value(char *bin);
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  sep              String cosisting of separator
  *                              symbols. For example: ",.;" would mean
  *                              that comma, dot and semicolon
@@ -917,10 +1498,10 @@ void free_bin_config_value(char *bin);
  * @return Array of strings.
  * In case of failure the function returns NULL.
  */
-char **get_string_config_array(struct collection_item *item,
-                               const char *sep,
-                               int *size,
-                               int *error);
+char **ini_get_string_config_array(struct value_obj *vo,
+                                   const char *sep,
+                                   int *size,
+                                   int *error);
 
 /**
  * @brief Convert value to an array of strings.
@@ -931,7 +1512,7 @@ char **get_string_config_array(struct collection_item *item,
  * into an array of strings. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
  * Separator string includes up to three different separators.
@@ -945,7 +1526,7 @@ char **get_string_config_array(struct collection_item *item,
  *
  * The length of the allocated array is returned in "size".
  * Size and error parameters can be NULL.
- * Use \ref free_string_config_array() to free the array after use.
+ * Use \ref ini_free_string_config_array() to free the array after use.
  *
  * The array is always NULL terminated so
  * it is safe not to get size and just loop until
@@ -953,7 +1534,7 @@ char **get_string_config_array(struct collection_item *item,
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[in]  sep              String cosisting of separator
  *                              symbols. For example: ",.;" would mean
  *                              that comma, dot and semicolon
@@ -976,10 +1557,10 @@ char **get_string_config_array(struct collection_item *item,
  * @return Array of strings.
  * In case of failure the function returns NULL.
  */
-char **get_raw_string_config_array(struct collection_item *item,
-                                   const char *sep,
-                                   int *size,
-                                   int *error);
+char **ini_get_raw_string_config_array(struct value_obj *vo,
+                                       const char *sep,
+                                       int *size,
+                                       int *error);
 
 /**
  * @brief Convert value to an array of long values.
@@ -990,7 +1571,7 @@ char **get_raw_string_config_array(struct collection_item *item,
  * into an array of long values. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
  * Separators inside the string are detected automatically.
@@ -1000,11 +1581,11 @@ char **get_raw_string_config_array(struct collection_item *item,
  * The length of the allocated array is returned in "size".
  * Size parameter can't be NULL.
  *
- * Use \ref free_long_config_array() to free the array after use.
+ * Use \ref ini_free_long_config_array() to free the array after use.
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[out] size             Variable that receives
  *                              the size of the array.
  * @param[out] error            Variable will get the value
@@ -1023,9 +1604,9 @@ char **get_raw_string_config_array(struct collection_item *item,
  * @return Array of long values.
  * In case of failure the function returns NULL.
  */
-long *get_long_config_array(struct collection_item *item,
-                            int *size,
-                            int *error);
+long *ini_get_long_config_array(struct value_obj *vo,
+                                int *size,
+                                int *error);
 
 /**
  * @brief Convert value to an array of floating point values.
@@ -1036,7 +1617,7 @@ long *get_long_config_array(struct collection_item *item,
  * into an array of floating point values. Any of the conversion
  * functions can be used to try to convert the value
  * stored as a string inside the item.
- * The results can be different depending upon
+ * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
  * Separators inside the string are detected automatically.
@@ -1046,11 +1627,11 @@ long *get_long_config_array(struct collection_item *item,
  * The length of the allocated array is returned in "size".
  * Size parameter can't be NULL.
  *
- * Use \ref free_double_config_array() to free the array after use.
+ * Use \ref ini_free_double_config_array() to free the array after use.
  *
  * @param[in]  item             Item to interpret.
  *                              It must be retrieved using
- *                              \ref get_config_item().
+ *                              \ref ini_get_config_valueobj().
  * @param[out] size             Variable that receives
  *                              the size of the array.
  * @param[out] error            Variable will get the value
@@ -1068,40 +1649,42 @@ long *get_long_config_array(struct collection_item *item,
  * @return Array of floating point values.
  * In case of failure the function returns NULL.
  */
-double *get_double_config_array(struct collection_item *item,
-                                int *size,
-                                int *error);
+double *ini_get_double_config_array(struct value_obj *vo,
+                                    int *size,
+                                    int *error);
 
 /**
  * @brief Free array of string values.
  *
  * Use this function to free the array returned by
- * \ref get_string_config_array() or by
- * \ref get_raw_string_config_array().
+ * \ref ini_get_string_config_array() or by
+ * \ref ini_get_raw_string_config_array().
  *
  * @param[in] str_config        Array of string values.
  */
-void free_string_config_array(char **str_config);
+void ini_free_string_config_array(char **str_config);
 
 /**
  * @brief Free array of long values.
  *
  * Use this function to free the array returned by
- * \ref get_long_config_array().
+ * \ref ini_get_long_config_array().
  *
  * @param[in] array         Array of long values.
  */
-void free_long_config_array(long *array);
+void ini_free_long_config_array(long *array);
 /**
  * @brief Free array of floating pointer values.
  *
  * Use this function to free the array returned by
- * \ref get_double_config_array().
+ * \ref ini_get_double_config_array().
  *
  * @param[in] array         Array of floating pointer values.
  */
-void free_double_config_array(double *array);
+void ini_free_double_config_array(double *array);
 
-#endif
+/**
+ * @}
+ */
 
 #endif
