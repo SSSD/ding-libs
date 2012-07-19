@@ -235,6 +235,9 @@ libini_config_la_SOURCES = \
     ini/ini_configobj.c \
     ini/ini_configobj.h \
     ini/ini_config_priv.h \
+    ini/ini_get_valueobj.c \
+    ini/ini_get_array_valueobj.c \
+    ini/ini_list_valueobj.c \
     trace/trace.h
 libini_config_la_LIBADD = \
     libcollection.la \
