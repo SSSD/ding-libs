@@ -695,11 +695,41 @@ int value_get_concatenated(struct value_obj *vo,
         return EINVAL;
     }
 
+    if (!fullstr)
+    {
+        TRACE_ERROR_NUMBER("Invalid output value", EINVAL);
+        return EINVAL;
+    }
+
     *fullstr = (const char *)simplebuffer_get_buf(vo->unfolded);
 
     TRACE_FLOW_EXIT();
     return EOK;
 }
+
+/* Get length of the concatenated value */
+int value_get_concatenated_len(struct value_obj *vo,
+                               uint32_t *len)
+{
+    TRACE_FLOW_ENTRY();
+
+    if (!vo) {
+        TRACE_ERROR_NUMBER("Invalid object", EINVAL);
+        return EINVAL;
+    }
+
+    if (!len)
+    {
+        TRACE_ERROR_NUMBER("Invalid output value", EINVAL);
+        return EINVAL;
+    }
+
+    *len = simplebuffer_get_len(vo->unfolded);
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
 
 /* Get value's origin */
 int value_get_origin(struct value_obj *vo, uint32_t *origin)
@@ -708,6 +738,12 @@ int value_get_origin(struct value_obj *vo, uint32_t *origin)
 
     if (!vo) {
         TRACE_ERROR_NUMBER("Invalid object", EINVAL);
+        return EINVAL;
+    }
+
+    if (!origin)
+    {
+        TRACE_ERROR_NUMBER("Invalid output value", EINVAL);
         return EINVAL;
     }
 
@@ -724,6 +760,12 @@ int value_get_line(struct value_obj *vo, uint32_t *line)
 
     if (!vo) {
         TRACE_ERROR_NUMBER("Invalid object", EINVAL);
+        return EINVAL;
+    }
+
+    if (!line)
+    {
+        TRACE_ERROR_NUMBER("Invalid output value", EINVAL);
         return EINVAL;
     }
 
@@ -1076,4 +1118,33 @@ extern void ref_array_debug(struct ref_array *ra, int num);
     TRACE_INFO_STRING("Buffer:", (const char *)simplebuffer_get_buf(sbobj));
     TRACE_FLOW_EXIT();
     return error;
+}
+
+/* Print value */
+void value_print(const char *key, struct value_obj *vo)
+{
+
+    int error = EOK;
+    struct simplebuffer *sbobj = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    error = simplebuffer_alloc(&sbobj);
+    if (error) {
+        printf("Failed to allocate dynamic string %d.\n", error);
+        return;
+    }
+
+    /* Serialize */
+    error = value_serialize(vo, key, sbobj);
+    if (error) {
+        printf("Failed to serialize a value object %d.\n", error);
+        simplebuffer_free(sbobj);
+        return;
+    }
+
+    printf("%s", simplebuffer_get_buf(sbobj));
+    simplebuffer_free(sbobj);
+
+    TRACE_FLOW_EXIT();
 }

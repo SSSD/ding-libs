@@ -98,6 +98,10 @@ void value_destroy(struct value_obj *vo);
 int value_get_concatenated(struct value_obj *vo,
                            const char **fullstr);
 
+/* Get length of the concatenated value */
+int value_get_concatenated_len(struct value_obj *vo,
+                               uint32_t *len);
+
 /* Get value's origin */
 int value_get_origin(struct value_obj *vo,
                      uint32_t *origin);
@@ -133,5 +137,7 @@ int value_serialize(struct value_obj *vo,
                     const char *key,
                     struct simplebuffer *sbobj);
 
+/* Print value */
+void value_print(const char *key, struct value_obj *vo);
 
 #endif

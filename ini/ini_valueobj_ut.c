@@ -141,6 +141,8 @@ int other_create_test(FILE *ff, struct value_obj **vo)
     int i;
     uint32_t origin = 0;
     uint32_t line = 0;
+    uint32_t len = 0;
+    uint32_t expected_len = 0;
 
 
     TRACE_FLOW_ENTRY();
@@ -230,7 +232,12 @@ int other_create_test(FILE *ff, struct value_obj **vo)
         return error;
     }
 
-    if (strncmp(fullstr, expected, strlen(expected) + 1) != 0) {
+    /* Get length of the concatenated value */
+    value_get_concatenated_len(new_vo, &len);
+    expected_len = strlen(expected);
+
+    if ((len != expected_len) ||
+        (strncmp(fullstr, expected, expected_len + 1) != 0)) {
         printf("The expected value is different.\n%s\n", fullstr);
         value_destroy(new_vo);
         return EINVAL;
