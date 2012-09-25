@@ -56,10 +56,33 @@ void ini_cleanup_cb(const char *property,
     TRACE_FLOW_EXIT();
 }
 
+/* Clean the search state */
+void ini_config_clean_state(struct ini_cfgobj *ini_config)
+{
+    TRACE_FLOW_ENTRY();
+
+    if (ini_config) {
+        if (ini_config->iterator) col_unbind_iterator(ini_config->iterator);
+        ini_config->iterator = NULL;
+        free(ini_config->section);
+        ini_config->section = NULL;
+        free(ini_config->name);
+        ini_config->name = NULL;
+        ini_config->section_len = 0;
+        ini_config->name_len = 0;
+    }
+
+    TRACE_FLOW_EXIT();
+}
+
+
+
 /* Traverse the collection and clean the object */
 void ini_config_destroy(struct ini_cfgobj *ini_config)
 {
     TRACE_FLOW_ENTRY();
+
+    ini_config_clean_state(ini_config);
 
     if (ini_config) {
         if(ini_config->cfg) {
@@ -97,6 +120,11 @@ int ini_config_create(struct ini_cfgobj **ini_config)
 
     new_co->cfg = NULL;
     new_co->boundary = INI_WRAP_BOUNDARY;
+    new_co->section = NULL;
+    new_co->name = NULL;
+    new_co->section_len = 0;
+    new_co->name_len = 0;
+    new_co->iterator = NULL;
 
     /* Create a collection to hold configuration data */
     error = col_create_collection(&(new_co->cfg),
@@ -235,6 +263,11 @@ int ini_config_copy(struct ini_cfgobj *ini_config,
 
     new_co->cfg = NULL;
     new_co->boundary = ini_config->boundary;
+    new_co->section = NULL;
+    new_co->name = NULL;
+    new_co->section_len = 0;
+    new_co->name_len = 0;
+    new_co->iterator = NULL;
 
     error = col_copy_collection_with_cb(&(new_co->cfg),
                                         ini_config->cfg,

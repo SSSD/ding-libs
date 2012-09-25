@@ -33,6 +33,13 @@ struct ini_cfgobj {
     struct collection_item *cfg;
     /* Boundary */
     uint32_t boundary;
+    /* Last search state */
+    char *section;
+    char *name;
+    int section_len;
+    int name_len;
+    struct collection_iterator *iterator;
+
     /*...         */
     /* Statistics? Timestamps? When created? Modified? - TBD */
     /*...         */
