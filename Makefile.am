@@ -213,7 +213,7 @@ endif
 
 lib_LTLIBRARIES += libini_config.la
 dist_pkgconfig_DATA += ini/ini_config.pc
-dist_include_HEADERS += ini/ini_config.h
+dist_include_HEADERS += ini/ini_config.h ini/ini_configobj.h ini/ini_valueobj.h
 
 libini_config_la_SOURCES = \
     ini/ini_config.c \
@@ -252,7 +252,7 @@ dist_noinst_DATA += \
     ini/ini.d/real.conf \
     ini/ini.d/test.conf \
     ini/ini.d/ipa.conf \
-    ini/ini.d/foo.conf \
+    ini/ini.d/foo.conf.in \
     ini/ini.d/mysssd.conf \
     ini/ini.d/smerge.conf \
     ini/ini.d/sexpect.conf
