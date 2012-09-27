@@ -635,6 +635,7 @@ int value_copy(struct value_obj *vo,
     new_vo->boundary = vo->boundary;
     new_vo->raw_lines = NULL;
     new_vo->raw_lengths = NULL;
+    new_vo->ic = NULL;
 
     error = value_create_arrays(&(new_vo->raw_lines),
                                 &(new_vo->raw_lengths));
@@ -666,7 +667,6 @@ int value_copy(struct value_obj *vo,
             return error;
         }
     }
-    else new_vo->ic = NULL;
 
     *copy_vo = new_vo;
 
