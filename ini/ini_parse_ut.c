@@ -226,8 +226,11 @@ int read_again_test(void)
         error = system(command);
         INIOUT(printf("Comparison of %s %s returned: %d\n",
                       infile, outfile, error));
-        if (error) break;
-
+        if ((error) || (WEXITSTATUS(error))) {
+            printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+            error = -1;
+            break;
+        }
         i++;
     }
 
@@ -455,6 +458,10 @@ int merge_values_test(void)
     error = system(command);
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   resname, checkname, error));
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+        return -1;
+    }
 
     INIOUT(printf("<==== Merge values test end ====>\n"));
 
@@ -476,7 +483,6 @@ int merge_section_test(void)
                              INI_MS_ERROR,
                              INI_MS_OVERWRITE,
                              INI_MS_PRESERVE,
-                             INI_MS_ALLOW,
                              INI_MS_DETECT };
 
     uint32_t mflags[] = { INI_MV2S_OVERWRITE,
@@ -489,7 +495,6 @@ int merge_section_test(void)
                               "ERROR",
                               "OVERWRITE",
                               "PRESERVE",
-                              "ALLOW",
                               "DETECT" };
 
     const char *mstr[] = { "OVERWRITE",
@@ -524,7 +529,7 @@ int merge_section_test(void)
         return error;
     }
 
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < 5; i++) {
         for (j = 0; j < 5; j++) {
 
             INIOUT(printf("<==== Testing mode %s + %s ====>\n",
@@ -656,6 +661,11 @@ int merge_section_test(void)
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   resname, checkname, error));
 
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run diff command %d %d.\n",  error, WEXITSTATUS(error));
+        return -1;
+    }
+
     INIOUT(printf("<==== Merge section test end ====>\n"));
 
     return error;
@@ -685,9 +695,9 @@ int startup_test(void)
     INIOUT(printf("Running command '%s'\n", command));
 
     error = system(command);
-    if(error) {
-        printf("Failed to run copy command %d.\n",  error);
-        return error;
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+        return -1;
     }
 
     INIOUT(printf("Running chmod 660 on file '%s'\n", outfile));
@@ -804,14 +814,14 @@ int reload_test(void)
     INIOUT(printf("Running command '%s'\n", command));
 
     error = system(command);
-    if(error) {
-        printf("Failed to run copy command %d.\n",  error);
-        return error;
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+        return -1;
     }
 
     INIOUT(printf("Running chmod 660 on file '%s'\n", outfile));
     error = chmod(outfile, S_IRUSR | S_IWUSR);
-    if(error) {
+    if (error) {
         error = errno;
         printf("Failed to run chmod command %d.\n",  error);
         return error;
@@ -912,10 +922,10 @@ int reload_test(void)
     INIOUT(printf("Copy file again with command '%s'\n", command));
 
     error = system(command);
-    if(error) {
-        printf("Failed to run copy command %d.\n",  error);
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
         ini_config_file_destroy(file_ctx);
-        return error;
+        return -1;
     }
 
     INIOUT(printf("Read file again.\n"));

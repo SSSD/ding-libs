@@ -278,7 +278,7 @@
  * These flags should be used during parsing to handle duplicate
  * keys coming from the same section scattered across the ini file.
  * These flags also can be used to specify the rules of merging
- * values that come from two files separate configuration files.
+ * values that come from two different configuration files.
  *
  * @{
  */
@@ -304,7 +304,7 @@
  * These flags should be used during parsing to handle duplicate
  * sections scattered across the ini file.
  * These flags also can be used to specify the rules of merging
- * sections that come from two separate configuration files.
+ * sections that come from two different configuration files.
  *
  * @{
  */
@@ -316,10 +316,8 @@
 #define INI_MS_OVERWRITE 0x0200
 /** @brief Second section is discarded */
 #define INI_MS_PRESERVE  0x0300
-/** @brief Duplicates are allowed */
-#define INI_MS_ALLOW     0x0400
-/** @brief Duplicates are allowed but errors are logged */
-#define INI_MS_DETECT    0x0500
+/** @brief Merge but log errors if duplicate sections are detected */
+#define INI_MS_DETECT    0x0400
 
 /**
  * @}

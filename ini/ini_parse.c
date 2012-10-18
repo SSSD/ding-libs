@@ -500,7 +500,6 @@ static int parser_save_section(struct parser_obj *po)
 {
     int error = EOK;
     uint32_t mergemode;
-    int add = 0;
     int merge = 0;
 
     TRACE_FLOW_ENTRY();
@@ -548,11 +547,6 @@ static int parser_save_section(struct parser_obj *po)
                                         ini_cleanup_cb,
                                         NULL);
                 po->sec = NULL;
-                break;
-
-            case INI_MS_ALLOW:
-                TRACE_INFO_STRING("Allow mode", "");
-                add = 1;
                 break;
 
             case INI_MS_OVERWRITE:
@@ -603,9 +597,7 @@ static int parser_save_section(struct parser_obj *po)
 
             po->merge_sec = NULL;
         }
-        else add = 1;
-
-        if (add) {
+        else {
             /* Add section to configuration */
             TRACE_INFO_STRING("Now adding collection", "");
             error = col_add_collection_to_collection(po->top,
