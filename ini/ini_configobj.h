@@ -561,7 +561,7 @@ void ini_config_free_errors(char **errors);
  * a provided file.
  *
  * @param[in]  file             File or stream to send errors to.
- * @param[in]  errors           Array of error strings.
+ * @param[in]  error_list       Array of error strings.
  *
  */
 void ini_config_print_errors(FILE *file, char **error_list);
@@ -933,21 +933,21 @@ int ini_get_int_config_value(struct value_obj *vo,
                              int *error);
 
 /**
- * @brief Convert item value to unsigned number.
+ * @brief Convert value object to a unsigned number.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into an unsigned number. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
  * The value range is from 0 to UINT_MAX.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
@@ -1117,21 +1117,21 @@ int32_t ini_get_int32_config_value(struct value_obj *vo,
                                    int *error);
 
 /**
- * @brief Convert item value to uint32_t number.
+ * @brief Convert value to uint32_t number.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration value
  * into an uint32_t number. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
  * The value range is from 0 to ULONG_MAX.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
@@ -1162,21 +1162,21 @@ uint32_t ini_get_uint32_config_value(struct value_obj *vo,
                                      int *error);
 
 /**
- * @brief Convert item value to integer number.
+ * @brief Convert value to integer number.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into an int64_t number. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
  * The value range is from LLONG_MIN to LLONG_MAX.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
@@ -1207,21 +1207,21 @@ int64_t ini_get_int64_config_value(struct value_obj *vo,
                                    int *error);
 
 /**
- * @brief Convert item value to integer number.
+ * @brief Convert value to integer number.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into an uint64_t number. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
  * The value range is from 0 to ULLONG_MAX.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
@@ -1252,20 +1252,20 @@ uint64_t ini_get_uint64_config_value(struct value_obj *vo,
                                      int *error);
 
 /**
- * @brief Convert item value to floating point number.
+ * @brief Convert value to floating point number.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into a floating point number. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  * If "strict" parameter is non zero the function will fail
  * if there are more characters after the last digit.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  strict           Fail the function if
@@ -1295,18 +1295,18 @@ double ini_get_double_config_value(struct value_obj *vo,
                                    int *error);
 
 /**
- * @brief Convert item value into a logical value.
+ * @brief Convert value into a logical value.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into a Boolean. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  def              Default value to use if
@@ -1332,13 +1332,14 @@ unsigned char ini_get_bool_config_value(struct value_obj *vo,
                                         int *error);
 
 /**
- * @brief Get string configuration value
+ * @brief Get the copy of string stored in the configuration value
  *
- * Function creates a copy of the string value stored in the item.
+ * Function creates a copy of the string value stored in
+ * the configuration element.
  * Returned value needs to be freed after use.
  * If error occurred the returned value will be NULL.
  *
- * @param[in]  item             Item to use.
+ * @param[in]  vo               Value object to use.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[out] error            Variable will get the value
@@ -1357,13 +1358,13 @@ unsigned char ini_get_bool_config_value(struct value_obj *vo,
 char *ini_get_string_config_value(struct value_obj *vo,
                                   int *error);
 /**
- * @brief Function returns the string stored in the item.
+ * @brief Get the string stored in the configuration value
  *
  * Function returns a reference to the string value
- * stored inside the item. This string can't be altered.
- * The string will go out of scope if the item is deleted.
+ * stored inside the configuration element. This string can't be altered.
+ * The string will go out of scope if the value object is deleted.
  *
- * @param[in]  item             Item to use.
+ * @param[in]  vo               Value object to use.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[out] error            Variable will get the value
@@ -1376,21 +1377,21 @@ char *ini_get_string_config_value(struct value_obj *vo,
  *                              - 0 - Success.
  *                              - EINVAL - Argument is invalid.
  *
- * @return String from the item.
+ * @return String from the value object.
  */
 const char *ini_get_const_string_config_value(struct value_obj *vo,
                                               int *error);
 
 /**
- * @brief Convert item value into a binary sequence.
+ * @brief Convert value into a binary sequence.
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into a sequence of bytes.
  * Any of the conversion functions
  * can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
@@ -1408,7 +1409,7 @@ const char *ini_get_const_string_config_value(struct value_obj *vo,
  *
  * Example: '0a2BFeCc'
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[out] length           Variable that optionally receives
@@ -1449,10 +1450,10 @@ void ini_free_bin_config_value(char *bin);
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration value object
  * into an array of strings. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
@@ -1473,7 +1474,7 @@ void ini_free_bin_config_value(char *bin);
  * it is safe not to get size and just loop until
  * array element is NULL.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  sep              String cosisting of separator
@@ -1508,10 +1509,10 @@ char **ini_get_string_config_array(struct value_obj *vo,
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into an array of strings. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
@@ -1532,7 +1533,7 @@ char **ini_get_string_config_array(struct value_obj *vo,
  * it is safe not to get size and just loop until
  * array element is NULL.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[in]  sep              String cosisting of separator
@@ -1567,10 +1568,10 @@ char **ini_get_raw_string_config_array(struct value_obj *vo,
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into an array of long values. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
@@ -1583,7 +1584,7 @@ char **ini_get_raw_string_config_array(struct value_obj *vo,
  *
  * Use \ref ini_free_long_config_array() to free the array after use.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[out] size             Variable that receives
@@ -1613,10 +1614,10 @@ long *ini_get_long_config_array(struct value_obj *vo,
  *
  * This is a conversion function.
  * It converts the value read from the INI file
- * and stored in the configuration item
+ * and stored in the configuration element
  * into an array of floating point values. Any of the conversion
  * functions can be used to try to convert the value
- * stored as a string inside the item.
+ * stored as a string inside the value object.
  * The result can be different depending upon
  * how the caller tries to interpret the value.
  *
@@ -1629,7 +1630,7 @@ long *ini_get_long_config_array(struct value_obj *vo,
  *
  * Use \ref ini_free_double_config_array() to free the array after use.
  *
- * @param[in]  item             Item to interpret.
+ * @param[in]  vo               Value object to interpret.
  *                              It must be retrieved using
  *                              \ref ini_get_config_valueobj().
  * @param[out] size             Variable that receives
