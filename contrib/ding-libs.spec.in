@@ -306,6 +306,7 @@ structure
 %{_includedir}/ini_config.h
 %{_includedir}/ini_configobj.h
 %{_includedir}/ini_valueobj.h
+%{_includedir}/ini_comment.h
 %{_libdir}/libini_config.so
 %{_libdir}/pkgconfig/ini_config.pc
 %doc ini/doc/html/

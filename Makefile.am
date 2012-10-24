@@ -213,7 +213,7 @@ endif
 
 lib_LTLIBRARIES += libini_config.la
 dist_pkgconfig_DATA += ini/ini_config.pc
-dist_include_HEADERS += ini/ini_config.h ini/ini_configobj.h ini/ini_valueobj.h
+dist_include_HEADERS += ini/ini_config.h ini/ini_configobj.h ini/ini_valueobj.h ini/ini_comment.h
 
 libini_config_la_SOURCES = \
     ini/ini_config.c \
