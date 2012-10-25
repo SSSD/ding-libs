@@ -284,6 +284,7 @@ Summary: Development files for libini_config
 Group: Development/Libraries
 License: LGPLv3+
 Requires: libini_config = %{ini_config_version}-%{release}
+Requires: libcollection-devel = %{collection_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config-devel
@@ -303,6 +304,8 @@ structure
 %files -n libini_config-devel
 %defattr(-,root,root,-)
 %{_includedir}/ini_config.h
+%{_includedir}/ini_configobj.h
+%{_includedir}/ini_valueobj.h
 %{_libdir}/libini_config.so
 %{_libdir}/pkgconfig/ini_config.pc
 %doc ini/doc/html/
