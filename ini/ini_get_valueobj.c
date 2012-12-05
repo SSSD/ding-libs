@@ -761,7 +761,7 @@ char *ini_get_bin_config_value(struct value_obj *vo,
     len -= 2;
     for (i = 0; i < len; i++) {
         if (!isxdigit(buff[i])) {
-            TRACE_ERROR_STRING("Invalid encoding for binary data", buff[i]);
+            TRACE_ERROR_STRING("Invalid encoding for binary data", buff);
             if (error) *error = EIO;
             return NULL;
         }
