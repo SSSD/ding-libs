@@ -405,7 +405,7 @@ int vo_basic_test(void)
         ic = NULL;
         error = create_comment(wrap, &ic);
         if (error) {
-            printf("Failed to create a new value object %d.\n", error);
+            printf("Failed to create a new comment object %d.\n", error);
             fclose(ff);
             return error;
         }
@@ -461,7 +461,7 @@ int vo_basic_test(void)
     ic = NULL;
     error = create_comment(100, &ic);
     if (error) {
-        printf("Failed to create a new value object %d.\n", error);
+        printf("Failed to create a new comment object %d.\n", error);
         fclose(ff);
         return error;
     }
@@ -625,6 +625,89 @@ int vo_show_test(void)
     return EOK;
 }
 
+int vo_mc_test(void)
+{
+    int error = EOK;
+    struct value_obj *vo1 = NULL;
+    struct value_obj *vo2 = NULL;
+    struct ini_comment *ic = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    VOOUT(printf("<=== Merge Comment Test ===>\n"));
+
+    error = create_comment(1, &ic);
+    if (error) {
+        printf("Failed to create a new comment object %d.\n", error);
+        return error;
+    }
+
+    error = value_create_new("test1",
+                             5,
+                             INI_VALUE_CREATED,
+                             3,
+                             80,
+                             ic,
+                             &vo1);
+    if (error) {
+        printf("Failed to create the first value object %d.\n", error);
+        ini_comment_destroy(ic);
+        return error;
+    }
+
+    error = create_comment(2, &ic);
+    if (error) {
+        printf("Failed to create a new comment object %d.\n", error);
+        value_destroy(vo1);
+        return error;
+    }
+
+    error = value_create_new("test2",
+                             5,
+                             INI_VALUE_CREATED,
+                             3,
+                             80,
+                             ic,
+                             &vo2);
+    if (error) {
+        printf("Failed to create the second value object %d.\n", error);
+        ini_comment_destroy(ic);
+        value_destroy(vo1);
+        return error;
+    }
+
+    /* Merge comment from one value into another */
+    error = value_merge_comment(vo2, vo1);
+    if (error) {
+        printf("Failed to merge comments %d.\n", error);
+        value_destroy(vo1);
+        value_destroy(vo2);
+        return error;
+    }
+
+    value_destroy(vo2);
+
+    VOOUT(printf("<=== Key ===>\n"));
+    VOOUT(value_print("key", vo1));
+
+    error = value_extract_comment(vo1, &ic);
+    if (error) {
+        printf("Failed to extract comment %d.\n", error);
+        value_destroy(vo1);
+        return error;
+    }
+
+    value_destroy(vo1);
+
+    VOOUT(printf("<=== Comment ===>\n"));
+    VOOUT(ini_comment_print(ic, stdout));
+    ini_comment_destroy(ic);
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
 /* Main function of the unit test */
 int main(int argc, char *argv[])
 {
@@ -632,6 +715,7 @@ int main(int argc, char *argv[])
     test_fn tests[] = { vo_basic_test,
                         vo_copy_test,
                         vo_show_test,
+                        vo_mc_test,
                         NULL };
     test_fn t;
     int i = 0;

@@ -943,10 +943,8 @@ int value_serialize(struct value_obj *vo,
                     struct simplebuffer *sbobj)
 {
     int error = EOK;
-    uint32_t num = 0;
     uint32_t i = 0;
     uint32_t len = 0;
-    char *commentline = NULL;
     char *ptr = NULL;
     char *part = NULL;
     int sec = 0;
@@ -962,39 +960,10 @@ int value_serialize(struct value_obj *vo,
 
     /* Put comment first */
     if (vo->ic) {
-
-        /* Get number of lines in the comment */
-        error = ini_comment_get_numlines(vo->ic, &num);
+        error = ini_comment_serialize(vo->ic, sbobj);
         if (error) {
-            TRACE_ERROR_NUMBER("Failed to get number of lines", errno);
+            TRACE_ERROR_NUMBER("Failed serialize comment", error);
             return error;
-        }
-
-        for (i = 0; i < num; i++) {
-
-            len = 0;
-            commentline = NULL;
-
-            error = ini_comment_get_line(vo->ic, i, &commentline, &len);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to get number of lines", errno);
-                return error;
-            }
-
-            error = simplebuffer_add_raw(sbobj,
-                                         commentline,
-                                         len,
-                                         INI_VALUE_BLOCK);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to add comment", error);
-                return error;
-            }
-
-            error = simplebuffer_add_cr(sbobj);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to add CR", error);
-                return error;
-            }
         }
     }
 
@@ -1119,6 +1088,48 @@ extern void ref_array_debug(struct ref_array *ra, int num);
     TRACE_FLOW_EXIT();
     return error;
 }
+
+/* Merge comment from one value into another */
+int value_merge_comment(struct value_obj *vo_donor,
+                        struct value_obj *vo)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    if ((!vo) || (!vo_donor)) {
+        TRACE_ERROR_NUMBER("Invalid input parameter", EINVAL);
+        return EINVAL;
+    }
+
+    if (vo_donor->ic) {
+
+        /* If there is something to add */
+
+        if (vo->ic) {
+
+            /* Merge comments if both present */
+            error = ini_comment_add(vo_donor->ic, vo->ic);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to merge the comment", error);
+                return error;
+            }
+        }
+        else {
+
+            /* Copy comment if only donor present */
+            error = ini_comment_copy(vo_donor->ic, &(vo->ic));
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to merge the comment", error);
+                return error;
+            }
+        }
+    }
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
 
 /* Print value */
 void value_print(const char *key, struct value_obj *vo)

@@ -132,6 +132,10 @@ int value_extract_comment(struct value_obj *vo,
 int value_put_comment(struct value_obj *vo,
                       struct ini_comment *ic);
 
+/* Merge comment from one value into another */
+int value_merge_comment(struct value_obj *vo_donor,
+                        struct value_obj *vo);
+
 /* Serialize value */
 int value_serialize(struct value_obj *vo,
                     const char *key,
