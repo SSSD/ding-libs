@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "collection.h"
+#include "ini_comment.h"
 
 /* Configuration object */
 struct ini_cfgobj {
@@ -33,6 +34,8 @@ struct ini_cfgobj {
     struct collection_item *cfg;
     /* Boundary */
     uint32_t boundary;
+    /* Last comment */
+    struct ini_comment *last_comment;
     /* Last search state */
     char *section;
     char *name;

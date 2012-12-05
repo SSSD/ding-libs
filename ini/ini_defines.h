@@ -63,7 +63,6 @@
 #define INI_ERROR_NAME  "errname"
 #define INI_CONFIG_NAME "INI"
 
-#define INI_SPECIAL_KEY "="
 #define INI_SECTION_KEY "["
 
 /* Internal sizes. MAX_KEY is defined in config.h */
@@ -81,6 +80,8 @@
 
 /* This constant belongs here. */
 #define COL_CLASS_INI_BASE        20000
+#define COL_CLASS_INI_CONFIG      COL_CLASS_INI_BASE + 0
+
 /**
  * @brief A one level collection of parse errors.
  *

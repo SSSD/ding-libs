@@ -967,12 +967,6 @@ int value_serialize(struct value_obj *vo,
         }
     }
 
-    if (strncmp(key, INI_SPECIAL_KEY, sizeof(INI_SPECIAL_KEY)) == 0) {
-        /* Special key carries only a comment */
-        TRACE_FLOW_EXIT();
-        return EOK;
-    }
-
     /* Handle the case it is a section key */
     if (strncmp(key,
                 INI_SECTION_KEY,

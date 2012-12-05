@@ -55,6 +55,7 @@ struct parser_obj {
     struct collection_item *top;
     struct collection_item *el;
     const char *filename;
+    struct ini_cfgobj *co;
     /* Level of error reporting */
     int error_level;
     /* Collistion flags */
@@ -135,6 +136,7 @@ static void parser_destroy(struct parser_obj *po)
                              po->raw_lengths);
         if (po->last_read) free(po->last_read);
         if (po->key) free(po->key);
+        col_destroy_collection_with_cb(po->top, ini_cleanup_cb, NULL);
         free(po);
     }
 
@@ -146,25 +148,26 @@ static void parser_destroy(struct parser_obj *po)
  * It assumes that the ini collection
  * has been precreated.
  */
-static int parser_create(FILE *file,
+static int parser_create(struct ini_cfgobj *co,
+                         FILE *file,
                          const char *config_filename,
-                         struct collection_item *ini_config,
                          int error_level,
                          uint32_t collision_flags,
                          struct collection_item *error_list,
-                         uint32_t boundary,
                          struct parser_obj **po)
 {
     int error = EOK;
     struct parser_obj *new_po = NULL;
+    unsigned count = 0;
 
     TRACE_FLOW_ENTRY();
 
     /* Make sure that all the parts are initialized */
     if ((!po) ||
+        (!co) ||
+        (!(co->cfg)) ||
         (!file) ||
         (!config_filename) ||
-        (!ini_config) ||
         (!error_list)) {
         TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
         return EINVAL;
@@ -177,6 +180,17 @@ static int parser_create(FILE *file,
         return EINVAL;
     }
 
+    error = col_get_collection_count(co->cfg, &count);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to check object size", error);
+        return error;
+    }
+
+    if (count != 1) {
+        TRACE_ERROR_NUMBER("Configuration is not empty", EINVAL);
+        return EINVAL;
+    }
+
     new_po = malloc(sizeof(struct parser_obj));
     if (!new_po) {
         TRACE_ERROR_NUMBER("No memory", ENOMEM);
@@ -185,12 +199,12 @@ static int parser_create(FILE *file,
 
     /* Save external data */
     new_po->file = file;
-    new_po->top = ini_config;
     new_po->el = error_list;
     new_po->filename = config_filename;
     new_po->error_level = error_level;
     new_po->collision_flags = collision_flags;
-    new_po->boundary = boundary;
+    new_po->boundary = co->boundary;
+    new_po->co = co;
 
     /* Initialize internal varibles */
     new_po->sec = NULL;
@@ -210,9 +224,20 @@ static int parser_create(FILE *file,
     new_po->merge_key = NULL;
     new_po->merge_vo = NULL;
     new_po->merge_error = 0;
+    new_po->top = NULL;
+    new_po->queue = NULL;
+
+    /* Create top collection */
+    error = col_create_collection(&(new_po->top),
+                                  INI_CONFIG_NAME,
+                                  COL_CLASS_INI_CONFIG);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create top collection", error);
+        parser_destroy(new_po);
+        return error;
+    }
 
     /* Create a queue */
-    new_po->queue = NULL;
     error = col_create_queue(&(new_po->queue));
     if (error) {
         TRACE_ERROR_NUMBER("Failed to create queue", error);
@@ -1260,18 +1285,27 @@ static int parser_post(struct parser_obj *po)
 
     TRACE_FLOW_ENTRY();
 
-    /* If there was just a comment at the bottom add special key */
+    /* If there was just a comment at the bottom
+     * put it directly into the config object
+     */
     if((po->ic) && (!(po->key))) {
-        po->key_len = sizeof(INI_SPECIAL_KEY) - 1;
-        po->key = strndup(INI_SPECIAL_KEY, sizeof(INI_SPECIAL_KEY));
-        /* Create new arrays */
-        error = value_create_arrays(&(po->raw_lines),
-                                    &(po->raw_lengths));
-        if (error) {
-            TRACE_ERROR_NUMBER("Failed to create arrays", error);
-            return error;
+        if (po->co->last_comment) {
+            error = ini_comment_add(po->ic, po->co->last_comment);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to merge comment", error);
+                return error;
+            }
+        }
+        else {
+            error = ini_comment_copy(po->ic, &(po->co->last_comment));
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to copy comment", error);
+                return error;
+            }
         }
 
+        ini_comment_destroy(po->ic);
+        po->ic = NULL;
     }
 
     /* If there is a key being processed add it */
@@ -1482,6 +1516,7 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
 {
     int error = EOK;
     struct parser_obj *po;
+    uint32_t fl1, fl2, fl3;
 
     TRACE_FLOW_ENTRY();
 
@@ -1490,13 +1525,12 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
         return EINVAL;
     }
 
-    error = parser_create(file_ctx->file,
+    error = parser_create(ini_config,
+                          file_ctx->file,
                           file_ctx->filename,
-                          ini_config->cfg,
                           file_ctx->error_level,
                           file_ctx->collision_flags,
                           file_ctx->error_list,
-                          ini_config->boundary,
                           &po);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to perform an action", error);
@@ -1505,17 +1539,39 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
 
     error = parser_run(po);
     if (error) {
-        TRACE_ERROR_NUMBER("Failed to parse file", error);
-        col_get_collection_count(file_ctx->error_list, &(file_ctx->count));
-        if(file_ctx->count) (file_ctx->count)--;
-        parser_destroy(po);
-        return error;
+        fl1 = file_ctx->collision_flags & INI_MS_MASK;
+        fl2 = file_ctx->collision_flags & INI_MV1S_MASK;
+        fl3 = file_ctx->collision_flags & INI_MV2S_MASK;
+        if ((error == EEXIST) &&
+            (((fl1 == INI_MS_DETECT) &&
+              (fl2 != INI_MV1S_ERROR) &&
+              (fl3 != INI_MV2S_ERROR)) ||
+             ((fl2 == INI_MV1S_DETECT) &&
+              (fl1 != INI_MS_ERROR) &&
+              (fl3 != INI_MV2S_ERROR)) ||
+             ((fl3 == INI_MV2S_DETECT) &&
+              (fl1 != INI_MS_ERROR) &&
+              (fl2 != INI_MV1S_ERROR)))) {
+            TRACE_ERROR_NUMBER("No error in detect mode", error);
+            /* Fall through */
+        }
+        else {
+            TRACE_ERROR_NUMBER("Failed to parse file", error);
+            TRACE_ERROR_NUMBER("Mode", file_ctx->collision_flags);
+            col_get_collection_count(file_ctx->error_list, &(file_ctx->count));
+            if(file_ctx->count) (file_ctx->count)--;
+            parser_destroy(po);
+            return error;
+        }
     }
+
+    /* If should be empty anyways */
+    col_destroy_collection_with_cb(ini_config->cfg, ini_cleanup_cb, NULL);
+    ini_config->cfg = po->top;
+    po->top = NULL;
 
     parser_destroy(po);
 
-
-    TRACE_INFO_NUMBER("Count returned:", error);
     TRACE_FLOW_EXIT();
     return error;
 }

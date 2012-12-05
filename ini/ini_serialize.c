@@ -79,9 +79,19 @@ int ini_config_serialize(struct ini_cfgobj *ini_config,
                                         COL_TRAVERSE_DEFAULT,
                                         ini_serialize_cb,
                                         (void *)sbobj);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to serialize collection", error);
+            return error;
+        }
     }
 
-    TRACE_INFO_NUMBER("Serialization returned:", error);
+    if (ini_config->last_comment) {
+        error = ini_comment_serialize(ini_config->last_comment, sbobj);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed serialize comment", error);
+            return error;
+        }
+    }
 
     TRACE_FLOW_EXIT();
     return error;
