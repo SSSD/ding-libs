@@ -1517,9 +1517,10 @@ static int col_walk_items(struct collection_item *ci,
             return error;
         }
 
+        TRACE_INFO_NUMBER("Next element", current->next);
+
         parent = current;
         current = current->next;
-
     }
 
     TRACE_INFO_STRING("Out of loop", "");
