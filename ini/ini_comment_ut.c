@@ -223,7 +223,7 @@ int copy_test(void)
             printf("Copy: %s\n", line_copy);
             ini_comment_destroy(ic);
             ini_comment_destroy(ic_copy);
-            return error;
+            return -1;
         }
     }
 
@@ -233,12 +233,138 @@ int copy_test(void)
     return error;
 }
 
+int add_test(void)
+{
+    int error = EOK;
+    struct ini_comment *ic = NULL;
+    struct ini_comment *ic_to_add = NULL;
+    struct ini_comment *ic_cmp = NULL;
+    uint32_t i, num1 = 0, num2 = 0;
+    char *line1 = NULL;
+    char *line2 = NULL;
+
+
+    INIOUT(printf("\n\nAdd test\n\n"));
+
+    if ((error = ini_comment_create(&ic)) ||
+        (error = ini_comment_build(ic, ";Line 0")) ||
+        (error = ini_comment_build(ic, ";Line 1")) ||
+        (error = ini_comment_build(ic, ";Line 2"))) {
+        printf("Failed to create comment object %d\n",
+               error);
+        ini_comment_destroy(ic);
+        return error;
+    }
+
+    INIOUT(printf("<==== Comment ====>\n"));
+    INIOUT(ini_comment_print(ic, stdout));
+    INIOUT(printf("<=================>\n"));
+
+    if ((error = ini_comment_create(&ic_to_add)) ||
+        (error = ini_comment_build(ic_to_add, ";Line 3")) ||
+        (error = ini_comment_build(ic_to_add, ";Line 4")) ||
+        (error = ini_comment_build(ic_to_add, ";Line 5"))) {
+        printf("Failed to create comment object %d\n",
+               error);
+        ini_comment_destroy(ic);
+        return error;
+    }
+
+    INIOUT(printf("<==== Comment To Add ====>\n"));
+    INIOUT(ini_comment_print(ic_to_add, stdout));
+    INIOUT(printf("<=================>\n"));
+
+    error = ini_comment_add(ic_to_add, ic);
+    if (error) {
+        printf("Failed to add one comment to another.\n");
+        ini_comment_destroy(ic);
+        ini_comment_destroy(ic_to_add);
+        return error;
+    }
+
+    INIOUT(printf("<==== Merged Comment ====>\n"));
+    INIOUT(ini_comment_print(ic, stdout));
+    INIOUT(printf("<=================>\n"));
+
+    if ((error = ini_comment_create(&ic_cmp)) ||
+        (error = ini_comment_build(ic_cmp, ";Line 0")) ||
+        (error = ini_comment_build(ic_cmp, ";Line 1")) ||
+        (error = ini_comment_build(ic_cmp, ";Line 2")) ||
+        (error = ini_comment_build(ic_cmp, ";Line 3")) ||
+        (error = ini_comment_build(ic_cmp, ";Line 4")) ||
+        (error = ini_comment_build(ic_cmp, ";Line 5"))) {
+        printf("Failed to create comment object %d\n",
+               error);
+        ini_comment_destroy(ic_cmp);
+        return error;
+    }
+
+    ini_comment_destroy(ic_to_add);
+
+    error = ini_comment_get_numlines(ic, &num1);
+    if (error) {
+        printf("Failed to get number of lines.\n");
+        ini_comment_destroy(ic);
+        ini_comment_destroy(ic_cmp);
+        return error;
+    }
+
+    error = ini_comment_get_numlines(ic, &num2);
+    if (error) {
+        printf("Failed to get number of lines.\n");
+        ini_comment_destroy(ic);
+        ini_comment_destroy(ic_cmp);
+        return error;
+    }
+
+    if (num1 != num2) {
+        printf("Sizes are different.\n");
+        ini_comment_destroy(ic);
+        ini_comment_destroy(ic_cmp);
+        return -1;
+    }
+
+    for (i = 0; i < num1; i++) {
+        line1 = NULL;
+        error = ini_comment_get_line(ic, i, &line1, NULL);
+        if (error) {
+            printf("Failed to get line.\n");
+            ini_comment_destroy(ic);
+            ini_comment_destroy(ic_cmp);
+            return error;
+        }
+        line2 = NULL;
+        error = ini_comment_get_line(ic_cmp, i, &line2, NULL);
+        if (error) {
+            printf("Failed to get line.\n");
+            ini_comment_destroy(ic);
+            ini_comment_destroy(ic_cmp);
+            return error;
+        }
+        if (strcmp(line1, line2) != 0) {
+            printf("Lines do not match.\n");
+            printf("1st: %s\n", line1);
+            printf("2nd: %s\n", line2);
+            ini_comment_destroy(ic);
+            ini_comment_destroy(ic_cmp);
+            return -1;
+        }
+    }
+
+    ini_comment_destroy(ic);
+    ini_comment_destroy(ic_cmp);
+
+    return error;
+}
+
+
 int main(int argc, char *argv[])
 {
     int error = EOK;
     test_fn tests[] = { file_test,
                         alter_test,
                         copy_test,
+                        add_test,
                         NULL };
     test_fn t;
     int i = 0;

@@ -28,6 +28,7 @@
 #include "ref_array.h"
 #include "simplebuffer.h"
 #include "ini_comment.h"
+#include "ini_defines.h"
 
 /* The lines will increment in this number */
 #define INI_COMMENT_BLOCK 10
@@ -339,7 +340,7 @@ static int ini_comment_modify(struct ini_comment *ic,
         error = ref_array_append(ic->ra, (void *)&elem);
         if (error) {
             TRACE_ERROR_NUMBER("Failed to append line to an array", error);
-            free(elem);
+            simplebuffer_free(elem);
             return error;
         }
 
@@ -654,6 +655,110 @@ int ini_comment_swap(struct ini_comment *ic,
     return error;
 }
 
+/* Add one comment to another */
+int ini_comment_add(struct ini_comment *ic_to_add,
+                    struct ini_comment *ic)
+{
+    int error = EOK;
+    struct simplebuffer *sb = NULL;
+    struct simplebuffer *sb_new = NULL;
+    void *res = NULL;
+    uint32_t len = 0;
+    int i;
+
+    TRACE_FLOW_ENTRY();
+
+    len = ref_array_len(ic_to_add->ra);
+
+    for (i = 0; i< len; i++) {
+
+        /* Get data element */
+        res = ref_array_get(ic_to_add->ra, i, (void *)(&sb));
+        if (!res) {
+            TRACE_ERROR_NUMBER("Failed to get comment element", error);
+            return error;
+        }
+
+        /* Create a storage a for a copy */
+        error = simplebuffer_alloc(&sb_new);
+        if (error) {
+            TRACE_ERROR_NUMBER("Allocate buffer for the comment", error);
+            return error;
+        }
+
+        /* Copy actual data */
+        error = simplebuffer_add_str(sb_new,
+                                     (const char *)simplebuffer_get_buf(sb),
+                                     simplebuffer_get_len(sb),
+                                     INI_COMMENT_LEN);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to append line to an array", error);
+            simplebuffer_free(sb_new);
+            return error;
+        }
+
+        /* Append it to the array */
+        error = ref_array_append(ic->ra, (void *)&sb_new);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to append element to an array", error);
+            simplebuffer_free(sb_new);
+            return error;
+        }
+    }
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Serialize comment */
+int ini_comment_serialize (struct ini_comment *ic,
+                           struct simplebuffer *sbobj)
+{
+    int error = EOK;
+    uint32_t num = 0;
+    uint32_t i = 0;
+    uint32_t len = 0;
+    char *commentline = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Get number of lines in the comment */
+    error = ini_comment_get_numlines(ic, &num);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to get number of lines", error);
+        return error;
+    }
+
+    for (i = 0; i < num; i++) {
+
+        len = 0;
+        commentline = NULL;
+
+        error = ini_comment_get_line(ic, i, &commentline, &len);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to get line", errno);
+            return error;
+        }
+
+        error = simplebuffer_add_raw(sbobj,
+                                     commentline,
+                                     len,
+                                     INI_VALUE_BLOCK);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add comment", error);
+            return error;
+        }
+
+        error = simplebuffer_add_cr(sbobj);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add CR", error);
+            return error;
+        }
+    }
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
 
 /* Internal function to print comment */
 void ini_comment_print(struct ini_comment *ic, FILE *file)
