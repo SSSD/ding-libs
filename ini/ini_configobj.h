@@ -658,8 +658,8 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
  *
  * Function parses the file. It is assumed that
  * the configuration object was just created.
- * Using one configuration object in more than one
- * parsing operation would lead to undetermined results.
+ * Using a non empty configuration object in
+ * a parsing operation would fail with EINVAL.
  *
  * @param[in]  file_ctx         Configuration file object.
  * @param[out] ini_config       Configuration object.
@@ -691,6 +691,11 @@ int ini_config_copy(struct ini_cfgobj *ini_config,
  *
  * Function merges configuration objects and creates
  * a new resulting object out of the two.
+ * IMPORTANT: Use same collision flags for reading
+ * of the files and then merging.
+ * Mixing the flags would lead to strange results
+ * that would be hard to debug.
+ *
  *
  * @param[in]  first            A base object
  *                              the other object will
