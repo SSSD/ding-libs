@@ -255,7 +255,10 @@ dist_noinst_DATA += \
     ini/ini.d/foo.conf.in \
     ini/ini.d/mysssd.conf \
     ini/ini.d/smerge.conf \
-    ini/ini.d/sexpect.conf
+    ini/ini.d/sexpect.conf \
+    ini/ini.d/first.conf \
+    ini/ini.d/second.conf \
+    ini/ini.d/mergecheck.conf
 
 check_PROGRAMS += \
     ini_config_ut \
