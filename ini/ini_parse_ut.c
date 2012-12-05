@@ -264,12 +264,6 @@ int create_expect(const char *checkname)
     fprintf(ff,"#Second value\n");
     fprintf(ff,"bar = second value\n");
     fprintf(ff,"#End of section\n");
-    /* Error */
-    fprintf(ff,"#Hoho section\n");
-    fprintf(ff,"[hoho]\n");
-    fprintf(ff,"#Hoho value\n");
-    fprintf(ff,"val = hoho\n");
-    /* No "#End of hoho" line is expected due to error */
     /* Preserve */
     fprintf(ff,"#Hoho section\n");
     fprintf(ff,"[hoho]\n");
@@ -669,6 +663,373 @@ int merge_section_test(void)
     INIOUT(printf("<==== Merge section test end ====>\n"));
 
     return error;
+}
+
+int read_one_file(char *name,
+                  struct ini_cfgobj *ini_config,
+                  uint32_t collision_flags)
+{
+    int error = EOK;
+    struct ini_cfgfile *file_ctx = NULL;
+    char **error_list = NULL;
+
+    INIOUT(printf("Reading file %s\n", name));
+
+    file_ctx = NULL;
+    error = ini_config_file_open(name,
+                                 INI_STOP_ON_ANY,
+                                 collision_flags,
+                                 0,
+                                 &file_ctx);
+    if (error) {
+        printf("Failed to open file %s for reading. "
+                "Error %d.\n", name, error);
+        return error;
+    }
+
+    INIOUT(printf("Parsing file %s\n", name));
+
+    error = ini_config_parse(file_ctx, ini_config);
+    if (error) {
+        INIOUT(printf("Failed to parse configuration. "
+                      "Error %d.\n", error));
+
+        if (ini_config_error_count(file_ctx)) {
+            INIOUT(printf("Errors detected while parsing: %s\n",
+                   ini_config_get_filename(file_ctx)));
+            ini_config_get_errors(file_ctx, &error_list);
+            INIOUT(ini_config_print_errors(stdout, error_list));
+            ini_config_free_errors(error_list);
+        }
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+
+    ini_config_file_destroy(file_ctx);
+
+    INIOUT(printf("Successfully parsed file %s\n", name));
+    return EOK;
+}
+
+/* Check merge modes */
+int merge_file_test(void)
+{
+    int error = EOK;
+    int i, j;
+    struct ini_cfgobj *ini_config_first = NULL;
+    struct ini_cfgobj *ini_config_second = NULL;
+    struct ini_cfgobj *ini_config_result = NULL;
+    struct simplebuffer *sbobj = NULL;
+    uint32_t left = 0;
+    FILE *ff = NULL;
+    uint32_t msecflags[] = { INI_MS_MERGE,
+                             INI_MS_ERROR,
+                             INI_MS_OVERWRITE,
+                             INI_MS_PRESERVE,
+                             INI_MS_DETECT };
+
+    uint32_t m2flags[] = { INI_MV2S_OVERWRITE,
+                           INI_MV2S_ERROR,
+                           INI_MV2S_PRESERVE,
+                           INI_MV2S_ALLOW,
+                           INI_MV2S_DETECT };
+
+    uint32_t m1flags[] = { INI_MV1S_OVERWRITE,
+                           INI_MV1S_ERROR,
+                           INI_MV1S_PRESERVE,
+                           INI_MV1S_ALLOW,
+                           INI_MV1S_DETECT };
+
+    const char *secmstr[] = { "MERGE",
+                              "ERROR",
+                              "OVERWRITE",
+                              "PRESERVE",
+                              "DETECT" };
+
+    const char *mstr[] = { "OVERWRITE",
+                           "ERROR",
+                           "PRESERVE",
+                           "ALLOW",
+                           "DETECT" };
+
+    char firstname[PATH_MAX];
+    char secondname[PATH_MAX];
+    char resname[PATH_MAX];
+    char checkname[PATH_MAX];
+    char command[PATH_MAX * 3];
+    char msg[100];
+    char mode[100];
+    char *srcdir = NULL;
+    char *builddir = NULL;
+    uint32_t collision_flags;
+    uint32_t ms_subst;
+    uint32_t mv1s_subst;
+    uint32_t mv2s_subst;
+
+    INIOUT(printf("<==== Merge file test ====>\n"));
+
+    srcdir = getenv("srcdir");
+    builddir = getenv("builddir");
+    sprintf(firstname, "%s/ini/ini.d/first.conf",
+                      (srcdir == NULL) ? "." : srcdir);
+
+    sprintf(secondname, "%s/ini/ini.d/second.conf",
+                      (srcdir == NULL) ? "." : srcdir);
+
+    sprintf(checkname, "%s/ini/ini.d/mergecheck.conf",
+                      (srcdir == NULL) ? "." : srcdir);
+
+    sprintf(resname, "%s/mergecheck.conf.out",
+                      (builddir == NULL) ? "." : builddir);
+
+    error = simplebuffer_alloc(&sbobj);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate dynamic string.", error);
+        return error;
+    }
+
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 5; j++) {
+
+            INIOUT(printf("<==== Testing mode %s + %s ====>\n",
+                          secmstr[i], mstr[j]));
+
+            sprintf(mode, "# Section mode: %s, value mode: %s\n",
+                          secmstr[i], mstr[j]);
+
+            error = simplebuffer_add_str(sbobj,
+                                         mode,
+                                         strlen(mode),
+                                         100);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to add string.",
+                                   error);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            /* Create first config collection */
+            ini_config_first = NULL;
+            error = ini_config_create(&ini_config_first);
+            if (error) {
+                printf("Failed to create collection. "
+                       "Error %d.\n", error);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            /* Create second config collection */
+            ini_config_second = NULL;
+            error = ini_config_create(&ini_config_second);
+            if (error) {
+                printf("Failed to create collection. "
+                       "Error %d.\n", error);
+                ini_config_destroy(ini_config_first);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            /* IMPORTANT: Use same collision flags for reading
+             * of the files and then merging.
+             * Mixing the flags would lead to strange results
+             * that would be hard to debug.
+             */
+            /* However here for purely testing purposes
+             * we will not use error modes in parsing
+             * otherwise we will not be able to try to merge.
+             * Instead we replace the error and detect modes
+             * with allow or merge mode.
+             */
+            /* The test actually does not fail in the case of
+             * PRESERVE + ERROR becuase it should fail at
+             * the stage of reading file but we suppress
+             * it so we can try the merge.
+             * As a result the mode PRESERVE + ERROR
+             * acts as PRESERVE + ALLOW and does not return an error.
+             * The same thing happens with PRESERVE + DETECT mode.
+             * It might be confusing if someone tries to decipher
+             * the tests, so this comment should help.
+             */
+            if ((msecflags[i] == INI_MS_ERROR) ||
+                (msecflags[i] == INI_MS_DETECT)) {
+                ms_subst = msecflags[i];
+            }
+            else {
+                ms_subst = INI_MS_MERGE;
+            }
+
+            if ((m2flags[j] == INI_MV2S_ERROR) ||
+                (m2flags[j] == INI_MV2S_DETECT)) {
+                mv1s_subst = INI_MV1S_ALLOW;
+                mv2s_subst = INI_MV2S_ALLOW;
+            }
+            else {
+                mv1s_subst = m1flags[j];
+                mv2s_subst = m2flags[j];
+            }
+
+            collision_flags = mv1s_subst | mv2s_subst | ms_subst;
+
+            error = read_one_file(firstname,
+                                  ini_config_first,
+                                  collision_flags);
+            if (error) {
+                printf("Failed to read %s. "
+                       "Error %d.\n", firstname, error);
+                printf("Source is %s.\n", (srcdir == NULL) ?
+                        "NOT Defined" : srcdir);
+                ini_config_destroy(ini_config_first);
+                ini_config_destroy(ini_config_second);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            error = read_one_file(secondname,
+                                  ini_config_second,
+                                  collision_flags);
+            if (error) {
+                printf("Failed to read %s. "
+                       "Error %d.\n", secondname, error);
+                printf("Source is %s.\n", (srcdir == NULL) ?
+                        "NOT Defined" : srcdir);
+                ini_config_destroy(ini_config_first);
+                ini_config_destroy(ini_config_second);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            INIOUT(col_debug_collection(ini_config_first->cfg,
+                   COL_TRAVERSE_ONELEVEL));
+            INIOUT(col_debug_collection(ini_config_second->cfg,
+                   COL_TRAVERSE_ONELEVEL));
+
+            ini_config_result = NULL;
+            error = ini_config_merge(ini_config_first,
+                                     ini_config_second,
+                                     msecflags[i] | m2flags[j] | m1flags[j],
+                                     &ini_config_result);
+            if (error) {
+                if ((error == EEXIST) &&
+                    ((msecflags[i] == INI_MS_ERROR) ||
+                     (m2flags[j] == INI_MV2S_ERROR))) {
+                    snprintf(msg, sizeof(msg) -1,
+                                  "# This is an expected error "
+                                  "%d in mode %d + %d + %d\n\n",
+                                  error,
+                                  msecflags[i],
+                                  m2flags[j],
+                                  m1flags[j]);
+                    INIOUT(printf(msg));
+                    error = simplebuffer_add_str(sbobj,
+                                                 msg,
+                                                 strlen(msg),
+                                                 100);
+                    if (error) {
+                        TRACE_ERROR_NUMBER("Failed to add string.",
+                                           error);
+                        ini_config_destroy(ini_config_first);
+                        ini_config_destroy(ini_config_second);
+                        simplebuffer_free(sbobj);
+                        return error;
+                    }
+
+                    ini_config_destroy(ini_config_first);
+                    ini_config_destroy(ini_config_second);
+                    continue;
+                }
+                else if ((error == EEXIST) &&
+                         ((msecflags[i] == INI_MS_DETECT) ||
+                          ((msecflags[i] != INI_MS_ERROR) &&
+                           (m2flags[j] == INI_MV2S_DETECT)))) {
+                    snprintf(msg, sizeof(msg) -1,
+                                  "# This is an expected error "
+                                  "%d in mode %d + %d + %d\n\n",
+                                  error,
+                                  msecflags[i],
+                                  m2flags[j],
+                                  m1flags[j]);
+                    INIOUT(printf(msg));
+                    error = simplebuffer_add_str(sbobj,
+                                                 msg,
+                                                 strlen(msg),
+                                                 100);
+                    if (error) {
+                        TRACE_ERROR_NUMBER("Failed to add string.",
+                                           error);
+                        ini_config_destroy(ini_config_first);
+                        ini_config_destroy(ini_config_second);
+                        simplebuffer_free(sbobj);
+                        return error;
+                    }
+                    /* Falling throught here */
+                }
+                else {
+                    TRACE_ERROR_NUMBER("Failed to merge.",
+                                       error);
+                    ini_config_destroy(ini_config_first);
+                    ini_config_destroy(ini_config_second);
+                    simplebuffer_free(sbobj);
+                    return error;
+                }
+            }
+
+            INIOUT(col_debug_collection(ini_config_result->cfg,
+                   COL_TRAVERSE_DEFAULT));
+
+            error = ini_config_serialize(ini_config_result, sbobj);
+            if (error) {
+                printf("Failed to serialize configuration. "
+                       "Error %d.\n", error);
+                ini_config_destroy(ini_config_first);
+                ini_config_destroy(ini_config_second);
+                ini_config_destroy(ini_config_result);
+                simplebuffer_free(sbobj);
+                return error;
+            }
+
+            ini_config_destroy(ini_config_first);
+            ini_config_destroy(ini_config_second);
+            ini_config_destroy(ini_config_result);
+        }
+    }
+
+    errno = 0;
+    ff = fopen(resname, "w");
+    if(!ff) {
+        error = errno;
+        printf("Failed to open file for writing. Error %d.\n", error);
+        simplebuffer_free(sbobj);
+        return error;
+    }
+
+    /* Save */
+    left = simplebuffer_get_len(sbobj);
+    while (left > 0) {
+        error = simplebuffer_write(fileno(ff), sbobj, &left);
+        if (error) {
+            printf("Failed to write back the configuration %d.\n", error);
+            simplebuffer_free(sbobj);
+            fclose(ff);
+            return error;
+        }
+    }
+
+    simplebuffer_free(sbobj);
+    fclose(ff);
+
+    sprintf(command,"diff -q %s %s", resname, checkname);
+    error = system(command);
+    INIOUT(printf("Comparison of %s %s returned: %d\n",
+                  resname, checkname, error));
+
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run diff command %d %d.\n",  error, WEXITSTATUS(error));
+        return -1;
+    }
+
+    INIOUT(printf("<==== Merge section file end ====>\n"));
+
+    return EOK;
 }
 
 int startup_test(void)
@@ -2125,6 +2486,7 @@ int main(int argc, char *argv[])
                         read_again_test,
                         merge_values_test,
                         merge_section_test,
+                        merge_file_test,
                         startup_test,
                         reload_test,
                         get_test,
