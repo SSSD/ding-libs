@@ -137,13 +137,13 @@ int ini_get_config_valueobj(const char *section,
     else to_find = section;
 
     TRACE_INFO_STRING("Getting Name:", name);
-    TRACE_INFO_STRING("In Section:", section);
+    TRACE_INFO_STRING("In Section:", to_find);
 
     /* Make sure we start over if this is the first value */
     if (mode == INI_GET_FIRST_VALUE) ini_config_clean_state(ini_config);
 
     /* Are we looking in the same section ? */
-    if (!is_same_section(ini_config, section)) {
+    if (!is_same_section(ini_config, to_find)) {
 
         /* This is a different section */
         ini_config_clean_state(ini_config);
