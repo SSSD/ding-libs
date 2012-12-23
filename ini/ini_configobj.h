@@ -345,10 +345,12 @@
  *
  * @{
  */
-/** @brief Get the first value (default). */
-#define INI_GET_FIRST_VALUE     0
-/** @brief Look for the next value in the section */
-#define INI_GET_NEXT_VALUE      1
+/** Enumeration of parsing errors. */
+enum INI_GET {
+    INI_GET_FIRST_VALUE, /**< Get the first value (default). */
+    INI_GET_NEXT_VALUE,  /**< Look for the next value in the section */
+    INI_GET_LAST_VALUE   /**< Look for the last value in the section */
+};
 
 /**
  * @}

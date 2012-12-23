@@ -100,6 +100,7 @@ int ini_get_config_valueobj(const char *section,
     int error = EOK;
     struct collection_item *section_handle = NULL;
     struct collection_item *item = NULL;
+    struct collection_item *last_found = NULL;
     const char *to_find;
     char default_section[] = INI_DEFAULT_SECTION;
     uint64_t hash = 0;
@@ -121,7 +122,7 @@ int ini_get_config_valueobj(const char *section,
     }
 
     if ((mode < INI_GET_FIRST_VALUE) ||
-        (mode > INI_GET_NEXT_VALUE)) {
+        (mode > INI_GET_LAST_VALUE)) {
         TRACE_ERROR_NUMBER("Invalid argument mode:", mode);
         return EINVAL;
     }
@@ -213,6 +214,11 @@ int ini_get_config_valueobj(const char *section,
 
         /* Are we done ? */
         if (item == NULL) {
+            /* We looped to the end and found last value */
+            if ((mode == INI_GET_LAST_VALUE) && (last_found)) {
+                item = last_found;
+                break;
+            }
             /* There is nothing left to look for */
             ini_config_clean_state(ini_config);
             TRACE_FLOW_EXIT();
@@ -223,6 +229,8 @@ int ini_get_config_valueobj(const char *section,
             (strncasecmp(col_get_item_property(item, &len), name, name_len) == 0) &&
             (len == name_len)) {
                 TRACE_INFO_STRING("Item is found", name);
+                last_found = item;
+                if (mode == INI_GET_LAST_VALUE) continue;
                 break;
         }
     }

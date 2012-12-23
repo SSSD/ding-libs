@@ -2307,6 +2307,31 @@ int get_test(void)
 
     /***************************************/
 
+    INIOUT(printf("\nGet last value\n"));
+
+    vo = NULL;
+    error = ini_get_config_valueobj("domains/EXAMPLE.COM",
+                                    "server",
+                                    ini_config,
+                                    INI_GET_LAST_VALUE,
+                                    &vo);
+    if(error) {
+        printf("Expected success but got error! %d\n", error);
+        ini_config_destroy(ini_config);
+        return error;
+    }
+
+    /* Value should be found */
+    if (vo == NULL) {
+        printf("Expected success but got NULL.\n");
+        ini_config_destroy(ini_config);
+        return -1;
+    }
+
+    INIOUT(value_print("server", vo));
+
+    /***************************************/
+
     INIOUT(printf("\nGet sequence of the multi-value keys\n"));
 
     vo = NULL;
@@ -2329,6 +2354,7 @@ int get_test(void)
     }
 
     INIOUT(value_print("server", vo));
+
 
     do {
 
@@ -2388,7 +2414,7 @@ int get_test(void)
                                         "server",
                                         ini_config,
                                         INI_GET_NEXT_VALUE,
-                                    &vo);
+                                        &vo);
         if(error) {
             printf("Expected success but got error! %d\n", error);
             ini_config_destroy(ini_config);
@@ -2406,7 +2432,7 @@ int get_test(void)
                                             "empty_value",
                                             ini_config,
                                             INI_GET_NEXT_VALUE,
-                                        &vo);
+                                            &vo);
             if(error) {
                 printf("Expected success but got error! %d\n", error);
                 ini_config_destroy(ini_config);
@@ -2424,7 +2450,7 @@ int get_test(void)
 
     /***************************************/
 
-    INIOUT(printf("\nGet multi-value keys with key interrupt\n"));
+    INIOUT(printf("\nGet multi-value keys with section interrupt\n"));
 
     i = 0;
 
