@@ -30,6 +30,8 @@
 #define TRACE_HOME
 #include "trace.h"
 
+#define TEST_SIZE 80
+
 int verbose = 0;
 
 #define VOOUT(foo) \
@@ -47,12 +49,12 @@ static int create_comment(int i, struct ini_comment **ic)
 {
     int error = EOK;
     const char *template = ";Line 0 of the value %d";
-    char comment[80];
+    char comment[TEST_SIZE];
     struct ini_comment *new_ic = NULL;
 
     TRACE_FLOW_ENTRY();
 
-    sprintf(comment, template, i);
+    snprintf(comment, TEST_SIZE, template, i);
 
 
     if ((error = ini_comment_create(&new_ic)) ||
@@ -579,7 +581,7 @@ int vo_copy_test(void)
         }
 
         /* Replace comment in the value */
-        sprintf(comment, ";This is value with boundary %d", wrap);
+        snprintf(comment, TEST_SIZE, ";This is value with boundary %d", wrap);
         VOOUT(printf("Comment: %s\n", comment));
         error = ini_comment_replace(ic, 1, comment);
         if (error) {

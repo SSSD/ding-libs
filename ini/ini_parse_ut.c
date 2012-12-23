@@ -38,6 +38,8 @@
 int verbose = 0;
 char *confdir = NULL;
 
+#define VAL_SIZE 100
+
 #define INIOUT(foo) \
     do { \
         if (verbose) foo; \
@@ -185,9 +187,9 @@ int read_save_test(void)
 
     while(files[i]) {
 
-        sprintf(infile, "%s/ini/ini.d/%s.conf", (srcdir == NULL) ? "." : srcdir,
-                                                files[i]);
-        sprintf(outfile, "./%s.conf.out", files[i]);
+        snprintf(infile, PATH_MAX, "%s/ini/ini.d/%s.conf",
+                (srcdir == NULL) ? "." : srcdir, files[i]);
+        snprintf(outfile, PATH_MAX, "./%s.conf.out", files[i]);
         error = test_one_file(infile, outfile);
         INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
         i++;
@@ -217,17 +219,18 @@ int read_again_test(void)
 
     while(files[i]) {
 
-        sprintf(infile, "./%s.conf.out", files[i]);
-        sprintf(outfile, "./%s.conf.2.out", files[i]);
+        snprintf(infile, PATH_MAX, "./%s.conf.out", files[i]);
+        snprintf(outfile, PATH_MAX, "./%s.conf.2.out", files[i]);
         error = test_one_file(infile, outfile);
         INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
         if (error) break;
-        sprintf(command,"diff -q %s %s", infile, outfile);
+        snprintf(command, PATH_MAX * 3, "diff -q %s %s", infile, outfile);
         error = system(command);
         INIOUT(printf("Comparison of %s %s returned: %d\n",
                       infile, outfile, error));
         if ((error) || (WEXITSTATUS(error))) {
-            printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+            printf("Failed to run copy command %d %d.\n",  error,
+                   WEXITSTATUS(error));
             error = -1;
             break;
         }
@@ -340,7 +343,7 @@ int merge_values_test(void)
 
     srcdir = getenv("srcdir");
 
-    sprintf(filename, "%s/ini/ini.d/foo.conf.in",
+    snprintf(filename, PATH_MAX, "%s/ini/ini.d/foo.conf.in",
             (srcdir == NULL) ? "." : srcdir);
 
     error = simplebuffer_alloc(&sbobj);
@@ -381,7 +384,8 @@ int merge_values_test(void)
         error = ini_config_parse(file_ctx,
                                  ini_config);
         if (error) {
-            INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
+            INIOUT(printf("Failed to parse configuration. Error %d.\n",
+                          error));
 
             if (ini_config_error_count(file_ctx)) {
                 INIOUT(printf("Errors detected while parsing: %s\n",
@@ -391,10 +395,12 @@ int merge_values_test(void)
                 ini_config_free_errors(error_list);
             }
 
-            if (((mflags[i] != INI_MV1S_ERROR) && (mflags[i]!= INI_MV1S_DETECT)) ||
+            if (((mflags[i] != INI_MV1S_ERROR) &&
+                 (mflags[i]!= INI_MV1S_DETECT)) ||
                 ((mflags[i] = INI_MV1S_ERROR) && (error != EEXIST)) ||
                 ((mflags[i] = INI_MV1S_DETECT) && (error != EEXIST))) {
-                printf("This is unexpected error %d in mode %d\n", error, mflags[i]);
+                printf("This is unexpected error %d in mode %d\n",
+                       error, mflags[i]);
                 ini_config_destroy(ini_config);
                 simplebuffer_free(sbobj);
                 ini_config_file_destroy(file_ctx);
@@ -448,12 +454,13 @@ int merge_values_test(void)
         return error;
     }
 
-    sprintf(command,"diff -q %s %s", resname, checkname);
+    snprintf(command, PATH_MAX * 3, "diff -q %s %s", resname, checkname);
     error = system(command);
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   resname, checkname, error));
     if ((error) || (WEXITSTATUS(error))) {
-        printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+        printf("Failed to run copy command %d %d.\n",  error,
+               WEXITSTATUS(error));
         return -1;
     }
 
@@ -501,7 +508,7 @@ int merge_section_test(void)
     char checkname[PATH_MAX];
     char resname[PATH_MAX];
     char command[PATH_MAX * 3];
-    char mode[100];
+    char mode[VAL_SIZE];
     char *srcdir = NULL;
     char *builddir = NULL;
 
@@ -510,11 +517,11 @@ int merge_section_test(void)
 
     srcdir = getenv("srcdir");
     builddir = getenv("builddir");
-    sprintf(filename, "%s/ini/ini.d/smerge.conf",
+    snprintf(filename, PATH_MAX, "%s/ini/ini.d/smerge.conf",
                       (srcdir == NULL) ? "." : srcdir);
-    sprintf(checkname, "%s/ini/ini.d/sexpect.conf",
+    snprintf(checkname, PATH_MAX, "%s/ini/ini.d/sexpect.conf",
                       (srcdir == NULL) ? "." : srcdir);
-    sprintf(resname, "%s/smerge.conf.out",
+    snprintf(resname, PATH_MAX, "%s/smerge.conf.out",
                       (builddir == NULL) ? "." : builddir);
 
     error = simplebuffer_alloc(&sbobj);
@@ -529,13 +536,13 @@ int merge_section_test(void)
             INIOUT(printf("<==== Testing mode %s + %s ====>\n",
                           secmstr[i], mstr[j]));
 
-            sprintf(mode, "# Section mode: %s, value mode: %s\n",
+            snprintf(mode, VAL_SIZE, "# Section mode: %s, value mode: %s\n",
                           secmstr[i], mstr[j]);
 
             error = simplebuffer_add_str(sbobj,
                                          mode,
                                          strlen(mode),
-                                         100);
+                                         VAL_SIZE);
             if (error) {
                 TRACE_ERROR_NUMBER("Failed to add string.",
                                    error);
@@ -650,13 +657,14 @@ int merge_section_test(void)
     simplebuffer_free(sbobj);
     fclose(ff);
 
-    sprintf(command,"diff -q %s %s", resname, checkname);
+    snprintf(command, PATH_MAX * 3, "diff -q %s %s", resname, checkname);
     error = system(command);
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   resname, checkname, error));
 
     if ((error) || (WEXITSTATUS(error))) {
-        printf("Failed to run diff command %d %d.\n",  error, WEXITSTATUS(error));
+        printf("Failed to run diff command %d %d.\n",  error,
+               WEXITSTATUS(error));
         return -1;
     }
 
@@ -757,8 +765,8 @@ int merge_file_test(void)
     char resname[PATH_MAX];
     char checkname[PATH_MAX];
     char command[PATH_MAX * 3];
-    char msg[100];
-    char mode[100];
+    char msg[VAL_SIZE];
+    char mode[VAL_SIZE];
     char *srcdir = NULL;
     char *builddir = NULL;
     uint32_t collision_flags;
@@ -770,16 +778,16 @@ int merge_file_test(void)
 
     srcdir = getenv("srcdir");
     builddir = getenv("builddir");
-    sprintf(firstname, "%s/ini/ini.d/first.conf",
+    snprintf(firstname, PATH_MAX, "%s/ini/ini.d/first.conf",
                       (srcdir == NULL) ? "." : srcdir);
 
-    sprintf(secondname, "%s/ini/ini.d/second.conf",
+    snprintf(secondname, PATH_MAX, "%s/ini/ini.d/second.conf",
                       (srcdir == NULL) ? "." : srcdir);
 
-    sprintf(checkname, "%s/ini/ini.d/mergecheck.conf",
+    snprintf(checkname, PATH_MAX, "%s/ini/ini.d/mergecheck.conf",
                       (srcdir == NULL) ? "." : srcdir);
 
-    sprintf(resname, "%s/mergecheck.conf.out",
+    snprintf(resname, PATH_MAX, "%s/mergecheck.conf.out",
                       (builddir == NULL) ? "." : builddir);
 
     error = simplebuffer_alloc(&sbobj);
@@ -794,13 +802,13 @@ int merge_file_test(void)
             INIOUT(printf("<==== Testing mode %s + %s ====>\n",
                           secmstr[i], mstr[j]));
 
-            sprintf(mode, "# Section mode: %s, value mode: %s\n",
+            snprintf(mode, VAL_SIZE, "# Section mode: %s, value mode: %s\n",
                           secmstr[i], mstr[j]);
 
             error = simplebuffer_add_str(sbobj,
                                          mode,
                                          strlen(mode),
-                                         100);
+                                         VAL_SIZE);
             if (error) {
                 TRACE_ERROR_NUMBER("Failed to add string.",
                                    error);
@@ -923,7 +931,7 @@ int merge_file_test(void)
                     error = simplebuffer_add_str(sbobj,
                                                  msg,
                                                  strlen(msg),
-                                                 100);
+                                                 VAL_SIZE);
                     if (error) {
                         TRACE_ERROR_NUMBER("Failed to add string.",
                                            error);
@@ -952,7 +960,7 @@ int merge_file_test(void)
                     error = simplebuffer_add_str(sbobj,
                                                  msg,
                                                  strlen(msg),
-                                                 100);
+                                                 VAL_SIZE);
                     if (error) {
                         TRACE_ERROR_NUMBER("Failed to add string.",
                                            error);
@@ -1017,13 +1025,14 @@ int merge_file_test(void)
     simplebuffer_free(sbobj);
     fclose(ff);
 
-    sprintf(command,"diff -q %s %s", resname, checkname);
+    snprintf(command,PATH_MAX * 3, "diff -q %s %s", resname, checkname);
     error = system(command);
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   resname, checkname, error));
 
     if ((error) || (WEXITSTATUS(error))) {
-        printf("Failed to run diff command %d %d.\n",  error, WEXITSTATUS(error));
+        printf("Failed to run diff command %d %d.\n",  error,
+               WEXITSTATUS(error));
         return -1;
     }
 
@@ -1040,24 +1049,26 @@ int startup_test(void)
     char **error_list = NULL;
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
-    char command[PATH_MAX * 2 + 3];
+    char command[PATH_MAX * 3];
     char *srcdir = NULL;
     char *builddir;
 
     INIOUT(printf("<==== Startup test ====>\n"));
 
     srcdir = getenv("srcdir");
-    sprintf(infile, "%s/ini/ini.d/foo.conf.in", (srcdir == NULL) ? "." : srcdir);
+    snprintf(infile, PATH_MAX, "%s/ini/ini.d/foo.conf.in",
+                     (srcdir == NULL) ? "." : srcdir);
     builddir = getenv("builddir");
-    sprintf(outfile, "%s/foo.conf",
+    snprintf(outfile, PATH_MAX, "%s/foo.conf",
                       (builddir == NULL) ? "." : builddir);
 
-    sprintf(command, "cp %s %s", infile, outfile);
+    snprintf(command, PATH_MAX * 3, "cp %s %s", infile, outfile);
     INIOUT(printf("Running command '%s'\n", command));
 
     error = system(command);
     if ((error) || (WEXITSTATUS(error))) {
-        printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+        printf("Failed to run copy command %d %d.\n",  error,
+               WEXITSTATUS(error));
         return -1;
     }
 
@@ -1157,7 +1168,7 @@ int reload_test(void)
     struct ini_cfgfile *file_ctx_new = NULL;
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
-    char command[PATH_MAX * 2 + 3];
+    char command[PATH_MAX * 3];
     char *srcdir;
     char *builddir;
     int changed = 0;
@@ -1165,18 +1176,19 @@ int reload_test(void)
     INIOUT(printf("<==== Reload test ====>\n"));
 
     srcdir = getenv("srcdir");
-    sprintf(infile, "%s/ini/ini.d/foo.conf.in",
+    snprintf(infile, PATH_MAX, "%s/ini/ini.d/foo.conf.in",
                    (srcdir == NULL) ? "." : srcdir);
     builddir = getenv("builddir");
-    sprintf(outfile, "%s/foo.conf",
+    snprintf(outfile, PATH_MAX, "%s/foo.conf",
                      (builddir == NULL) ? "." : builddir);
 
-    sprintf(command, "cp %s %s", infile, outfile);
+    snprintf(command, PATH_MAX * 3, "cp %s %s", infile, outfile);
     INIOUT(printf("Running command '%s'\n", command));
 
     error = system(command);
     if ((error) || (WEXITSTATUS(error))) {
-        printf("Failed to run copy command %d %d.\n",  error, WEXITSTATUS(error));
+        printf("Failed to run copy command %d %d.\n",  error,
+               WEXITSTATUS(error));
         return -1;
     }
 
@@ -1279,7 +1291,7 @@ int reload_test(void)
 
     sleep(1);
 
-    sprintf(command, "cp %s %s", infile, outfile);
+    snprintf(command, PATH_MAX * 3, "cp %s %s", infile, outfile);
     INIOUT(printf("Copy file again with command '%s'\n", command));
 
     error = system(command);
@@ -1389,7 +1401,8 @@ int get_test(void)
     }
 
     srcdir = getenv("srcdir");
-    sprintf(infile, "%s/ini/ini.d/real.conf", (srcdir == NULL) ? "." : srcdir);
+    snprintf(infile, PATH_MAX, "%s/ini/ini.d/real.conf",
+             (srcdir == NULL) ? "." : srcdir);
 
     INIOUT(printf("Reading file %s\n", infile));
 

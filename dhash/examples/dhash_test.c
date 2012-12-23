@@ -26,6 +26,7 @@
 #include <getopt.h>
 #include "dhash.h"
 
+#define BUF_SIZE 1024
 #define DEFAULT_MAX_TEST (500)
 hash_entry_t *iter_result_1 = NULL;
 hash_entry_t *iter_result_2 = NULL;
@@ -54,7 +55,7 @@ const char *error_string(int error)
 
 char *key_string(hash_key_t *key)
 {
-    static char buf[1024];
+    static char buf[BUF_SIZE];
 
     switch(key->type) {
     case HASH_KEY_ULONG:
@@ -72,7 +73,7 @@ char *key_string(hash_key_t *key)
 
 char *value_string(hash_value_t *value)
 {
-    static char buf[1024];
+    static char buf[BUF_SIZE];
 
     switch(value->type) {
     case HASH_VALUE_UNDEF:
@@ -109,7 +110,7 @@ char *value_string(hash_value_t *value)
 
 char *entry_string(hash_entry_t *entry)
 {
-    static char buf[1024];
+    static char buf[BUF_SIZE];
 
     snprintf(buf, sizeof(buf), "[%s] = [%s]", key_string(&entry->key), value_string(&entry->value));
 
@@ -151,7 +152,7 @@ int main(int argc, char **argv)
     hash_value_t old_value;
     hash_value_t new_value;
     hash_key_t key;
-    char buf[1024];
+    char buf[BUF_SIZE];
     hash_table_t *table = NULL;
     unsigned long callback_count = 0;
     unsigned long table_size = 0;
@@ -259,7 +260,7 @@ int main(int argc, char **argv)
          * otherwise we'll use an unsigned long as the key */
         if (test[i].val & 1) {
             key.type = HASH_KEY_STRING;
-            sprintf(buf, "%ld", test[i].val);
+            snprintf(buf, BUF_SIZE, "%ld", test[i].val);
             test[i].str = strdup(buf);
         }
     }

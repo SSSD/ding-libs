@@ -911,6 +911,7 @@ int config_for_app_with_metadata(const char *application,
             return error;
         }
 
+        /* It is safe to use sprintf() here */
         sprintf(file_name, "%s%s%s.conf", config_dir, SLASH, application);
         TRACE_INFO_STRING("Opening file:", file_name);
         /* Read specific file */

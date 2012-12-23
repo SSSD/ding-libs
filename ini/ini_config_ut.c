@@ -1547,6 +1547,7 @@ int main(int argc, char *argv[])
     char *srcdir = NULL;
     char *rundir = NULL;
     const char inidir[] = "/ini";
+    int len = 0;
 
     if ((argc > 1) && (strcmp(argv[1], "-v") == 0)) verbose = 1;
 
@@ -1555,14 +1556,15 @@ int main(int argc, char *argv[])
     srcdir = getenv("srcdir");
     if(srcdir) {
 
-        rundir = malloc(strlen(srcdir) + sizeof(inidir));
+        len = strlen(srcdir) + sizeof(inidir);
+        rundir = malloc(len);
         if (!rundir) {
             printf("Failed to allocate memory to store path"
                    " to the test files %d.\n", ENOMEM);
             return -1;
         }
 
-        sprintf(rundir, "%s%s", srcdir, inidir);
+        snprintf(rundir, len, "%s%s", srcdir, inidir);
 
         errno = 0;
         if(chdir(rundir) != 0) {

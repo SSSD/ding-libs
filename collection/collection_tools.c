@@ -465,6 +465,11 @@ int col_serialize(const char *property_in,
                            (const char *)(data), '"');
         break;
 
+    /* Here and below it is safe to use sprintf() becuase we
+     * already pre-calculated the length and allocated buffer
+     * of the right size.
+     */
+
     case COL_TYPE_BINARY:
         buf_data->buffer[buf_data->length] = '\'';
         for (i = 0; i < length; i++)
