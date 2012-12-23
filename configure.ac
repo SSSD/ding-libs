@@ -4,6 +4,7 @@ AC_INIT([ding-libs],
         [sssd-devel@lists.fedorahosted.org])
 AC_CONFIG_SRCDIR([README])
 AC_CONFIG_AUX_DIR([build])
+AC_GNU_SOURCE
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_PROG_CC
 AC_PROG_LIBTOOL

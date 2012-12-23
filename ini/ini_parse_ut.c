@@ -19,6 +19,7 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -30,7 +31,6 @@
 #include "ini_config_priv.h"
 #include "simplebuffer.h"
 #include "path_utils.h"
-#include "config.h"
 #define TRACE_HOME
 #include "trace.h"
 #include "collection_tools.h"

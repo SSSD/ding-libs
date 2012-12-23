@@ -20,19 +20,9 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE
+#include "config.h"
 #include <stdio.h>
 #include <errno.h>
-/*
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <locale.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <limits.h>
-*/
-#include "config.h"
 #include "trace.h"
 #include "collection.h"
 #include "collection_tools.h"

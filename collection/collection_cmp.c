@@ -19,13 +19,12 @@
     along with Collection Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE
+#include "config.h"
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>
 #include <time.h>
-#include "config.h"
 #include "trace.h"
 
 /* The collection should use the real structures */

@@ -19,6 +19,7 @@
     along with Collection Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
 #include <stdlib.h>
 #include <errno.h>
 #include "collection_stack.h"

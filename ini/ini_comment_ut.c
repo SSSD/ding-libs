@@ -19,9 +19,9 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include <stdlib.h>
 #define TRACE_HOME
 #include "trace.h"

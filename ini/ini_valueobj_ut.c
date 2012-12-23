@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE
+#include "config.h"
 #include <errno.h>  /* for errors */
 #include <stdint.h>
 #include <stdio.h>
@@ -27,7 +27,6 @@
 
 #include "ini_valueobj.h"
 #include "ini_defines.h"
-#include "config.h"
 #define TRACE_HOME
 #include "trace.h"
 

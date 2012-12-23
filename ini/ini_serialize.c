@@ -19,12 +19,11 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE
+#include "config.h"
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include "config.h"
 #include "simplebuffer.h"
 #include "collection.h"
 #include "ini_valueobj.h"

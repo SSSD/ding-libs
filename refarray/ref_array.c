@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE
+#include "config.h"
 #include <errno.h>  /* for errors */
 #include <stdint.h>
 #include <malloc.h>
@@ -25,7 +25,6 @@
 #include <stdio.h>
 
 #include "ref_array.h"
-#include "config.h"
 #include "trace.h"
 
 /* The structure used in referenced array */

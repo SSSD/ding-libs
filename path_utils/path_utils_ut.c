@@ -20,7 +20,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE /* asprintf */
+#include "config.h"
 
 #include <check.h>
 #include <stdlib.h>

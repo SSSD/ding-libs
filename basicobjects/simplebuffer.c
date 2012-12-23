@@ -17,8 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#define _GNU_SOURCE
+#include "config.h"
 #include <errno.h>      /* for errors */
 #include <stdlib.h>     /* for free() */
 #include <unistd.h>     /* for write() */
@@ -26,7 +25,6 @@
 
 #include "simplebuffer.h"
 #include "trace.h"
-#include "config.h"
 
 /* End line string */
 #define ENDLNSTR "\n"

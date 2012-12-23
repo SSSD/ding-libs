@@ -19,10 +19,8 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <errno.h>
 #include "config.h"
+#include <stdio.h>
 /* For error text */
 #include <libintl.h>
 #define _(String) gettext (String)
