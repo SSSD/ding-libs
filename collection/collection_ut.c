@@ -1648,7 +1648,6 @@ int search_test(void)
     }
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, "level1!level2!level3!level4!id", COL_TYPE_ANY, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1662,7 +1661,6 @@ int search_test(void)
 
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, NULL, COL_TYPE_INTEGER, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1676,7 +1674,6 @@ int search_test(void)
 
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, "", COL_TYPE_INTEGER, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1690,7 +1687,6 @@ int search_test(void)
 
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, "level3!level4!id", COL_TYPE_ANY, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1703,7 +1699,6 @@ int search_test(void)
     else COLOUT(printf("Expected item is found\n"));
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, "level3!packets", COL_TYPE_ANY, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1716,7 +1711,6 @@ int search_test(void)
     else COLOUT(printf("Expected item is found\n"));
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, "level1!level2!stack", COL_TYPE_ANY, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1729,7 +1723,6 @@ int search_test(void)
     else COLOUT(printf("Expected item is found\n"));
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, "level1!level2!level3", COL_TYPE_ANY, COL_TRAVERSE_DEFAULT, &found);
     if ((error) || (!found)) {
         col_destroy_collection(level1);
@@ -1743,7 +1736,6 @@ int search_test(void)
 
     /* Negative tests */
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, NULL, 0, COL_TRAVERSE_DEFAULT, &found);
     if ((error != ENOENT) || (found)) {
         col_destroy_collection(level1);
@@ -1762,7 +1754,6 @@ int search_test(void)
     else COLOUT(printf("No item is found as expected.\n"));
 
     found = 0;
-    error = 0;
     error = col_is_item_in_collection(level1, "", 0, COL_TRAVERSE_DEFAULT, &found);
     if ((error != ENOENT) || (found)) {
         col_destroy_collection(level1);

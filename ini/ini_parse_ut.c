@@ -919,7 +919,7 @@ int merge_file_test(void)
                                   msecflags[i],
                                   m2flags[j],
                                   m1flags[j]);
-                    INIOUT(printf(msg));
+                    INIOUT(printf("%s", msg));
                     error = simplebuffer_add_str(sbobj,
                                                  msg,
                                                  strlen(msg),
@@ -948,7 +948,7 @@ int merge_file_test(void)
                                   msecflags[i],
                                   m2flags[j],
                                   m1flags[j]);
-                    INIOUT(printf(msg));
+                    INIOUT(printf("%s", msg));
                     error = simplebuffer_add_str(sbobj,
                                                  msg,
                                                  strlen(msg),
@@ -1353,7 +1353,7 @@ int get_test(void)
     double number_double;
     unsigned number_unsigned;
     unsigned long number_ulong;
-    unsigned char logical;
+    unsigned char logical = 0;
     char *str;
     const char *cstr;
     const char *cstrn;
@@ -1579,7 +1579,6 @@ int get_test(void)
     INIOUT(printf("Convert value to number without strict conversion.\n"));
 
     error = 0;
-    number = 1;
     number = ini_get_int_config_value(vo, 0, 10, &error);
     if (error) {
         printf("Did not expect error.\n");
@@ -1723,7 +1722,7 @@ int get_test(void)
     error = 0;
     logical = ini_get_bool_config_value(vo, 1, &error);
     if (!error) {
-        printf("Expect error. Got success.\n");
+        printf("Expect error. Got success. Value %d\n", (int) logical);
         ini_config_destroy(ini_config);
         return -1;
     }

@@ -380,53 +380,67 @@ START_TEST(test_split_path)
     array = split_path("/foo/bar", &n);
     fail_if(array == NULL);
     fail_unless(n == 3);
-    fail_unless_str_equal(array[0], "/");
-    fail_unless_str_equal(array[1], "foo");
-    fail_unless_str_equal(array[2], "bar");
-    free(array);
+    if (array) {
+        fail_unless_str_equal(array[0], "/");
+        fail_unless_str_equal(array[1], "foo");
+        fail_unless_str_equal(array[2], "bar");
+        free(array);
+    }
 
     array = split_path("/foo/../bar", &n);
     fail_if(array == NULL);
     fail_unless(n == 4);
-    fail_unless_str_equal(array[0], "/");
-    fail_unless_str_equal(array[1], "foo");
-    fail_unless_str_equal(array[2], "..");
-    fail_unless_str_equal(array[3], "bar");
-    free(array);
+    if (array) {
+        fail_unless_str_equal(array[0], "/");
+        fail_unless_str_equal(array[1], "foo");
+        fail_unless_str_equal(array[2], "..");
+        fail_unless_str_equal(array[3], "bar");
+        free(array);
+    }
 
     array = split_path("/foo/bar", NULL);
     fail_if(array == NULL);
-    fail_unless_str_equal(array[0], "/");
-    fail_unless_str_equal(array[1], "foo");
-    fail_unless_str_equal(array[2], "bar");
-    free(array);
+    if (array) {
+        fail_unless_str_equal(array[0], "/");
+        fail_unless_str_equal(array[1], "foo");
+        fail_unless_str_equal(array[2], "bar");
+        free(array);
+    }
 
     array = split_path("foo/bar", &n);
     fail_if(array == NULL);
     fail_unless(n == 2);
-    fail_unless_str_equal(array[0], "foo");
-    fail_unless_str_equal(array[1], "bar");
-    free(array);
+    if (array) {
+        fail_unless_str_equal(array[0], "foo");
+        fail_unless_str_equal(array[1], "bar");
+        free(array);
+    }
 
     array = split_path(".", &n);
     fail_if(array == NULL);
     fail_unless(n == 1);
-    fail_unless_str_equal(array[0], ".");
-    free(array);
+    if (array) {
+        fail_unless_str_equal(array[0], ".");
+        free(array);
+    }
 
     array = split_path("foo", &n);
     fail_if(array == NULL);
     fail_unless(n == 1);
-    fail_unless_str_equal(array[0], "foo");
-    free(array);
+    if (array) {
+        fail_unless_str_equal(array[0], "foo");
+        free(array);
+    }
 
     /* one might expect { "" } or outright NULL, but we agreed not to
      * do changes beyond bugfixes at this point */
     array = split_path("", &n);
     fail_if(array == NULL);
     fail_unless(n == 0);
-    fail_unless(array[0] == NULL);
-    free(array);
+    if (array) {
+        fail_unless(array[0] == NULL);
+        free(array);
+    }
 }
 END_TEST
 
@@ -573,6 +587,7 @@ void setup_directory_list(void)
 
     s = strdup(DIR_TEMPLATE);
     fail_unless(s != NULL, "strdup failed\n");
+    if (!s) return;
     dlist_dir = mkdtemp(s);
     fail_unless(dlist_dir != NULL, "mkstemp failed [%d][%s]", errno, strerror(errno));
 

@@ -62,7 +62,7 @@ static int create_comment(int i, struct ini_comment **ic)
         (error = ini_comment_build(new_ic, "#This is the second line")) ||
         (error = ini_comment_build(new_ic, ";This is the third line")) ||
         (error = ini_comment_build(new_ic, ""))) {
-        printf("Failed to create comment object\n");
+        printf("Failed to create comment object. Error %d.\n", error);
         ini_comment_destroy(new_ic);
         return -1;
     }

@@ -467,7 +467,7 @@ int get_test(void)
     double number_double;
     unsigned number_unsigned;
     unsigned long number_ulong;
-    unsigned char logical;
+    unsigned char logical = 0;
     char *str;
     const char *cstr;
     const char *cstrn;
@@ -637,7 +637,6 @@ int get_test(void)
     COLOUT(printf("Convert item to number without strict conversion.\n"));
 
     error = 0;
-    number = 1;
     number = get_int_config_value(item, 0, 10, &error);
     if (error) {
         /* We expected error in this case */
@@ -779,7 +778,7 @@ int get_test(void)
     error = 0;
     logical = get_bool_config_value(item, 1, &error);
     if (!error) {
-        printf("Expect error. Got success.\n");
+        printf("Expect error. Got success. Value %d\n", (int) logical);
         free_ini_config(ini_config);
         return -1;
     }
