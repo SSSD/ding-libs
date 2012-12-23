@@ -357,13 +357,13 @@ char **split_path(const char *path, int *count)
     for (start = end = path; *start; start = end) {
         for (start = end; *start && *start == '/'; start++);
         for (end = start; *end && *end != '/'; end++);
-        if ((component_len = end - start) == 0) break;
+        if ((end - start) == 0) break;
 
         *array_ptr++ = component_ptr;
         while (start < end) *component_ptr++ = *start++;
         *component_ptr++ = 0;
     }
-    *array_ptr++ = NULL;
+    *array_ptr = NULL;
     if (count) *count = n_components;
     return (char **)mem_block;
 }
@@ -565,7 +565,7 @@ int directory_list(const char *path, bool recursive,
     }
 
     for (entry = readdir(dir); entry; entry = readdir(dir)) {
-        prune = false;
+
         if (strcmp(entry->d_name, ".") == 0 ||
             strcmp(entry->d_name, "..") == 0) {
             continue;
@@ -611,25 +611,21 @@ bool is_ancestor_path(const char *ancestor, const char *path)
 {
     char **path_components, **ancestor_components;
     int i, path_count, ancestor_count;
-    bool result;
+    bool result = false;
 
-    result = false;
     path_components = split_path(path, &path_count);
     ancestor_components = split_path(ancestor, &ancestor_count);
 
     if (!path_components || !ancestor_components) {
-        result = false;
         goto exit;
     }
 
     if (ancestor_count >= path_count) {
-        result = false;
         goto exit;
     }
 
     for (i = 0; i < ancestor_count; i++) {
         if (strcmp(path_components[i], ancestor_components[i]) != 0) {
-            result = false;
             goto exit;
         }
     }

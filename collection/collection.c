@@ -574,7 +574,7 @@ int col_insert_item_into_current(struct collection_item *collection,
                                 /* Move to the right position counting */
                                 while (idx > 0) {
                                     idx--;
-                                    parent = parent->next;
+                                    if (parent->next) parent = parent->next;
                                 }
                                 item->next = parent->next;
                                 parent->next = item;

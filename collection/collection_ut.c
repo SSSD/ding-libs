@@ -1354,6 +1354,9 @@ int insert_extract_test(void)
         (error = col_insert_str_property(col, NULL, COL_DSP_END,
                                          NULL, 0, COL_INSERT_NOCHECK,
                                          "property1", "value1", 0)) ||
+        (error = col_insert_str_property(col, NULL, COL_DSP_INDEX,
+                                         NULL, 1, COL_INSERT_NOCHECK,
+                                         "second", "second", 0)) ||
         (error = col_insert_str_property(col, NULL, COL_DSP_END,
                                          NULL, 0, COL_INSERT_NOCHECK,
                                          "property2", "value2", 0)) ||
@@ -1428,6 +1431,14 @@ int insert_extract_test(void)
     COLOUT(printf("\n\n==== EXTRACTION TEST ====\n\n"));
 
     if ((error = col_create_collection(&col2, "extraction", 0)) ||
+
+        (error = col_extract_item(col, NULL, COL_DSP_FRONT,
+                                  NULL, 0, 0, &item)) ||
+
+        (error = col_insert_item(col2, NULL, item, COL_DSP_FRONT,
+                                 NULL, 0, COL_INSERT_NOCHECK)) ||
+
+        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
 
         (error = col_extract_item(col, NULL, COL_DSP_FRONT,
                                   NULL, 0, 0, &item)) ||

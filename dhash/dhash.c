@@ -888,12 +888,17 @@ int hash_get_default(hash_table_t *table, hash_key_t *key, hash_value_t *value, 
 
     if (!table) return HASH_ERROR_BAD_TABLE;
 
-    if ((error = hash_lookup(table, key, value)) != HASH_SUCCESS) {
-        if ((error = hash_enter(table, key, default_value)) != HASH_SUCCESS) {
+    error = hash_lookup(table, key, value);
+    if (error == HASH_ERROR_KEY_NOT_FOUND) {
+
+        error = hash_enter(table, key, default_value);
+        if (error != HASH_SUCCESS) {
             return error;
         }
         *value = *default_value;
         return HASH_SUCCESS;
+    } else {
+        if (error != HASH_SUCCESS) return error;
     }
 
     return HASH_SUCCESS;
