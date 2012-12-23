@@ -137,12 +137,12 @@
  *
  * @{
  */
-/** @brief Fail if any problem is detected. */
-#define INI_STOP_ON_ANY     0
-/** @brief Best effort - do not fail. */
-#define INI_STOP_ON_NONE    1
-/** @brief Fail on errors only. */
-#define INI_STOP_ON_ERROR   2
+/** Enumeration of error levels. */
+enum ERR_LEVEL {
+    INI_STOP_ON_ANY   = 0, /**< Fail if any problem is detected. */
+    INI_STOP_ON_NONE  = 1, /**< Best effort - do not fail. */
+    INI_STOP_ON_ERROR = 2  /**< Fail on errors only. */
+};
 
 /**
  * @}
@@ -155,32 +155,25 @@
  *
  * @{
  */
-/** @brief Line is too long (Error). */
-#define ERR_LONGDATA        1
-/** @brief No closing bracket in section definition (Error). */
-#define ERR_NOCLOSESEC      2
-/** @brief Section name is missing (Error). */
-#define ERR_NOSECTION       3
-/** @brief Section name too long (Error). */
-#define ERR_SECTIONLONG     4
-/** @brief No equal sign (Error). */
-#define ERR_NOEQUAL         5
-/** @brief No key before equal sign (Error). */
-#define ERR_NOKEY           6
-/** @brief Key is too long (Error). */
-#define ERR_LONGKEY         7
-/** @brief Failed to read line (Error). */
-#define ERR_READ            8
-/** @brief Line starts with space when it should not (Error). */
-#define ERR_SPACE           9
-/** @brief Duplicate key is not allowed (Error). */
-#define ERR_DUPKEY          10
-/** @brief Duplicate key is detected while merging sections (Error). */
-#define ERR_DUPKEYSEC       11
-/** @brief Duplicate section is not allowed (Error). */
-#define ERR_DUPSECTION      12
-/** @brief Special value. Size of the error array. */
-#define ERR_MAXPARSE        ERR_DUPSECTION
+/** Enumeration of parsing errors. */
+enum ERR_PARSE {
+    ERR_LONGDATA = 1, /**< Line is too long (Error). */
+    ERR_NOCLOSESEC,   /**< No closing bracket in section
+                           definition (Error). */
+    ERR_NOSECTION,    /**< Section name is missing (Error). */
+    ERR_SECTIONLONG,  /**< Section name too long (Error). */
+    ERR_NOEQUAL,      /**< No equal sign (Error). */
+    ERR_NOKEY,        /**< No key before equal sign (Error). */
+    ERR_LONGKEY,      /**< Key is too long (Error). */
+    ERR_READ,         /**< Failed to read line (Error). */
+    ERR_SPACE,        /**< Line starts with space when it
+                           should not (Error). */
+    ERR_DUPKEY,       /**< Duplicate key is not allowed (Error). */
+    ERR_DUPKEYSEC,    /**< Duplicate key is detected while merging
+                           sections (Error). */
+    ERR_DUPSECTION,   /**< Duplicate section is not allowed (Error). */
+    ERR_MAXPARSE = ERR_DUPSECTION /**< Special value. Size of the error array. */
+};
 
 /**
  * @}
