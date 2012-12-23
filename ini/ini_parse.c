@@ -1012,12 +1012,10 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     }
 
     /* Dup the key name */
-    errno = 0;
     po->key = malloc(len + 1);
     if (!(po->key)) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to dup key", error);
-        return error;
+        TRACE_ERROR_NUMBER("Failed to dup key", ENOMEM);
+        return ENOMEM;
     }
 
     memcpy(po->key, po->last_read, len);
@@ -1040,12 +1038,10 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     TRACE_INFO_NUMBER("LENGTH:", len);
 
     /* Dup the part of the value */
-    errno = 0;
     dupval = malloc(len + 1);
     if (!dupval) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to dup value", error);
-        return error;
+        TRACE_ERROR_NUMBER("Failed to dup value", ENOMEM);
+        return ENOMEM;
     }
 
     memcpy(dupval, eq, len);
@@ -1152,12 +1148,10 @@ static int handle_section(struct parser_obj *po, uint32_t *action)
     }
 
     /* Dup the name */
-    errno = 0;
     dupval = malloc(len + 1);
     if (!dupval) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to dup section name", error);
-        return error;
+        TRACE_ERROR_NUMBER("Failed to dup section name", ENOMEM);
+        return ENOMEM;
     }
 
     memcpy(dupval, start, len);

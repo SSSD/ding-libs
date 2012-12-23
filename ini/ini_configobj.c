@@ -119,10 +119,8 @@ int ini_config_create(struct ini_cfgobj **ini_config)
         return EINVAL;
     }
 
-    errno = 0;
     new_co = malloc(sizeof(struct ini_cfgobj));
     if (!new_co) {
-        error = errno;
         TRACE_ERROR_NUMBER("Failed to allocate memory", ENOMEM);
         return ENOMEM;
     }
@@ -263,10 +261,8 @@ int ini_config_copy(struct ini_cfgobj *ini_config,
     }
 
     /* Create a new configuration object */
-    errno = 0;
     new_co = malloc(sizeof(struct ini_cfgobj));
     if (!new_co) {
-        error = errno;
         TRACE_ERROR_NUMBER("Failed to allocate memory", ENOMEM);
         return ENOMEM;
     }

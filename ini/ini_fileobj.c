@@ -170,12 +170,10 @@ int ini_config_file_open(const char *filename,
     }
 
     /* Allocate structure */
-    errno = 0;
     new_ctx = malloc(sizeof(struct ini_cfgfile));
     if (!new_ctx) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to allocate file ctx.", error);
-        return error;
+        TRACE_ERROR_NUMBER("Failed to allocate file ctx.", ENOMEM);
+        return ENOMEM;
     }
 
     new_ctx->filename = NULL;
@@ -189,13 +187,11 @@ int ini_config_file_open(const char *filename,
     new_ctx->count = 0;
 
     /* Construct the full file path */
-    errno = 0;
     new_ctx->filename = malloc(PATH_MAX + 1);
     if (!(new_ctx->filename)) {
-        error = errno;
         ini_config_file_destroy(new_ctx);
-        TRACE_ERROR_NUMBER("Failed to allocate memory for file path.", error);
-        return error;
+        TRACE_ERROR_NUMBER("Failed to allocate memory for file path.", ENOMEM);
+        return ENOMEM;
     }
 
     /* Construct path */
@@ -236,12 +232,10 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
     }
 
     /* Allocate structure */
-    errno = 0;
     new_ctx = malloc(sizeof(struct ini_cfgfile));
     if (!new_ctx) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to allocate file ctx.", error);
-        return error;
+        TRACE_ERROR_NUMBER("Failed to allocate file ctx.", ENOMEM);
+        return ENOMEM;
     }
 
     new_ctx->file = NULL;
@@ -320,13 +314,10 @@ int ini_config_get_errors(struct ini_cfgfile *file_ctx,
         return EINVAL;
     }
 
-
-    errno = 0;
     errlist = calloc(file_ctx->count + 1, sizeof(char *));
     if (!errlist) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to allocate memory for errors.", error);
-        return error;
+        TRACE_ERROR_NUMBER("Failed to allocate memory for errors.", ENOMEM);
+        return ENOMEM;
     }
 
     /* Bind iterator */
@@ -365,14 +356,12 @@ int ini_config_get_errors(struct ini_cfgfile *file_ctx,
              * are pretty short and will fir into the predefined
              * error length buffer.
              */
-            errno = 0;
             line = malloc(MAX_ERROR_LINE + 1);
             if (!line) {
-                error = errno;
-                TRACE_ERROR_NUMBER("Failed to get memory for error.", error);
+                TRACE_ERROR_NUMBER("Failed to get memory for error.", ENOMEM);
                 col_unbind_iterator(iterator);
                 ini_config_free_errors(errlist);
-                return error;
+                return ENOMEM;
             }
 
             snprintf(line, MAX_ERROR_LINE, LINE_FORMAT,

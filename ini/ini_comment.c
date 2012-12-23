@@ -736,7 +736,7 @@ int ini_comment_serialize (struct ini_comment *ic,
 
         error = ini_comment_get_line(ic, i, &commentline, &len);
         if (error) {
-            TRACE_ERROR_NUMBER("Failed to get line", errno);
+            TRACE_ERROR_NUMBER("Failed to get line", error);
             return error;
         }
 
