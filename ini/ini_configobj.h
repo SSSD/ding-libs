@@ -526,11 +526,11 @@ void ini_config_file_destroy(struct ini_cfgfile *file_ctx);
  * how many parsing errors were found during last
  * parsing operation.
  *
- * @param[in]  file_ctx         Configuration file object.
+ * @param[in]  ini_config       Configuration object.
  *
  * @return Number of errors.
  */
-unsigned ini_config_error_count(struct ini_cfgfile *file_ctx);
+unsigned ini_config_error_count(struct ini_cfgobj *ini_config);
 
 /**
  * @brief Get array of parsing errors
@@ -541,14 +541,14 @@ unsigned ini_config_error_count(struct ini_cfgfile *file_ctx);
  * Array can be referenced as a normal array of strings.
  * The NULL entry indicates the end of the array.
  *
- * @param[in]  file_ctx         Configuration file object.
+ * @param[in]  ini_config       Configuration object.
  * @param[out] errors           Array of error strings.
  *
  * @return 0 - Success.
  * @return EINVAL - Invalid parameter.
  * @return ENOMEM - No memory.
  */
-int ini_config_get_errors(struct ini_cfgfile *file_ctx,
+int ini_config_get_errors(struct ini_cfgobj *ini_config,
                           char ***errors);
 
 /**
@@ -693,6 +693,7 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
  * @brief Create a copy of the configuration object
  *
  * Function creates a deep copy of all the configuration data.
+ * Error list created during parsing is not copied over.
  *
  * @param[in]  ini_config       Original configuration object.
  * @param[out] ini_new          A new configuration object.

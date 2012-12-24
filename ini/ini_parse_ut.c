@@ -86,10 +86,10 @@ int test_one_file(const char *in_filename,
     if (error) {
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
 
-        if (ini_config_error_count(file_ctx)) {
+        if (ini_config_error_count(ini_config)) {
             INIOUT(printf("Errors detected while parsing: %s\n",
                    ini_config_get_filename(file_ctx)));
-            ini_config_get_errors(file_ctx, &error_list);
+            ini_config_get_errors(ini_config, &error_list);
             INIOUT(ini_config_print_errors(stdout, error_list));
             ini_config_free_errors(error_list);
         }
@@ -389,10 +389,10 @@ int merge_values_test(void)
             INIOUT(printf("Failed to parse configuration. Error %d.\n",
                           error));
 
-            if (ini_config_error_count(file_ctx)) {
+            if (ini_config_error_count(ini_config)) {
                 INIOUT(printf("Errors detected while parsing: %s\n",
                        ini_config_get_filename(file_ctx)));
-                ini_config_get_errors(file_ctx, &error_list);
+                ini_config_get_errors(ini_config, &error_list);
                 INIOUT(ini_config_print_errors(stdout, error_list));
                 ini_config_free_errors(error_list);
             }
@@ -585,10 +585,10 @@ int merge_section_test(void)
                 INIOUT(printf("Failed to parse configuration. "
                               "Error %d.\n", error));
 
-                if (ini_config_error_count(file_ctx)) {
+                if (ini_config_error_count(ini_config)) {
                     INIOUT(printf("Errors detected while parsing: %s\n",
                            ini_config_get_filename(file_ctx)));
-                    ini_config_get_errors(file_ctx, &error_list);
+                    ini_config_get_errors(ini_config, &error_list);
                     INIOUT(ini_config_print_errors(stdout, error_list));
                     ini_config_free_errors(error_list);
                 }
@@ -707,10 +707,10 @@ int read_one_file(char *name,
         INIOUT(printf("Failed to parse configuration. "
                       "Error %d.\n", error));
 
-        if (ini_config_error_count(file_ctx)) {
+        if (ini_config_error_count(ini_config)) {
             INIOUT(printf("Errors detected while parsing: %s\n",
                    ini_config_get_filename(file_ctx)));
-            ini_config_get_errors(file_ctx, &error_list);
+            ini_config_get_errors(ini_config, &error_list);
             INIOUT(ini_config_print_errors(stdout, error_list));
             ini_config_free_errors(error_list);
         }
@@ -1146,10 +1146,10 @@ int startup_test(void)
     if (error) {
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
 
-        if (ini_config_error_count(file_ctx)) {
+        if (ini_config_error_count(ini_config)) {
             INIOUT(printf("Errors detected while parsing: %s\n",
                    ini_config_get_filename(file_ctx)));
-            ini_config_get_errors(file_ctx, &error_list);
+            ini_config_get_errors(ini_config, &error_list);
             INIOUT(ini_config_print_errors(stdout, error_list));
             ini_config_free_errors(error_list);
         }
@@ -1430,10 +1430,10 @@ int get_test(void)
     if (error) {
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
 
-        if (ini_config_error_count(file_ctx)) {
+        if (ini_config_error_count(ini_config)) {
             INIOUT(printf("Errors detected while parsing: %s\n",
                    ini_config_get_filename(file_ctx)));
-            ini_config_get_errors(file_ctx, &error_list);
+            ini_config_get_errors(ini_config, &error_list);
             INIOUT(ini_config_print_errors(stdout, error_list));
             ini_config_free_errors(error_list);
         }

@@ -42,6 +42,10 @@ struct ini_cfgobj {
     int section_len;
     int name_len;
     struct collection_iterator *iterator;
+    /* Collection of errors detected during parsing */
+    struct collection_item *error_list;
+    /* Count of error lines */
+    unsigned count;
 
     /*...         */
     /* Statistics? Timestamps? When created? Modified? - TBD */
@@ -63,12 +67,8 @@ struct ini_cfgfile {
     /**********************/
     /* Internal variables */
     /**********************/
-    /* Collection of errors detected during parsing */
-    struct collection_item *error_list;
     /* File stats */
     struct stat file_stats;
-    /* Count of error lines */
-    unsigned count;
 };
 
 /* Parsing error */

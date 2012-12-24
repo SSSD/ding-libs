@@ -24,8 +24,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+/* For error text */
+#include <libintl.h>
+#define _(String) gettext (String)
 #include "trace.h"
 #include "collection.h"
+#include "collection_tools.h"
+#include "ini_configobj.h"
 #include "ini_config_priv.h"
 #include "ini_defines.h"
 #include "ini_valueobj.h"
@@ -99,6 +105,11 @@ void ini_config_destroy(struct ini_cfgobj *ini_config)
         if (ini_config->last_comment) {
             ini_comment_destroy(ini_config->last_comment);
         }
+
+        if (ini_config->error_list) {
+            col_destroy_collection(ini_config->error_list);
+        }
+
         free(ini_config);
     }
 
@@ -132,6 +143,8 @@ int ini_config_create(struct ini_cfgobj **ini_config)
     new_co->section_len = 0;
     new_co->name_len = 0;
     new_co->iterator = NULL;
+    new_co->error_list = NULL;
+    new_co->count = 0;
 
     /* Create a collection to hold configuration data */
     error = col_create_collection(&(new_co->cfg),
@@ -139,6 +152,16 @@ int ini_config_create(struct ini_cfgobj **ini_config)
                                   COL_CLASS_INI_CONFIG);
     if (error != EOK) {
         TRACE_ERROR_NUMBER("Failed to create collection.", error);
+        ini_config_destroy(new_co);
+        return error;
+    }
+
+    /* Create error list collection */
+    error = col_create_collection(&(new_co->error_list),
+                                  INI_ERROR,
+                                  COL_CLASS_INI_PERROR);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to create error list", error);
         ini_config_destroy(new_co);
         return error;
     }
@@ -274,6 +297,8 @@ int ini_config_copy(struct ini_cfgobj *ini_config,
     new_co->section_len = 0;
     new_co->name_len = 0;
     new_co->iterator = NULL;
+    new_co->error_list = NULL;
+    new_co->count = 0;
 
     error = col_copy_collection_with_cb(&(new_co->cfg),
                                         ini_config->cfg,
@@ -897,4 +922,120 @@ int ini_config_merge(struct ini_cfgobj *first,
     TRACE_FLOW_EXIT();
     return error;
 
+}
+
+/* How many errors do we have in the list ? */
+unsigned ini_config_error_count(struct ini_cfgobj *cfg_ctx)
+{
+    unsigned count = 0;
+
+    TRACE_FLOW_ENTRY();
+
+    count = cfg_ctx->count;
+
+    TRACE_FLOW_EXIT();
+    return count;
+
+}
+
+/* Free error strings */
+void ini_config_free_errors(char **errors)
+{
+    TRACE_FLOW_ENTRY();
+
+    col_free_property_list(errors);
+
+    TRACE_FLOW_EXIT();
+}
+
+/* Get the list of error strings */
+int ini_config_get_errors(struct ini_cfgobj *cfg_ctx,
+                          char ***errors)
+{
+    char **errlist = NULL;
+    struct collection_iterator *iterator = NULL;
+    int error;
+    struct collection_item *item = NULL;
+    struct ini_parse_error *pe;
+    unsigned int count = 0;
+    char *line;
+
+    TRACE_FLOW_ENTRY();
+
+    /* If we have something to print print it */
+    if ((!errors) || (!cfg_ctx)) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    errlist = calloc(cfg_ctx->count + 1, sizeof(char *));
+    if (!errlist) {
+        TRACE_ERROR_NUMBER("Failed to allocate memory for errors.", ENOMEM);
+        return ENOMEM;
+    }
+
+    /* Bind iterator */
+    error =  col_bind_iterator(&iterator,
+                               cfg_ctx->error_list,
+                               COL_TRAVERSE_DEFAULT);
+    if (error) {
+        TRACE_ERROR_NUMBER("Faile to bind iterator:", error);
+        ini_config_free_errors(errlist);
+        return error;
+    }
+
+    while(1) {
+        /* Loop through a collection */
+        error = col_iterate_collection(iterator, &item);
+        if (error) {
+            TRACE_ERROR_NUMBER("Error iterating collection", error);
+            col_unbind_iterator(iterator);
+            ini_config_free_errors(errlist);
+            return error;
+        }
+
+        /* Are we done ? */
+        if (item == NULL) break;
+
+        /* Process collection header */
+        if (col_get_item_type(item) == COL_TYPE_COLLECTION) {
+            continue;
+        }
+        else {
+            /* Put error into provided format */
+            pe = (struct ini_parse_error *)(col_get_item_data(item));
+
+            /* Would be nice to have asprintf function...
+             * ...but for now we know that all the errors
+             * are pretty short and will fir into the predefined
+             * error length buffer.
+             */
+            line = malloc(MAX_ERROR_LINE + 1);
+            if (!line) {
+                TRACE_ERROR_NUMBER("Failed to get memory for error.", ENOMEM);
+                col_unbind_iterator(iterator);
+                ini_config_free_errors(errlist);
+                return ENOMEM;
+            }
+
+            snprintf(line, MAX_ERROR_LINE, LINE_FORMAT,
+                     col_get_item_property(item, NULL),
+                     pe->error,
+                     pe->line,
+                     ini_get_error_str(pe->error,
+                                       INI_FAMILY_PARSING));
+
+            errlist[count] = line;
+            count++;
+        }
+
+    }
+
+    /* Do not forget to unbind iterator - otherwise there will be a leak */
+    col_unbind_iterator(iterator);
+
+    *errors = errlist;
+
+    TRACE_FLOW_EXIT();
+    return error;
 }

@@ -27,9 +27,7 @@
 #include "ini_defines.h"
 #include "ini_configobj.h"
 #include "ini_config_priv.h"
-#include "collection.h"
 #include "path_utils.h"
-#include "collection_tools.h"
 
 
 /* Close file but not destroy the object */
@@ -54,7 +52,6 @@ void ini_config_file_destroy(struct ini_cfgfile *file_ctx)
 
     if(file_ctx) {
         free(file_ctx->filename);
-        col_destroy_collection(file_ctx->error_list);
         if(file_ctx->file) fclose(file_ctx->file);
         free(file_ctx);
     }
@@ -76,15 +73,6 @@ static int common_file_init(struct ini_cfgfile *file_ctx)
     if (!(file_ctx->file)) {
         error = errno;
         TRACE_ERROR_NUMBER("Failed to open file", error);
-        return error;
-    }
-
-    /* Create internal collections */
-    error = col_create_collection(&(file_ctx->error_list),
-                                  INI_ERROR,
-                                  COL_CLASS_INI_PERROR);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to create error list", error);
         return error;
     }
 
@@ -128,11 +116,9 @@ int ini_config_file_open(const char *filename,
 
     new_ctx->filename = NULL;
     new_ctx->file = NULL;
-    new_ctx->error_list = NULL;
 
     /* Store flags */
     new_ctx->metadata_flags = metadata_flags;
-    new_ctx->count = 0;
 
     /* Construct the full file path */
     new_ctx->filename = malloc(PATH_MAX + 1);
@@ -187,11 +173,9 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
     }
 
     new_ctx->file = NULL;
-    new_ctx->error_list = NULL;
 
     /* Store flags */
     new_ctx->metadata_flags = file_ctx_in->metadata_flags;
-    new_ctx->count = 0;
 
     /* Copy full file path */
     errno = 0;
@@ -216,122 +200,6 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
     return error;
 }
 
-/* How many errors do we have in the list ? */
-unsigned ini_config_error_count(struct ini_cfgfile *file_ctx)
-{
-    unsigned count = 0;
-
-    TRACE_FLOW_ENTRY();
-
-    count = file_ctx->count;
-
-    TRACE_FLOW_EXIT();
-    return count;
-
-}
-
-/* Free error strings */
-void ini_config_free_errors(char **errors)
-{
-    TRACE_FLOW_ENTRY();
-
-    col_free_property_list(errors);
-
-    TRACE_FLOW_EXIT();
-}
-
-/* Get the list of error strings */
-int ini_config_get_errors(struct ini_cfgfile *file_ctx,
-                          char ***errors)
-{
-    char **errlist = NULL;
-    struct collection_iterator *iterator = NULL;
-    int error;
-    struct collection_item *item = NULL;
-    struct ini_parse_error *pe;
-    unsigned int count = 0;
-    char *line;
-
-    TRACE_FLOW_ENTRY();
-
-    /* If we have something to print print it */
-    if ((!errors) || (!file_ctx)) {
-        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
-        return EINVAL;
-    }
-
-    errlist = calloc(file_ctx->count + 1, sizeof(char *));
-    if (!errlist) {
-        TRACE_ERROR_NUMBER("Failed to allocate memory for errors.", ENOMEM);
-        return ENOMEM;
-    }
-
-    /* Bind iterator */
-    error =  col_bind_iterator(&iterator,
-                               file_ctx->error_list,
-                               COL_TRAVERSE_DEFAULT);
-    if (error) {
-        TRACE_ERROR_NUMBER("Faile to bind iterator:", error);
-        ini_config_free_errors(errlist);
-        return error;
-    }
-
-    while(1) {
-        /* Loop through a collection */
-        error = col_iterate_collection(iterator, &item);
-        if (error) {
-            TRACE_ERROR_NUMBER("Error iterating collection", error);
-            col_unbind_iterator(iterator);
-            ini_config_free_errors(errlist);
-            return error;
-        }
-
-        /* Are we done ? */
-        if (item == NULL) break;
-
-        /* Process collection header */
-        if (col_get_item_type(item) == COL_TYPE_COLLECTION) {
-            continue;
-        }
-        else {
-            /* Put error into provided format */
-            pe = (struct ini_parse_error *)(col_get_item_data(item));
-
-            /* Would be nice to have asprintf function...
-             * ...but for now we know that all the errors
-             * are pretty short and will fir into the predefined
-             * error length buffer.
-             */
-            line = malloc(MAX_ERROR_LINE + 1);
-            if (!line) {
-                TRACE_ERROR_NUMBER("Failed to get memory for error.", ENOMEM);
-                col_unbind_iterator(iterator);
-                ini_config_free_errors(errlist);
-                return ENOMEM;
-            }
-
-            snprintf(line, MAX_ERROR_LINE, LINE_FORMAT,
-                     col_get_item_property(item, NULL),
-                     pe->error,
-                     pe->line,
-                     ini_get_error_str(pe->error,
-                                       INI_FAMILY_PARSING));
-
-            errlist[count] = line;
-            count++;
-        }
-
-    }
-
-    /* Do not forget to unbind iterator - otherwise there will be a leak */
-    col_unbind_iterator(iterator);
-
-    *errors = errlist;
-
-    TRACE_FLOW_EXIT();
-    return error;
-}
-
 /* Get the fully resolved file name */
 const char *ini_config_get_filename(struct ini_cfgfile *file_ctx)
 {
@@ -343,7 +211,6 @@ const char *ini_config_get_filename(struct ini_cfgfile *file_ctx)
     TRACE_FLOW_EXIT();
     return ret;
 }
-
 
 /* Check access */
 int ini_config_access_check(struct ini_cfgfile *file_ctx,
@@ -471,8 +338,6 @@ void ini_config_file_print(struct ini_cfgfile *file_ctx)
         printf("File name: %s\n", (file_ctx->filename) ? file_ctx->filename : "NULL");
         printf("File is %s\n", (file_ctx->file) ? "open" : "closed");
         printf("Metadata flags %u\n", file_ctx->metadata_flags);
-        if (file_ctx->error_list) col_print_collection(file_ctx->error_list);
-        else printf("Error list is empty.");
         printf("Stats flag st_dev %li\n", file_ctx->file_stats.st_dev);
         printf("Stats flag st_ino %li\n", file_ctx->file_stats.st_ino);
         printf("Stats flag st_mode %u\n", file_ctx->file_stats.st_mode);
@@ -485,7 +350,6 @@ void ini_config_file_print(struct ini_cfgfile *file_ctx)
         printf("Stats flag st_atime %ld\n", file_ctx->file_stats.st_atime);
         printf("Stats flag st_mtime %ld\n", file_ctx->file_stats.st_mtime);
         printf("Stats flag st_ctime %ld\n", file_ctx->file_stats.st_ctime);
-        printf("Count %u\n", file_ctx->count);
     }
     TRACE_FLOW_EXIT();
 }

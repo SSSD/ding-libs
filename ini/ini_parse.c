@@ -202,7 +202,6 @@ static int parser_create(struct ini_cfgobj *co,
                          int error_level,
                          uint32_t collision_flags,
                          uint32_t parse_flags,
-                         struct collection_item *error_list,
                          struct parser_obj **po)
 {
     int error = EOK;
@@ -216,15 +215,7 @@ static int parser_create(struct ini_cfgobj *co,
         (!co) ||
         (!(co->cfg)) ||
         (!file) ||
-        (!config_filename) ||
-        (!error_list)) {
-        TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
-        return EINVAL;
-    }
-
-    if ((error_level != INI_STOP_ON_ANY) &&
-        (error_level != INI_STOP_ON_NONE) &&
-        (error_level != INI_STOP_ON_ERROR)) {
+        (!config_filename)) {
         TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
         return EINVAL;
     }
@@ -248,7 +239,7 @@ static int parser_create(struct ini_cfgobj *co,
 
     /* Save external data */
     new_po->file = file;
-    new_po->el = error_list;
+    new_po->el = co->error_list;
     new_po->filename = config_filename;
     new_po->error_level = error_level;
     new_po->collision_flags = collision_flags;
@@ -1618,10 +1609,11 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
         return EINVAL;
     }
 
-    if ((error_level < INI_STOP_ON_ANY) ||
-        (error_level > INI_STOP_ON_ERROR)) {
-        /* Any other error mode is equivalent stopping on any error */
-        error_level = INI_STOP_ON_ANY;
+    if ((error_level != INI_STOP_ON_ANY) &&
+        (error_level != INI_STOP_ON_NONE) &&
+        (error_level != INI_STOP_ON_ERROR)) {
+        TRACE_ERROR_NUMBER("Invalid argument", EINVAL);
+        return EINVAL;
     }
 
     error = parser_create(ini_config,
@@ -1630,7 +1622,6 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
                           error_level,
                           collision_flags,
                           parse_flags,
-                          file_ctx->error_list,
                           &po);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to perform an action", error);
@@ -1658,8 +1649,8 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
         else {
             TRACE_ERROR_NUMBER("Failed to parse file", error);
             TRACE_ERROR_NUMBER("Mode", collision_flags);
-            col_get_collection_count(file_ctx->error_list, &(file_ctx->count));
-            if(file_ctx->count) (file_ctx->count)--;
+            col_get_collection_count(ini_config->error_list, &(ini_config->count));
+            if(ini_config->count) (ini_config->count)--;
             parser_destroy(po);
             return error;
         }
