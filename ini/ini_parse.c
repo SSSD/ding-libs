@@ -59,6 +59,8 @@ struct parser_obj {
     int error_level;
     /* Collistion flags */
     uint32_t collision_flags;
+    /* Parseing flags */
+    uint32_t parse_flags;
     /* Wrapping boundary */
     uint32_t boundary;
     /* Action queue */
@@ -121,6 +123,53 @@ int is_just_spaces(const char *str, uint32_t len)
     return 1;
 }
 
+/* Functions checks whether the line
+ * starts with the sequence of allowed blank characters.
+ * If spaces are allowed - function will say that line
+ * is OK. If tabls are allowed the function also would
+ * say that line is OK. If the mixture of both is allowed
+ * the line is OK too.
+ * Any other character will cause an error.
+ */
+int is_allowed_spaces(const char *str,
+                      uint32_t len,
+                      uint32_t parse_flags,
+                      int *error)
+{
+    uint32_t i;
+    int line_ok = 1;
+
+    TRACE_FLOW_ENTRY();
+
+    for (i = 0; i < len; i++) {
+        if ((str[i] == ' ') &&
+            (parse_flags & INI_PARSE_NOSPACE)) {
+            /* Leading spaces are not allowed */
+            *error = ERR_SPACE;
+            line_ok = 0;
+            break;
+        }
+        else if ((str[i] == '\t') &&
+            (parse_flags & INI_PARSE_NOTAB)) {
+            /* Leading tabs are not allowed */
+            *error = ERR_TAB;
+            line_ok = 0;
+            break;
+        }
+        else if ((str[i] == '\f') ||
+                 (str[i] == '\n') ||
+                 (str[i] == '\r') ||
+                 (str[i] == '\v')) {
+            *error = ERR_SPECIAL;
+            line_ok = 0;
+            break;
+        }
+        if (!isblank(str[i])) break;
+    }
+
+    TRACE_FLOW_EXIT();
+    return line_ok;
+}
 
 /* Destroy parser object */
 static void parser_destroy(struct parser_obj *po)
@@ -152,6 +201,7 @@ static int parser_create(struct ini_cfgobj *co,
                          const char *config_filename,
                          int error_level,
                          uint32_t collision_flags,
+                         uint32_t parse_flags,
                          struct collection_item *error_list,
                          struct parser_obj **po)
 {
@@ -202,6 +252,7 @@ static int parser_create(struct ini_cfgobj *co,
     new_po->filename = config_filename;
     new_po->error_level = error_level;
     new_po->collision_flags = collision_flags;
+    new_po->parse_flags = parse_flags;
     new_po->boundary = co->boundary;
     new_po->co = co;
 
@@ -903,55 +954,6 @@ static int handle_comment(struct parser_obj *po, uint32_t *action)
     return EOK;
 }
 
-
-/* Process line starts with space  */
-static int handle_space(struct parser_obj *po, uint32_t *action)
-{
-    int error = EOK;
-
-    TRACE_FLOW_ENTRY();
-
-    /* Do we have current value object? */
-    if (po->key) {
-        /* This is a new line in a folded value */
-        error = value_add_to_arrays(po->last_read,
-                                    po->last_read_len,
-                                    po->raw_lines,
-                                    po->raw_lengths);
-        if (error) {
-            TRACE_ERROR_NUMBER("Failed to add line to value", error);
-            return error;
-        }
-        /* Do not free the line, it is now an element of the array */
-        po->last_read = NULL;
-        po->last_read_len = 0;
-        *action = PARSE_READ;
-    }
-    else {
-        /* Check if this is a completely empty line */
-        if (is_just_spaces(po->last_read, po->last_read_len)) {
-            error = handle_comment(po, action);
-            if (error) {
-                TRACE_ERROR_NUMBER("Failed to process comment", error);
-                return error;
-            }
-        }
-        else {
-            /* We do not have an active value
-             * but have a line is starting with a space.
-             * For now it is error.
-             * We can change it in future if
-             * people find it being too restrictive
-             */
-            *action = PARSE_ERROR;
-            po->last_error = ERR_SPACE;
-        }
-    }
-
-    TRACE_FLOW_EXIT();
-    return EOK;
-}
-
 /* Handle key-value pair */
 static int handle_kvp(struct parser_obj *po, uint32_t *action)
 {
@@ -959,35 +961,46 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     char *eq = NULL;
     uint32_t len = 0;
     char *dupval = NULL;
+    char *str;
+    uint32_t full_len;
 
     TRACE_FLOW_ENTRY();
 
-    TRACE_INFO_STRING("Last read:", po->last_read);
+    str = po->last_read;
+    full_len = po->last_read_len;
 
-    /* We got a line with KVP */
-    if (*(po->last_read) == '=') {
+    TRACE_INFO_STRING("Last read:", str);
+
+    /* Trim spaces at the beginning */
+    while ((full_len > 0) && (isspace(*(str)))) {
+        str++;
+        full_len--;
+    }
+
+    /* Check if we have the key */
+    if (*(str) == '=') {
         po->last_error = ERR_NOKEY;
         *action = PARSE_ERROR;
         return EOK;
     }
 
     /* Find "=" */
-    eq = strchr(po->last_read, '=');
+    eq = strchr(str, '=');
     if (eq == NULL) {
-        TRACE_ERROR_STRING("No equal sign", po->last_read);
+        TRACE_ERROR_STRING("No equal sign", str);
         po->last_error = ERR_NOEQUAL;
         *action = PARSE_ERROR;
         return EOK;
     }
 
     /* Strip spaces around "=" */
-    /* Since eq > po->last_read we can substract 1 */
-    len = eq - po->last_read - 1;
-    while ((len > 0) && (isspace(*(po->last_read + len)))) len--;
+    /* Since eq > str we can substract 1 */
+    len = eq - str - 1;
+    while ((len > 0) && (isspace(*(str + len)))) len--;
     /* Adjust length properly */
     len++;
     if (!len) {
-        TRACE_ERROR_STRING("No key", po->last_read);
+        TRACE_ERROR_STRING("No key", str);
         po->last_error = ERR_NOKEY;
         *action = PARSE_ERROR;
         return EOK;
@@ -995,7 +1008,7 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
 
     /* Check the key length */
     if(len >= MAX_KEY) {
-        TRACE_ERROR_STRING("Key name is too long", po->last_read);
+        TRACE_ERROR_STRING("Key name is too long", str);
         po->last_error = ERR_LONGKEY;
         *action = PARSE_ERROR;
         return EOK;
@@ -1017,14 +1030,14 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
         return ENOMEM;
     }
 
-    memcpy(po->key, po->last_read, len);
+    memcpy(po->key, str, len);
     *(po->key + len) = '\0';
     po->key_len = len;
 
     TRACE_INFO_STRING("Key:", po->key);
     TRACE_INFO_NUMBER("Keylen:", po->key_len);
 
-    len = po->last_read_len - (eq - po->last_read) - 1;
+    len = full_len - (eq - str) - 1;
 
     /* Trim spaces after equal sign */
     eq++;
@@ -1081,6 +1094,81 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     return EOK;
 }
 
+/* Process line starts with space  */
+static int handle_space(struct parser_obj *po, uint32_t *action)
+{
+    int error = EOK;
+    int space_err = 0;
+
+    TRACE_FLOW_ENTRY();
+
+    if (po->parse_flags & INI_PARSE_NOWRAP) {
+        /* In this case an empty line is a comment. */
+        if (is_just_spaces(po->last_read, po->last_read_len)) {
+            error = handle_comment(po, action);
+            TRACE_FLOW_EXIT();
+            return error;
+        }
+
+        /* Wrapping is not allowed */
+        if (!is_allowed_spaces(po->last_read,
+                               po->last_read_len,
+                               po->parse_flags,
+                               &space_err)) {
+            *action = PARSE_ERROR;
+            po->last_error = space_err;
+            error = EOK;
+        }
+        else {
+            /* Allowed spaces will be trimmed
+             * inside KVP processing.
+             */
+            error = handle_kvp(po, action);
+        }
+        TRACE_FLOW_EXIT();
+        return error;
+    }
+
+    /* Do we have current value object? */
+    if (po->key) {
+        /* This is a new line in a folded value */
+        error = value_add_to_arrays(po->last_read,
+                                    po->last_read_len,
+                                    po->raw_lines,
+                                    po->raw_lengths);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to add line to value", error);
+            return error;
+        }
+        /* Do not free the line, it is now an element of the array */
+        po->last_read = NULL;
+        po->last_read_len = 0;
+        *action = PARSE_READ;
+    }
+    else {
+        /* Check if this is a completely empty line */
+        if (is_just_spaces(po->last_read, po->last_read_len)) {
+            error = handle_comment(po, action);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to process comment", error);
+                return error;
+            }
+        }
+        else {
+            /* We do not have an active value
+             * but have a line is starting with a space.
+             * For now it is error.
+             * We can change it in future if
+             * people find it being too restrictive
+             */
+            *action = PARSE_ERROR;
+            po->last_error = ERR_SPACE;
+        }
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
 
 /* Parse and process section */
 static int handle_section(struct parser_obj *po, uint32_t *action)
@@ -1231,8 +1319,7 @@ static int parser_inspect(struct parser_obj *po)
             return error;
         }
     }
-    else if ((*(po->last_read) == ' ') ||
-             (*(po->last_read) == '\t')) {
+    else if (isspace(*(po->last_read))) {
 
         error = handle_space(po, &action);
         if (error) {
@@ -1507,6 +1594,7 @@ int parser_run(struct parser_obj *po)
 int ini_config_parse(struct ini_cfgfile *file_ctx,
                      int error_level,
                      uint32_t collision_flags,
+                     uint32_t parse_flags,
                      struct ini_cfgobj *ini_config)
 {
     int error = EOK;
@@ -1541,6 +1629,7 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
                           file_ctx->filename,
                           error_level,
                           collision_flags,
+                          parse_flags,
                           file_ctx->error_list,
                           &po);
     if (error) {

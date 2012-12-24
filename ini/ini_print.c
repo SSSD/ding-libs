@@ -122,7 +122,11 @@ static const char *parsing_error_str(int parsing_error)
                                 _("Duplicate key is not allowed."),
                                 _("Duplicate key is detected while "
                                   "merging sections."),
-                                _("Duplicate section is not allowed.")
+                                _("Duplicate section is not allowed."),
+                                _("Invalid character at the "
+                                  "beginning of the line."),
+                                _("Invalid tab character at the "
+                                  "beginning of the line.")
     };
 
     /* Check the range */

@@ -172,7 +172,10 @@ enum ERR_PARSE {
     ERR_DUPKEYSEC,    /**< Duplicate key is detected while merging
                            sections (Error). */
     ERR_DUPSECTION,   /**< Duplicate section is not allowed (Error). */
-    ERR_MAXPARSE = ERR_DUPSECTION /**< Special value. Size of the error array. */
+    ERR_SPECIAL,      /**< Line contains invalid characters (Error). */
+    ERR_TAB,          /**< Line starts with tab when it
+                           should not (Error). */
+    ERR_MAXPARSE = ERR_TAB /**< Special value. Size of the error array. */
 };
 
 /**
@@ -315,6 +318,25 @@ enum ERR_PARSE {
 /**
  * @}
  */
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup parseflags Flags that define parsing rules
+ *
+ * Flags that define how the file should be parsed.
+ *
+ * @{
+ */
+
+/** @brief Do not wrap */
+#define INI_PARSE_NOWRAP    0x0001
+/** @brief No spaces are allowed to the left of the key */
+#define INI_PARSE_NOSPACE   0x0002
+/** @brief No tabs are allowed to the left of the key */
+#define INI_PARSE_NOTAB     0x0004
 
 /**
  * @}
@@ -664,6 +686,7 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
 int ini_config_parse(struct ini_cfgfile *file_ctx,
                      int error_level,
                      uint32_t collision_flags,
+                     uint32_t parse_flags,
                      struct ini_cfgobj *ini_config);
 
 /**
