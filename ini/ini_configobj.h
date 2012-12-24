@@ -444,10 +444,6 @@ void ini_config_clean_state(struct ini_cfgobj *ini_config);
  *                              file name. If a short name is
  *                              specified the full path
  *                              will be resolved internally.
- * @param[in]  error_level      Flags that control actions
- *                              in case of parsing error.
- * @param[in]  collision_flags  Flags that control handling
- *                              of the duplicate sections or keys.
  * @param[in]  metadata_flags   Flags that specify what additional
  *                              data if any needs to be collected
  *                              about the ini file.
@@ -458,8 +454,6 @@ void ini_config_clean_state(struct ini_cfgobj *ini_config);
  * @return ENOMEM - No memory.
  */
 int ini_config_file_open(const char *filename,
-                         int error_level,
-                         uint32_t collision_flags,
                          uint32_t metadata_flags,
                          struct ini_cfgfile **file_ctx);
 
@@ -657,6 +651,10 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
  * a parsing operation would fail with EINVAL.
  *
  * @param[in]  file_ctx         Configuration file object.
+ * @param[in]  error_level      Flags that control actions
+ *                              in case of parsing error.
+ * @param[in]  collision_flags  Flags that control handling
+ *                              of the duplicate sections or keys.
  * @param[out] ini_config       Configuration object.
  *
  * @return 0 - Success.
@@ -664,6 +662,8 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
  * @return ENOMEM - No memory.
  */
 int ini_config_parse(struct ini_cfgfile *file_ctx,
+                     int error_level,
+                     uint32_t collision_flags,
                      struct ini_cfgobj *ini_config);
 
 /**

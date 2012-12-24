@@ -788,6 +788,47 @@ static int merge_configs(struct ini_cfgobj *donor,
     return error;
 }
 
+/* Check if collision flags are valid */
+int valid_collision_flags(uint32_t collision_flags)
+{
+    uint32_t flag;
+
+    TRACE_FLOW_ENTRY();
+
+    flag = collision_flags & INI_MV1S_MASK;
+    if ((flag != INI_MV1S_OVERWRITE) &&
+        (flag != INI_MV1S_ERROR) &&
+        (flag != INI_MV1S_PRESERVE) &&
+        (flag != INI_MV1S_ALLOW) &&
+        (flag != INI_MV1S_DETECT)) {
+        TRACE_ERROR_STRING("Invalid value collision flag","");
+        return 0;
+    }
+
+    flag = collision_flags & INI_MV2S_MASK;
+    if ((flag != INI_MV2S_OVERWRITE) &&
+        (flag != INI_MV2S_ERROR) &&
+        (flag != INI_MV2S_PRESERVE) &&
+        (flag != INI_MV2S_ALLOW) &&
+        (flag != INI_MV2S_DETECT)) {
+        TRACE_ERROR_STRING("Invalid value cross-section collision flag","");
+        return 0;
+    }
+
+    flag = collision_flags & INI_MS_MASK;
+    if ((flag != INI_MS_MERGE) &&
+        (flag != INI_MS_OVERWRITE) &&
+        (flag != INI_MS_ERROR) &&
+        (flag != INI_MS_PRESERVE) &&
+        (flag != INI_MS_DETECT)) {
+        TRACE_ERROR_STRING("Invalid section collision flag","");
+        return 0;
+    }
+
+    TRACE_FLOW_EXIT();
+    return 1;
+}
+
 /* Merge two configurations together creating a new one */
 int ini_config_merge(struct ini_cfgobj *first,
                      struct ini_cfgobj *second,

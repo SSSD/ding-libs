@@ -32,48 +32,6 @@
 #include "collection_tools.h"
 
 
-/* Check if collision flags are valid */
-int valid_collision_flags(uint32_t collision_flags)
-{
-    uint32_t flag;
-
-    TRACE_FLOW_ENTRY();
-
-    flag = collision_flags & INI_MV1S_MASK;
-    if ((flag != INI_MV1S_OVERWRITE) &&
-        (flag != INI_MV1S_ERROR) &&
-        (flag != INI_MV1S_PRESERVE) &&
-        (flag != INI_MV1S_ALLOW) &&
-        (flag != INI_MV1S_DETECT)) {
-        TRACE_ERROR_STRING("Invalid value collision flag","");
-        return 0;
-    }
-
-    flag = collision_flags & INI_MV2S_MASK;
-    if ((flag != INI_MV2S_OVERWRITE) &&
-        (flag != INI_MV2S_ERROR) &&
-        (flag != INI_MV2S_PRESERVE) &&
-        (flag != INI_MV2S_ALLOW) &&
-        (flag != INI_MV2S_DETECT)) {
-        TRACE_ERROR_STRING("Invalid value cross-section collision flag","");
-        return 0;
-    }
-
-    flag = collision_flags & INI_MS_MASK;
-    if ((flag != INI_MS_MERGE) &&
-        (flag != INI_MS_OVERWRITE) &&
-        (flag != INI_MS_ERROR) &&
-        (flag != INI_MS_PRESERVE) &&
-        (flag != INI_MS_DETECT)) {
-        TRACE_ERROR_STRING("Invalid section collision flag","");
-        return 0;
-    }
-
-    TRACE_FLOW_EXIT();
-    return 1;
-}
-
-
 /* Close file but not destroy the object */
 void ini_config_file_close(struct ini_cfgfile *file_ctx)
 {
@@ -148,8 +106,6 @@ static int common_file_init(struct ini_cfgfile *file_ctx)
 
 /* Create a file object for parsing a config file */
 int ini_config_file_open(const char *filename,
-                         int error_level,
-                         uint32_t collision_flags,
                          uint32_t metadata_flags,
                          struct ini_cfgfile **file_ctx)
 {
@@ -160,11 +116,6 @@ int ini_config_file_open(const char *filename,
 
     if ((!filename) || (!file_ctx)) {
         TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
-        return EINVAL;
-    }
-
-    if (!valid_collision_flags(collision_flags)) {
-        TRACE_ERROR_NUMBER("Invalid flags.", EINVAL);
         return EINVAL;
     }
 
@@ -180,8 +131,6 @@ int ini_config_file_open(const char *filename,
     new_ctx->error_list = NULL;
 
     /* Store flags */
-    new_ctx->error_level = error_level;
-    new_ctx->collision_flags = collision_flags;
     new_ctx->metadata_flags = metadata_flags;
     new_ctx->count = 0;
 
@@ -241,8 +190,6 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
     new_ctx->error_list = NULL;
 
     /* Store flags */
-    new_ctx->error_level = file_ctx_in->error_level;
-    new_ctx->collision_flags = file_ctx_in->collision_flags;
     new_ctx->metadata_flags = file_ctx_in->metadata_flags;
     new_ctx->count = 0;
 
@@ -523,8 +470,6 @@ void ini_config_file_print(struct ini_cfgfile *file_ctx)
     else {
         printf("File name: %s\n", (file_ctx->filename) ? file_ctx->filename : "NULL");
         printf("File is %s\n", (file_ctx->file) ? "open" : "closed");
-        printf("Error level is %d\n", file_ctx->error_level);
-        printf("Collision flags %u\n", file_ctx->collision_flags);
         printf("Metadata flags %u\n", file_ctx->metadata_flags);
         if (file_ctx->error_list) col_print_collection(file_ctx->error_list);
         else printf("Error list is empty.");

@@ -69,8 +69,6 @@ int test_one_file(const char *in_filename,
     }
 
     error = ini_config_file_open(in_filename,
-                                 INI_STOP_ON_NONE,
-                                 0, /* TBD */
                                  0, /* TBD */
                                  &file_ctx);
     if (error) {
@@ -81,6 +79,8 @@ int test_one_file(const char *in_filename,
     }
 
     error = ini_config_parse(file_ctx,
+                             INI_STOP_ON_NONE,
+                             0, /* TBD */
                              ini_config);
     if (error) {
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
@@ -367,8 +367,6 @@ int merge_values_test(void)
 
         file_ctx = NULL;
         error = ini_config_file_open(filename,
-                                     INI_STOP_ON_ANY,
-                                     mflags[i],
                                      0, /* TBD */
                                      &file_ctx);
         if (error) {
@@ -382,6 +380,8 @@ int merge_values_test(void)
         }
 
         error = ini_config_parse(file_ctx,
+                                 INI_STOP_ON_ANY,
+                                 mflags[i],
                                  ini_config);
         if (error) {
             INIOUT(printf("Failed to parse configuration. Error %d.\n",
@@ -562,8 +562,6 @@ int merge_section_test(void)
 
             file_ctx = NULL;
             error = ini_config_file_open(filename,
-                                         INI_STOP_ON_ANY,
-                                         msecflags[i] | mflags[j],
                                          0, /* TBD */
                                          &file_ctx);
             if (error) {
@@ -577,6 +575,8 @@ int merge_section_test(void)
             }
 
             error = ini_config_parse(file_ctx,
+                                     INI_STOP_ON_ANY,
+                                     msecflags[i] | mflags[j],
                                      ini_config);
             if (error) {
                 INIOUT(printf("Failed to parse configuration. "
@@ -685,8 +685,6 @@ int read_one_file(char *name,
 
     file_ctx = NULL;
     error = ini_config_file_open(name,
-                                 INI_STOP_ON_ANY,
-                                 collision_flags,
                                  0,
                                  &file_ctx);
     if (error) {
@@ -697,7 +695,10 @@ int read_one_file(char *name,
 
     INIOUT(printf("Parsing file %s\n", name));
 
-    error = ini_config_parse(file_ctx, ini_config);
+    error = ini_config_parse(file_ctx,
+                             INI_STOP_ON_ANY,
+                             collision_flags,
+                             ini_config);
     if (error) {
         INIOUT(printf("Failed to parse configuration. "
                       "Error %d.\n", error));
@@ -1082,8 +1083,6 @@ int startup_test(void)
 
     /* Open config file */
     error = ini_config_file_open(outfile,
-                                 INI_STOP_ON_NONE,
-                                 0,
                                  INI_META_STATS,
                                  &file_ctx);
     if (error) {
@@ -1136,6 +1135,8 @@ int startup_test(void)
     }
 
     error = ini_config_parse(file_ctx,
+                             INI_STOP_ON_NONE,
+                             0,
                              ini_config);
     if (error) {
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
@@ -1204,8 +1205,6 @@ int reload_test(void)
 
     /* Open config file */
     error = ini_config_file_open(outfile,
-                                 INI_STOP_ON_NONE,
-                                 0,
                                  INI_META_STATS,
                                  &file_ctx);
     if (error) {
@@ -1407,11 +1406,6 @@ int get_test(void)
     INIOUT(printf("Reading file %s\n", infile));
 
     error = ini_config_file_open(infile,
-                                 INI_STOP_ON_NONE,
-                                 /* Merge section but allow duplicates */
-                                 INI_MS_MERGE |
-                                 INI_MV1S_ALLOW |
-                                 INI_MV2S_ALLOW,
                                  0,
                                  &file_ctx);
     if (error) {
@@ -1421,6 +1415,11 @@ int get_test(void)
     }
 
     error = ini_config_parse(file_ctx,
+                             INI_STOP_ON_NONE,
+                             /* Merge section but allow duplicates */
+                             INI_MS_MERGE |
+                             INI_MV1S_ALLOW |
+                             INI_MV2S_ALLOW,
                              ini_config);
     if (error) {
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));

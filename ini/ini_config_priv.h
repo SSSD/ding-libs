@@ -58,10 +58,6 @@ struct ini_cfgfile {
     char *filename;
     /* File stream */
     FILE *file;
-    /* Error level */
-    int error_level;
-    /* Collision flags - define how to merge things */
-    uint32_t collision_flags;
     /* What meta data to collect */
     uint32_t metadata_flags;
     /**********************/

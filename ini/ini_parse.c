@@ -1505,10 +1505,12 @@ int parser_run(struct parser_obj *po)
 
 /* Top level wrapper around the parser */
 int ini_config_parse(struct ini_cfgfile *file_ctx,
+                     int error_level,
+                     uint32_t collision_flags,
                      struct ini_cfgobj *ini_config)
 {
     int error = EOK;
-    struct parser_obj *po;
+    struct parser_obj *po = NULL;
     uint32_t fl1, fl2, fl3;
 
     TRACE_FLOW_ENTRY();
@@ -1518,11 +1520,27 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
         return EINVAL;
     }
 
+    if (!file_ctx) {
+        TRACE_ERROR_NUMBER("Invalid file context", EINVAL);
+        return EINVAL;
+    }
+
+    if (!valid_collision_flags(collision_flags)) {
+        TRACE_ERROR_NUMBER("Invalid flags.", EINVAL);
+        return EINVAL;
+    }
+
+    if ((error_level < INI_STOP_ON_ANY) ||
+        (error_level > INI_STOP_ON_ERROR)) {
+        /* Any other error mode is equivalent stopping on any error */
+        error_level = INI_STOP_ON_ANY;
+    }
+
     error = parser_create(ini_config,
                           file_ctx->file,
                           file_ctx->filename,
-                          file_ctx->error_level,
-                          file_ctx->collision_flags,
+                          error_level,
+                          collision_flags,
                           file_ctx->error_list,
                           &po);
     if (error) {
@@ -1532,9 +1550,9 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
 
     error = parser_run(po);
     if (error) {
-        fl1 = file_ctx->collision_flags & INI_MS_MASK;
-        fl2 = file_ctx->collision_flags & INI_MV1S_MASK;
-        fl3 = file_ctx->collision_flags & INI_MV2S_MASK;
+        fl1 = collision_flags & INI_MS_MASK;
+        fl2 = collision_flags & INI_MV1S_MASK;
+        fl3 = collision_flags & INI_MV2S_MASK;
         if ((error == EEXIST) &&
             (((fl1 == INI_MS_DETECT) &&
               (fl2 != INI_MV1S_ERROR) &&
@@ -1550,7 +1568,7 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
         }
         else {
             TRACE_ERROR_NUMBER("Failed to parse file", error);
-            TRACE_ERROR_NUMBER("Mode", file_ctx->collision_flags);
+            TRACE_ERROR_NUMBER("Mode", collision_flags);
             col_get_collection_count(file_ctx->error_list, &(file_ctx->count));
             if(file_ctx->count) (file_ctx->count)--;
             parser_destroy(po);
