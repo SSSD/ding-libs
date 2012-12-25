@@ -258,6 +258,7 @@ dist_noinst_DATA += \
     ini/ini.d/sexpect.conf \
     ini/ini.d/first.conf \
     ini/ini.d/second.conf \
+    ini/ini.d/space.conf \
     ini/ini.d/mergecheck.conf
 
 check_PROGRAMS += \

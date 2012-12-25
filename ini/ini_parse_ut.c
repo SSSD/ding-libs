@@ -2520,6 +2520,88 @@ int get_test(void)
     return EOK;
 }
 
+int space_test(void)
+{
+
+    int error;
+    struct ini_cfgfile *file_ctx = NULL;
+    struct ini_cfgobj *ini_config = NULL;
+    char **error_list = NULL;
+    char infile[PATH_MAX];
+    char *srcdir = NULL;
+    unsigned errnum;
+    int i;
+    uint32_t flags[] = { INI_PARSE_NOWRAP,
+                         INI_PARSE_NOWRAP |
+                         INI_PARSE_NOSPACE,
+                         INI_PARSE_NOWRAP |
+                         INI_PARSE_NOTAB,
+                         INI_PARSE_NOWRAP |
+                         INI_PARSE_NOSPACE |
+                         INI_PARSE_NOTAB };
+
+    INIOUT(printf("\n\n<==== SPACE TEST START =====>\n"));
+
+    srcdir = getenv("srcdir");
+    snprintf(infile, PATH_MAX, "%s/ini/ini.d/space.conf",
+             (srcdir == NULL) ? "." : srcdir);
+
+
+    for (i = 0; i < 4; i++ ) {
+
+        INIOUT(printf("Reading file %s\n", infile));
+        error = ini_config_file_open(infile,
+                                        0,
+                                        &file_ctx);
+        if (error) {
+            printf("Failed to open file for reading. Error %d.\n",  error);
+            return error;
+        }
+
+        INIOUT(printf("Creating configuration object\n"));
+        error = ini_config_create(&ini_config);
+        if (error) {
+            printf("Failed to create object. Error %d.\n", error);
+            ini_config_file_destroy(file_ctx);
+            return error;
+        }
+        INIOUT(printf("Parsing\n"));
+        error = ini_config_parse(file_ctx,
+                                 INI_STOP_ON_NONE,
+                                 0,
+                                 flags[i],
+                                 ini_config);
+        if (error) {
+            INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
+
+            errnum = ini_config_error_count(ini_config);
+            if (errnum) {
+                INIOUT(printf("Errors detected while parsing: %s\n",
+                       ini_config_get_filename(file_ctx)));
+                ini_config_get_errors(ini_config, &error_list);
+                INIOUT(ini_config_print_errors(stdout, error_list));
+                ini_config_free_errors(error_list);
+            }
+            if (((i == 0) && (errnum != 0)) ||
+                ((i == 1) && (errnum != 3)) ||
+                ((i == 2) && (errnum != 3)) ||
+                ((i == 3) && (errnum != 4))) {
+                printf("Failed to open file for reading. Error %d.\n",  error);
+                ini_config_file_destroy(file_ctx);
+                ini_config_destroy(ini_config);
+                return -1;
+            }
+            /* We do not return here intentionally */
+        }
+
+        INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
+        ini_config_destroy(ini_config);
+        ini_config_file_destroy(file_ctx);
+    }
+
+    INIOUT(printf("\n<==== SPACE TEST END =====>\n\n"));
+    return EOK;
+}
 
 /* Main function of the unit test */
 int main(int argc, char *argv[])
@@ -2533,6 +2615,7 @@ int main(int argc, char *argv[])
                         startup_test,
                         reload_test,
                         get_test,
+                        space_test,
                         NULL };
     test_fn t;
     int i = 0;
