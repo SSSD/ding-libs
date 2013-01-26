@@ -69,6 +69,8 @@ struct ini_cfgfile {
     /**********************/
     /* File stats */
     struct stat file_stats;
+    /* Were stats read ? */
+    int stats_read;
 };
 
 /* Parsing error */

@@ -76,6 +76,8 @@ static int common_file_init(struct ini_cfgfile *file_ctx)
         return error;
     }
 
+    file_ctx->stats_read = 0;
+
     /* Collect stats */
     if (file_ctx->metadata_flags & INI_META_STATS) {
         errno = 0;
@@ -85,6 +87,7 @@ static int common_file_init(struct ini_cfgfile *file_ctx)
             TRACE_ERROR_NUMBER("Failed to get file stats.", error);
             return error;
         }
+        file_ctx->stats_read = 1;
     }
     else memset(&(file_ctx->file_stats), 0, sizeof(struct stat));
 
@@ -231,7 +234,11 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
     if ((file_ctx == NULL) || (flags == 0)) {
         TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
         return EINVAL;
+    }
 
+    if (file_ctx->stats_read == 0) {
+        TRACE_ERROR_NUMBER("Stats were not collected.", EINVAL);
+        return EINVAL;
     }
 
     /* Check mode */
@@ -301,6 +308,12 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
         (file_ctx2 == NULL) ||
         (changed == NULL)) {
         TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    if ((file_ctx1->stats_read == 0) ||
+        (file_ctx2->stats_read == 0)) {
+        TRACE_ERROR_NUMBER("Stats were not collected.", EINVAL);
         return EINVAL;
     }
 

@@ -1085,6 +1085,36 @@ int startup_test(void)
         return error;
     }
 
+    /* Open config file not collecting stats */
+    error = ini_config_file_open(outfile,
+                                 0,
+                                 &file_ctx);
+    if (error) {
+        printf("Failed to open file %s for reading. Error %d.\n",
+               outfile, error);
+        return error;
+    }
+
+    /* We will check just permissions here. */
+    error = ini_config_access_check(file_ctx,
+                                INI_ACCESS_CHECK_MODE, /* add uid & gui flags
+                                                        * in real case
+                                                        */
+                                0, /* <- will be real uid in real case */
+                                0, /* <- will be real gid in real case */
+                                0440, /* Checking for r--r----- */
+                                0);
+    /* This check is expected to fail since
+     * we did not collect stats
+     */
+    ini_config_file_destroy(file_ctx);
+
+    if (!error) {
+        printf("Expected error got success!\n");
+        return EACCES;
+    }
+
+
     /* Open config file */
     error = ini_config_file_open(outfile,
                                  INI_META_STATS,
