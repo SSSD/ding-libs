@@ -587,6 +587,20 @@ void ini_config_print_errors(FILE *file, char **error_list);
  */
 const char *ini_config_get_filename(struct ini_cfgfile *file_ctx);
 
+/**
+ * @brief Get pointer to collected stat data
+ *
+ * Returns the pointer to the internal stat structure.
+ * If stat data was not collected when the file was open
+ * function would return NULL.
+ *
+ * @param[in]  file_ctx         Configuration file object.
+ *
+ * @return Pointer to the stat structure.
+ */
+const struct stat *ini_config_get_stat(struct ini_cfgfile *file_ctx);
+
+
 
 /**
  * @brief Print file context

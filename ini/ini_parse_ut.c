@@ -1057,6 +1057,7 @@ int startup_test(void)
     char command[PATH_MAX * 3];
     char *srcdir = NULL;
     char *builddir;
+    const struct stat *file_stat;
 
     INIOUT(printf("<==== Startup test ====>\n"));
 
@@ -1095,6 +1096,12 @@ int startup_test(void)
         return error;
     }
 
+    file_stat = ini_config_get_stat(file_ctx);
+    if (file_stat) {
+        printf("Expected NULL got not NULL!\n");
+        return EINVAL;
+    }
+
     /* We will check just permissions here. */
     error = ini_config_access_check(file_ctx,
                                 INI_ACCESS_CHECK_MODE, /* add uid & gui flags
@@ -1124,6 +1131,16 @@ int startup_test(void)
                outfile, error);
         return error;
     }
+
+    /* Get stats */
+    file_stat = ini_config_get_stat(file_ctx);
+    if (!file_stat) {
+        printf("Expected not NULL got NULL!\n");
+        return EINVAL;
+    }
+
+    INIOUT(printf("File was modified at: %d seconds since Jan 1 1970.\n",
+                  (int)(file_stat->st_mtime)));
 
     /* We will check just permissions here. */
     error = ini_config_access_check(file_ctx,
