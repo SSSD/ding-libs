@@ -320,6 +320,7 @@ structure
 %setup -q
 
 %build
+autoreconf -ivf
 %configure \
     --disable-static
 
