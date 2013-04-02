@@ -124,6 +124,14 @@ struct _hash_iter_context_t {
     element_t *p;
 };
 
+enum hash_iter_state {
+    HI_STATE_0,
+    HI_STATE_1,
+    HI_STATE_2,
+    HI_STATE_3A,
+    HI_STATE_3B
+};
+
 /*****************************************************************************/
 /**********************  External Function Declarations  *********************/
 /*****************************************************************************/
@@ -709,32 +717,57 @@ static hash_entry_t *hash_iter_next(struct hash_iter_context_t *iter_arg)
 {
     struct _hash_iter_context_t *iter = (struct _hash_iter_context_t *) iter_arg;
     hash_entry_t *entry;
+    enum hash_iter_state state = HI_STATE_3A;
 
     if (iter->table == NULL) return NULL;
-    goto state_3a;
 
- state_1:
-    iter->i++;
-    if(iter->i >= iter->table->segment_count) return NULL;
-    /* test probably unnecessary */
-    iter->s = iter->table->directory[iter->i];
-    if (iter->s == NULL) goto state_1;
-    iter->j = 0;
- state_2:
-    if (iter->j >= iter->table->segment_size) goto state_1;
-    iter->p = iter->s[iter->j];
- state_3a:
-    if (iter->p == NULL) goto state_3b;
-    entry = &iter->p->entry;
-    iter->p = iter->p->next;
+    while (state != HI_STATE_0) {
+
+        switch (state) {
+            case HI_STATE_1:
+                iter->i++;
+                if(iter->i >= iter->table->segment_count) return NULL;
+                /* test probably unnecessary */
+                iter->s = iter->table->directory[iter->i];
+                if (iter->s == NULL) {
+                    state = HI_STATE_1;
+                    break;
+                }
+                iter->j = 0;
+                state = HI_STATE_2;
+
+            case HI_STATE_2:
+                if (iter->j >= iter->table->segment_size) {
+                    state = HI_STATE_1;
+                    break;
+                }
+                iter->p = iter->s[iter->j];
+                state = HI_STATE_3A;
+
+            case HI_STATE_3A:
+                if (iter->p == NULL) {
+                    state = HI_STATE_3B;
+                    break;
+                }
+                entry = &iter->p->entry;
+                iter->p = iter->p->next;
+                state = HI_STATE_0;
+                break;
+
+            case HI_STATE_3B:
+                iter->j++;
+                state = HI_STATE_2;
+                break;
+
+            default:
+                /* Should never reach here */
+                fprintf(stderr, "ERROR hash_iter_next reached invalid state\n");
+                return NULL;
+                break;
+        }
+    }
+
     return entry;
- state_3b:
-    iter->j++;
-    goto state_2;
-
-    /* Should never reach here */
-    fprintf(stderr, "ERROR hash_iter_next reached invalid state\n");
-    return NULL;
 }
 
 struct hash_iter_context_t *new_hash_iter_context(hash_table_t *table)
