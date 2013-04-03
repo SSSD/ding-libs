@@ -970,6 +970,7 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
 
     /* Check if we have the key */
     if (*(str) == '=') {
+        TRACE_ERROR_STRING("No key", str);
         po->last_error = ERR_NOKEY;
         *action = PARSE_ERROR;
         return EOK;
@@ -990,12 +991,6 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     while ((len > 0) && (isspace(*(str + len)))) len--;
     /* Adjust length properly */
     len++;
-    if (!len) {
-        TRACE_ERROR_STRING("No key", str);
-        po->last_error = ERR_NOKEY;
-        *action = PARSE_ERROR;
-        return EOK;
-    }
 
     /* Check the key length */
     if(len >= MAX_KEY) {
