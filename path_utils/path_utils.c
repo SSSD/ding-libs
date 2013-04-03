@@ -102,7 +102,7 @@ static int dot_to_absolute(char *rel_path, int rel_path_size)
                 return errno;
         }
         strncpy(rel_path, dirname(tmp_path), rel_path_size);
-        if (rel_path[rel_path_size-1] != 0) return ENOBUFS;
+        if (rel_path[rel_path_size-1] != '\0') return ENOBUFS;
     }
 
     return SUCCESS;
@@ -117,9 +117,9 @@ int get_basename(char *base_name, size_t base_name_size, const char *path)
     if (!base_name || base_name_size < 1) return ENOBUFS;
 
     strncpy(tmp_path, path, sizeof(tmp_path));
-    if (tmp_path[sizeof(tmp_path)-1] != 0) return ENOBUFS;
+    if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(base_name, basename(tmp_path), base_name_size);
-    if (base_name[base_name_size-1] != 0) return ENOBUFS;
+    if (base_name[base_name_size-1] != '\0') return ENOBUFS;
 
     ret = dot_to_absolute(base_name, base_name_size);
     if (ret != SUCCESS) {
@@ -138,9 +138,9 @@ int get_dirname(char *dir_path, size_t dir_path_size, const char *path)
     if (!dir_path || dir_path_size < 1) return ENOBUFS;
 
     strncpy(tmp_path, path, sizeof(tmp_path));
-    if (tmp_path[sizeof(tmp_path)-1] != 0) return ENOBUFS;
+    if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(dir_path, dirname(tmp_path), dir_path_size);
-    if (dir_path[dir_path_size-1] != 0) return ENOBUFS;
+    if (dir_path[dir_path_size-1] != '\0') return ENOBUFS;
 
     ret = dot_to_absolute(dir_path, dir_path_size);
     if (ret != SUCCESS) {
@@ -162,14 +162,14 @@ int get_directory_and_base_name(char *dir_path, size_t dir_path_size,
     if (!base_name || base_name_size < 1) return ENOBUFS;
 
     strncpy(tmp_path, path, sizeof(tmp_path));
-    if (tmp_path[sizeof(tmp_path)-1] != 0) return ENOBUFS;
+    if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(base_name, basename(tmp_path), base_name_size);
-    if (base_name[base_name_size-1] != 0) return ENOBUFS;
+    if (base_name[base_name_size-1] != '\0') return ENOBUFS;
 
     strncpy(tmp_path, path, sizeof(tmp_path));
-    if (tmp_path[sizeof(tmp_path)-1] != 0) return ENOBUFS;
+    if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(dir_path, dirname(tmp_path), dir_path_size);
-    if (dir_path[dir_path_size-1] != 0) return ENOBUFS;
+    if (dir_path[dir_path_size-1] != '\0') return ENOBUFS;
 
     ret = dot_to_absolute(dir_path, dir_path_size);
     if (ret != SUCCESS) {
@@ -178,7 +178,7 @@ int get_directory_and_base_name(char *dir_path, size_t dir_path_size,
 
     if (strcmp(base_name, ".") == 0) {
         strncpy(base_name, "", base_name_size);
-        if (base_name[base_name_size-1] != 0) return ENOBUFS;
+        if (base_name[base_name_size-1] != '\0') return ENOBUFS;
     }
 
     return SUCCESS;
@@ -529,7 +529,7 @@ int find_existing_directory_ancestor(char *ancestor, size_t ancestor_size, const
     if (!ancestor || ancestor_size < 1) return ENOBUFS;
     *ancestor = 0;
     strncpy(dir_path, path, sizeof(dir_path));
-    if (dir_path[sizeof(dir_path)-1] != 0) return ENOBUFS;
+    if (dir_path[sizeof(dir_path)-1] != '\0') return ENOBUFS;
 
     while (strcmp(dir_path, "/") != 0) {
         if (lstat(dir_path, &info) < 0) {
@@ -545,7 +545,7 @@ int find_existing_directory_ancestor(char *ancestor, size_t ancestor_size, const
     }
 
     strncpy(ancestor, dir_path, ancestor_size);
-    if (ancestor[ancestor_size-1] != 0) return ENOBUFS;
+    if (ancestor[ancestor_size-1] != '\0') return ENOBUFS;
     return SUCCESS;
 }
 
