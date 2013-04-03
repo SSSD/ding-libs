@@ -85,7 +85,7 @@ int col_compare_items(struct collection_item *first,
         case COL_CMPIN_PROP_EQU: /* looking for exact match */
 
             /* Compare hashes and lengths first */
-            if ((first->phash == first->phash) &&
+            if ((first->phash == second->phash) &&
                 (first->property_len == second->property_len)) {
                 /* Collections are case insensitive, sorry... */
                 cmpres = strncasecmp(first->property,
