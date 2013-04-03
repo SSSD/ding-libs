@@ -768,12 +768,13 @@ unsigned long hash_count(hash_table_t *table)
 
 int hash_keys(hash_table_t *table, unsigned long *count_arg, hash_key_t **keys_arg)
 {
-    unsigned long count = table->entry_count;
+    unsigned long count;
     hash_key_t *keys;
     hash_keys_callback_data_t data;
 
     if (!table) return HASH_ERROR_BAD_TABLE;
 
+    count = table->entry_count;
     if (count == 0) {
         *count_arg = 0;
         *keys_arg = NULL;
@@ -799,12 +800,13 @@ int hash_keys(hash_table_t *table, unsigned long *count_arg, hash_key_t **keys_a
 
 int hash_values(hash_table_t *table, unsigned long *count_arg, hash_value_t **values_arg)
 {
-    unsigned long count = table->entry_count;
+    unsigned long count;
     hash_value_t *values;
     hash_values_callback_data_t data;
 
     if (!table) return HASH_ERROR_BAD_TABLE;
 
+    count = table->entry_count;
     if (count == 0) {
         *count_arg = 0;
         *values_arg = NULL;
@@ -843,12 +845,13 @@ static bool hash_entries_callback(hash_entry_t *item, void *user_data)
 
 int hash_entries(hash_table_t *table, unsigned long *count_arg, hash_entry_t **entries_arg)
 {
-    unsigned long count = table->entry_count;
+    unsigned long count;
     hash_entry_t *entries;
     hash_entries_callback_data_t data;
 
     if (!table) return HASH_ERROR_BAD_TABLE;
 
+    count = table->entry_count;
     if (count == 0) {
         *count_arg = 0;
         *entries_arg = NULL;
