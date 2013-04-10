@@ -716,7 +716,7 @@ int hash_iterate(hash_table_t *table, hash_iterate_callback callback, void *user
 static hash_entry_t *hash_iter_next(struct hash_iter_context_t *iter_arg)
 {
     struct _hash_iter_context_t *iter = (struct _hash_iter_context_t *) iter_arg;
-    hash_entry_t *entry;
+    hash_entry_t *entry = NULL;
     enum hash_iter_state state = HI_STATE_3A;
 
     if (iter->table == NULL) return NULL;
@@ -724,6 +724,8 @@ static hash_entry_t *hash_iter_next(struct hash_iter_context_t *iter_arg)
     while (state != HI_STATE_0) {
 
         switch (state) {
+            case HI_STATE_0:
+                break;
             case HI_STATE_1:
                 iter->i++;
                 if(iter->i >= iter->table->segment_count) return NULL;
