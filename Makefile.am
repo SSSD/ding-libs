@@ -245,7 +245,7 @@ libini_config_la_LIBADD = \
     libref_array.la \
     libbasicobjects.la
 libini_config_la_LDFLAGS = \
-    -version-info 3:0:0
+    -version-info 4:0:1
 
 dist_noinst_DATA += \
     ini/ini.conf \
