@@ -301,7 +301,7 @@ structure
 %doc COPYING
 %doc COPYING.LESSER
 %{_libdir}/libini_config.so.3
-%{_libdir}/libini_config.so.3.0.0
+%{_libdir}/libini_config.so.3.1.0
 
 %files -n libini_config-devel
 %defattr(-,root,root,-)
