@@ -968,6 +968,13 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
         full_len--;
     }
 
+    /* Trucate trailing spaces */
+    /* Make sure not to step before the beginning */
+    while (full_len && isspace(str[full_len - 1])) {
+        str[full_len - 1] = '\0';
+        full_len--;
+    }
+
     /* Check if we have the key */
     if (*(str) == '=') {
         TRACE_ERROR_STRING("No key", str);

@@ -2650,6 +2650,105 @@ int space_test(void)
     return EOK;
 }
 
+
+int trim_test(void)
+{
+    int error;
+    struct ini_cfgfile *file_ctx = NULL;
+    struct ini_cfgobj *ini_config = NULL;
+    char **error_list = NULL;
+    char infile[PATH_MAX];
+    char *srcdir = NULL;
+    const char *value;
+    struct value_obj *vo = NULL;
+
+    INIOUT(printf("\n\n<==== TRIM TEST START =====>\n"));
+
+    srcdir = getenv("srcdir");
+    snprintf(infile, PATH_MAX, "%s/ini/ini.d/real.conf",
+             (srcdir == NULL) ? "." : srcdir);
+
+
+    INIOUT(printf("Reading file %s\n", infile));
+    error = ini_config_file_open(infile,
+                                 0,
+                                 &file_ctx);
+    if (error) {
+        printf("Failed to open file for reading. Error %d.\n",  error);
+        return error;
+    }
+
+    INIOUT(printf("Creating configuration object\n"));
+    error = ini_config_create(&ini_config);
+    if (error) {
+        printf("Failed to create object. Error %d.\n", error);
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+    INIOUT(printf("Parsing\n"));
+    error = ini_config_parse(file_ctx,
+                             INI_STOP_ON_NONE,
+                             0,
+                             0,
+                             ini_config);
+    if (error) {
+        INIOUT(printf("Failed to parse configuration. "
+                      "Error %d.\n", error));
+
+        if (ini_config_error_count(ini_config)) {
+            INIOUT(printf("Errors detected while parsing: %s\n",
+                   ini_config_get_filename(file_ctx)));
+            ini_config_get_errors(ini_config, &error_list);
+            INIOUT(ini_config_print_errors(stdout, error_list));
+            ini_config_free_errors(error_list);
+        }
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+
+    INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
+    ini_config_file_destroy(file_ctx);
+
+    vo = NULL;
+    error = ini_get_config_valueobj("domains/EXAMPLE.COM",
+                                    "description",
+                                    ini_config,
+                                    INI_GET_FIRST_VALUE,
+                                    &vo);
+    if(error) {
+        printf("Expected success but got error! %d\n",error);
+        ini_config_destroy(ini_config);
+        return error;
+    }
+
+    /* Value should be found */
+    if (vo == NULL) {
+        printf("Expected success but got NULL.\n");
+        ini_config_destroy(ini_config);
+        return -1;
+    }
+
+    value = ini_get_const_string_config_value(vo, NULL);
+
+    if (value == NULL) {
+        printf("No value.\n");
+        ini_config_destroy(ini_config);
+        return -1;
+    }
+
+    if(value[strlen(value) - 1] == ' ') {
+        printf("Trailing space is not trimmed.\n");
+        ini_config_destroy(ini_config);
+        return -1;
+    }
+
+    INIOUT(printf("[%s]\n", value));
+
+    ini_config_destroy(ini_config);
+
+    INIOUT(printf("\n<==== TRIM TEST END =====>\n\n"));
+    return EOK;
+}
 /* Main function of the unit test */
 int main(int argc, char *argv[])
 {
@@ -2663,6 +2762,7 @@ int main(int argc, char *argv[])
                         reload_test,
                         get_test,
                         space_test,
+                        trim_test,
                         NULL };
     test_fn t;
     int i = 0;
