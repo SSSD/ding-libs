@@ -38,6 +38,7 @@
 int verbose = 0;
 char *confdir = NULL;
 
+#define NUM_TESTS 14
 #define VAL_SIZE 100
 
 #define INIOUT(foo) \
@@ -1407,6 +1408,74 @@ int reload_test(void)
     return 0;
 }
 
+int test_one_array(struct ini_cfgobj *ini_config,
+                   const char *section,
+                   const char *value,
+                   int raw,
+                   int expect,
+                   const char *sep,
+                   const char *message)
+{
+    struct value_obj *vo = NULL;
+    int error = 0;
+    int size = 0;
+    char **strarray;
+    char **strptr;
+    int i;
+
+    INIOUT(printf(message));
+
+    vo = NULL;
+    error = ini_get_config_valueobj(section,
+                                    value,
+                                    ini_config,
+                                    INI_GET_FIRST_VALUE,
+                                    &vo);
+    if(error) {
+        printf("Expected success but got error! %d\n",error);
+        return error;
+    }
+
+    /* Value should be found */
+    if (vo == NULL) {
+        printf("Expected success but got NULL. Section %s value %s, %s\n", section, value, raw ? "raw" : "interpreted");
+        return -1;
+    }
+
+    INIOUT(value_print(value, vo));
+
+    INIOUT(printf("Get str array with size.\n"));
+
+    error = 0;
+
+    if (raw) strarray = ini_get_raw_string_config_array(vo, sep, &size, &error);
+    else strarray = ini_get_string_config_array(vo, sep, &size, &error);
+    if (error) {
+        printf("Expect success got error %d.\n", error);
+        return error;
+    }
+
+    /* Can be used with this cycle */
+    strptr = strarray;
+    while (*strptr != NULL) {
+        INIOUT(printf("[%s]\n",*strptr));
+        strptr++;
+    }
+
+    if (size != expect) {
+        printf("Expected %d but got %d.\n", expect, size);
+        ini_free_string_config_array(strarray);
+        return -1;
+    }
+
+    /* Can be used with this cycle */
+    INIOUT(for (i=0; i<size; i++) printf("[%s]\n", *(strarray + i)));
+
+    ini_free_string_config_array(strarray);
+
+    return EOK;
+}
+
 int get_test(void)
 {
 
@@ -1440,6 +1509,115 @@ int get_test(void)
     char infile[PATH_MAX];
     char *srcdir = NULL;
     int bad_val = 0;
+
+    /* Define structure for testing arrays in the loop */
+    struct a_t { char section[100];
+                 char value[100];
+                 int raw;
+                 int expect;
+                 char sep[10];
+                 char message[100]; } array_test[NUM_TESTS] =
+            {
+                { "services",
+                  "activeServices",
+                  0,
+                  4,
+                  ",:;",
+                  "Make sure we parse string array properly\n"},
+
+                { "services",
+                  "activeServices",
+                  1,
+                  4,
+                  ",:;",
+                  "Make sure we parse raw string array properly\n"},
+
+                { "domains",
+                  "domainsOrder",
+                  0,
+                  3,
+                  ",:;",
+                  "Parse string array with comma at the end\n"},
+
+                { "domains",
+                  "domainsOrder",
+                  1,
+                  8,
+                  ",:;",
+                  "Parse raw string array with comma at the end\n"},
+
+                { "domains",
+                  "badarray",
+                  0,
+                  0,
+                  ",:;",
+                  "Bad array should have no tokens\n"},
+
+                { "domains",
+                  "badarray",
+                  1,
+                  6,
+                  ",:;",
+                  "Raw bad array should have right number of tokens.\n"},
+
+                { "domains",
+                  "somearray",
+                  0,
+                  0,
+                  ",:;",
+                  "Bad array should have no tokens\n"},
+
+                { "domains",
+                  "somearray",
+                  1,
+                  2,
+                  ",:;",
+                  "Raw bad array should have right number of tokens.\n"},
+
+                { "domains",
+                  "someotherarray",
+                  0,
+                  0,
+                  ",:;",
+                  "Bad array should have no tokens\n"},
+
+                { "domains",
+                  "someotherarray",
+                  1,
+                  3,
+                  ",:;",
+                  "Raw bad array should have right number of tokens.\n"},
+
+                { "domains",
+                  "justdelim",
+                  0,
+                  0,
+                  ",:;",
+                  "Bad array should have no tokens\n"},
+
+                { "domains",
+                  "justdelim",
+                  1,
+                  5,
+                  ",:;",
+                  "Delimeters only should have right number of tokens.\n"},
+
+                { "domains",
+                  "yetanother",
+                  0,
+                  0,
+                  ",:;",
+                  "Empty array should have no tokens.\n"},
+
+                { "domains",
+                  "yetanother",
+                  1,
+                  0,
+                  ",:;",
+                  "Empty raw array should have no token.\n"}
+            };
+
+    /*****************************************************/
 
     INIOUT(printf("\n\n<==== GET TEST START =====>\n"));
     INIOUT(printf("Creating configuration object\n"));
@@ -2060,6 +2238,23 @@ int get_test(void)
     }
 
     ini_free_string_config_array(strarray);
+
+    /**********************************************************/
+
+    for (i = 0; i< NUM_TESTS; i++) {
+        error = test_one_array(ini_config,
+                               array_test[i].section,
+                               array_test[i].value,
+                               array_test[i].raw,
+                               array_test[i].expect,
+                               array_test[i].sep,
+                               array_test[i].message);
+        if (error) {
+            /* Message is printed inside function */
+            ini_config_destroy(ini_config);
+            return error;
+        }
+    }
 
     /**********************************************************/
 

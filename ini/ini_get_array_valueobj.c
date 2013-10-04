@@ -92,7 +92,10 @@ static char **get_str_cfg_array(struct value_obj *vo,
     }
 
     /* Allocate memory for the copy of the string */
-    copy = malloc(dlen);
+    TRACE_INFO_NUMBER("Length to allocate is :", dlen);
+    /* Always reserve one more byte 
+     * for the case when the string consist of delimeters */
+    copy = malloc(dlen + 1);
     if (copy == NULL) {
         TRACE_ERROR_NUMBER("Failed to allocate memory.", ENOMEM);
         if (error) *error = ENOMEM;
@@ -128,7 +131,6 @@ static char **get_str_cfg_array(struct value_obj *vo,
                     *dest = '\0';
                     dest++;
                 }
-                if (locsep[j] == '\0') break; /* We are done */
 
                 /* Move forward and trim spaces if any */
                 start += resume_len + 1;
@@ -146,6 +148,24 @@ static char **get_str_cfg_array(struct value_obj *vo,
             }
         }
         len++;
+    }
+
+    /* Save last segment */
+    TRACE_INFO_STRING("Current:", start);
+    TRACE_INFO_NUMBER("Length:", len);
+    if (len > 0) {
+        /* Save block aside */
+        memcpy(dest, start, len);
+        count++;
+        dest += len;
+        *dest = '\0';
+    }
+    else if(include && dlen && count) {
+        TRACE_INFO_NUMBER("Include :", include);
+        TRACE_INFO_NUMBER("dlen :", dlen);
+        TRACE_INFO_NUMBER("Count :", count);
+        count++;
+        *dest = '\0';
     }
 
     /* Now we know how many items are there in the list */
