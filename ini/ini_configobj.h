@@ -331,7 +331,7 @@ enum ERR_PARSE {
  * @{
  */
 
-/** @brief Do not wrap */
+/** @brief Suppress multi line value wrapping */
 #define INI_PARSE_NOWRAP    0x0001
 /** @brief No spaces are allowed to the left of the key */
 #define INI_PARSE_NOSPACE   0x0002
@@ -691,6 +691,9 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
  *                              in case of parsing error.
  * @param[in]  collision_flags  Flags that control handling
  *                              of the duplicate sections or keys.
+ * @param[in]  parse_flags      Flags that control parsing process,
+ *                              for example how to handle spaces at
+ *                              the beginning of the line.
  * @param[out] ini_config       Configuration object.
  *
  * @return 0 - Success.
