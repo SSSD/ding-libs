@@ -79,6 +79,7 @@ struct parser_obj {
     struct ini_comment *ic;
     char *last_read;
     uint32_t last_read_len;
+    int inside_comment;
     char *key;
     uint32_t key_len;
     struct ref_array *raw_lines;
@@ -257,6 +258,7 @@ static int parser_create(struct ini_cfgobj *co,
     new_po->seclinenum = 0;
     new_po->last_read = NULL;
     new_po->last_read_len = 0;
+    new_po->inside_comment = 0;
     new_po->key = NULL;
     new_po->key_len = 0;
     new_po->raw_lines = NULL;
@@ -321,7 +323,11 @@ static int parser_read(struct parser_obj *po)
     if (res == -1) {
         if (feof(po->file)) {
             TRACE_FLOW_STRING("Read nothing", "");
-            action = PARSE_POST;
+            if (po->inside_comment) {
+                action = PARSE_ERROR;
+                po->last_error = ERR_BADCOMMENT;
+            }
+            else action = PARSE_POST;
         }
         else {
             TRACE_ERROR_STRING("Error reading", "");
@@ -1294,6 +1300,73 @@ static int handle_section(struct parser_obj *po, uint32_t *action)
 
 }
 
+static int check_for_comment(char *buffer,
+                             uint32_t buffer_len,
+                             int allow_c_comments,
+                             int *inside_comment)
+{
+    int pos;
+    int is_comment = 0;
+
+    TRACE_FLOW_ENTRY();
+
+    if (*inside_comment) {
+        /* We are already inside the comment
+         * and we are looking for the end of the comment
+         */
+        if (buffer_len) {
+            pos = buffer_len - 1;
+            while(isspace(buffer[pos]) && pos > 0) pos--;
+
+            /* Check for comment at the end of the line */
+            if ((pos > 1) &&
+                (buffer[pos] == '/') &&
+                (buffer[pos - 1] == '*')) {
+                *inside_comment = 0;
+            }
+        }
+        is_comment = 1;
+    }
+    else {
+        /* We do not allow spaces in front of comments
+         * so we expect the comment to start right away.
+         */
+        if ((buffer[0] == '\0') ||
+            (buffer[0] == ';') ||
+            (buffer[0] == '#')) {
+            is_comment = 1;
+        }
+        else if ((allow_c_comments) && (buffer_len > 1)) {
+            if (buffer[0] == '/') {
+                if (buffer[1] == '/') is_comment = 1;
+                else if (buffer[1] == '*') {
+
+                    is_comment = 1;
+                    *inside_comment = 1;
+
+                    /* Here we need to check whether this comment ends
+                     * on this line or not
+                     */
+                    pos = buffer_len - 1;
+                    while(isspace(buffer[pos]) && pos > 0) pos--;
+
+                    /* Check for comment at the end of the line
+                     * but make sure we have at least two asterisks
+                     */
+                    if ((pos > 2) &&
+                        (buffer[pos] == '/') &&
+                        (buffer[pos - 1] == '*')) {
+                        *inside_comment = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    TRACE_FLOW_EXIT();
+    return is_comment;
+}
+
 /* Inspect the line */
 static int parser_inspect(struct parser_obj *po)
 {
@@ -1302,9 +1375,13 @@ static int parser_inspect(struct parser_obj *po)
 
     TRACE_FLOW_ENTRY();
 
-    if ((*(po->last_read) == '\0') ||
-        (*(po->last_read) == ';') ||
-        (*(po->last_read) == '#')) {
+    TRACE_INFO_STRING("Buffer:", po->last_read);
+    TRACE_INFO_NUMBER("In comment:", po->inside_comment);
+
+    if (check_for_comment(po->last_read,
+                          po->last_read_len,
+                          !(po->parse_flags & INI_PARSE_NO_C_COMMENTS),
+                          &(po->inside_comment))) {
 
         error = handle_comment(po, &action);
         if (error) {
@@ -1453,8 +1530,12 @@ static int parser_error(struct parser_obj *po)
         return error;
     }
 
-    /* Exit if there was an error parsing file */
-    if (po->error_level == INI_STOP_ON_ANY) {
+    if (po->last_error == ERR_BADCOMMENT) {
+        /* Avoid endless loop */
+        action = PARSE_DONE;
+        po->ret = EIO;
+    }
+    else if (po->error_level == INI_STOP_ON_ANY) {
         action = PARSE_DONE;
         if (po->last_error & INI_WARNING) po->ret = EILSEQ;
         else po->ret = EIO;
