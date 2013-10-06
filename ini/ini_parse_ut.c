@@ -2944,6 +2944,72 @@ int trim_test(void)
     INIOUT(printf("\n<==== TRIM TEST END =====>\n\n"));
     return EOK;
 }
+
+int comment_test(void)
+{
+    int error;
+    struct ini_cfgfile *file_ctx = NULL;
+    struct ini_cfgobj *ini_config = NULL;
+    char **error_list = NULL;
+    char infile[PATH_MAX];
+    char *srcdir = NULL;
+    int err_count = 0;
+
+    INIOUT(printf("\n\n<==== COMMENT TEST START =====>\n"));
+
+    srcdir = getenv("srcdir");
+    snprintf(infile, PATH_MAX, "%s/ini/ini.d/comment.conf",
+             (srcdir == NULL) ? "." : srcdir);
+
+
+    INIOUT(printf("Reading file %s\n", infile));
+    error = ini_config_file_open(infile,
+                                 0,
+                                 &file_ctx);
+    if (error) {
+        printf("Failed to open file for reading. Error %d.\n",  error);
+        return error;
+    }
+
+    INIOUT(printf("Creating configuration object\n"));
+    error = ini_config_create(&ini_config);
+    if (error) {
+        printf("Failed to create object. Error %d.\n", error);
+        ini_config_file_destroy(file_ctx);
+        return error;
+    }
+    INIOUT(printf("Parsing\n"));
+    error = ini_config_parse(file_ctx,
+                             INI_STOP_ON_NONE,
+                             0,
+                             0,
+                             ini_config);
+    if (error) {
+        INIOUT(printf("Failed to parse configuration. "
+                      "Error %d.\n", error));
+        err_count = ini_config_error_count(ini_config);
+        if (err_count) {
+            INIOUT(printf("Errors detected while parsing: %s\n",
+                   ini_config_get_filename(file_ctx)));
+            ini_config_get_errors(ini_config, &error_list);
+            INIOUT(ini_config_print_errors(stdout, error_list));
+            ini_config_free_errors(error_list);
+        }
+    }
+
+    INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
+    ini_config_file_destroy(file_ctx);
+    ini_config_destroy(ini_config);
+
+    if(err_count != 4) {
+        printf("Expected 4 errors got: %d\n", err_count);
+        return 1;
+    }
+
+    INIOUT(printf("\n<==== COMMENT TEST END =====>\n\n"));
+    return EOK;
+}
+
 /* Main function of the unit test */
 int main(int argc, char *argv[])
 {
@@ -2958,6 +3024,7 @@ int main(int argc, char *argv[])
                         get_test,
                         space_test,
                         trim_test,
+                        comment_test,
                         NULL };
     test_fn t;
     int i = 0;

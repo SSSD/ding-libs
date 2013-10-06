@@ -259,7 +259,8 @@ dist_noinst_DATA += \
     ini/ini.d/first.conf \
     ini/ini.d/second.conf \
     ini/ini.d/space.conf \
-    ini/ini.d/mergecheck.conf
+    ini/ini.d/mergecheck.conf \
+    ini/ini.d/comment.conf
 
 check_PROGRAMS += \
     ini_config_ut \
