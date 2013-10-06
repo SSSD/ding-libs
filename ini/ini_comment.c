@@ -200,45 +200,6 @@ int ini_comment_copy(struct ini_comment *ic,
     return error;
 }
 
-/* Is the comment valid? */
-static int ini_comment_is_valid(const char *line)
-{
-    int i;
-
-    TRACE_FLOW_ENTRY();
-
-    /* Null is ok */
-    if (!line) {
-        TRACE_FLOW_STRING("ini_comment_is_valid", "Exit - NULL str");
-        return 1;
-    }
-
-    /* Empty is Ok or starts with a special symbol */
-    if ((line[0] == '\0') ||
-        (line[0] == ';') ||
-        (line[0] == '#')) {
-        TRACE_FLOW_STRING("ini_comment_is_valid", "Exit - empty or comment");
-        return 1;
-    }
-
-    /* All spaces is Ok too */
-    TRACE_INFO_STRING("Line to eval", line);
-
-    i = 0;
-    while (line[i] != '\0') {
-        if (!isspace(line[i])) {
-            TRACE_ERROR_STRING("ini_comment_is_valid", "Invalid comment");
-            return 0;
-        }
-        i++;
-    }
-
-    TRACE_FLOW_STRING("ini_comment_is_valid", "Exit - empty str");
-    return 1;
-
-}
-
-
 /*
  * Modify the comment object
  */
@@ -281,14 +242,6 @@ static int ini_comment_modify(struct ini_comment *ic,
         memcpy(&input, &line, sizeof(char *));
 
     if (mode != INI_COMMENT_MODE_REMOVE) {
-        /*
-         * Check that provided line is a comment or an empty line.
-         * Can be NULL too.
-         */
-        if (!ini_comment_is_valid(input)) {
-            TRACE_ERROR_NUMBER("Invalid comment", EINVAL);
-            return EINVAL;
-        }
 
         error = simplebuffer_alloc(&elem);
         if (error) {
