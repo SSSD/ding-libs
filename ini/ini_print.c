@@ -126,7 +126,9 @@ static const char *parsing_error_str(int parsing_error)
                                 _("Invalid character at the "
                                   "beginning of the line."),
                                 _("Invalid tab character at the "
-                                  "beginning of the line.")
+                                  "beginning of the line."),
+                                _("Incomplete comment at the "
+                                  "end of the file.")
     };
 
     /* Check the range */

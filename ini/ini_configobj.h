@@ -175,7 +175,8 @@ enum ERR_PARSE {
     ERR_SPECIAL,      /**< Line contains invalid characters (Error). */
     ERR_TAB,          /**< Line starts with tab when it
                            should not (Error). */
-    ERR_MAXPARSE = ERR_TAB /**< Special value. Size of the error array. */
+    ERR_BADCOMMENT,   /**< End of file while processing comment (Error). */
+    ERR_MAXPARSE = ERR_BADCOMMENT /**< Special value. Size of the error array. */
 };
 
 /**
@@ -332,11 +333,13 @@ enum ERR_PARSE {
  */
 
 /** @brief Suppress multi line value wrapping */
-#define INI_PARSE_NOWRAP    0x0001
+#define INI_PARSE_NOWRAP           0x0001
 /** @brief No spaces are allowed to the left of the key */
-#define INI_PARSE_NOSPACE   0x0002
+#define INI_PARSE_NOSPACE          0x0002
 /** @brief No tabs are allowed to the left of the key */
-#define INI_PARSE_NOTAB     0x0004
+#define INI_PARSE_NOTAB            0x0004
+/** @brief Do not allow C-style comments */
+#define INI_PARSE_NO_C_COMMENTS    0x0008
 
 /**
  * @}
