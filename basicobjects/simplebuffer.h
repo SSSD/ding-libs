@@ -74,6 +74,10 @@ int simplebuffer_write(int fd,
 /* Get buffer */
 const unsigned char *simplebuffer_get_buf(struct simplebuffer *data);
 
+/* Get buffer */
+void *simplebuffer_get_vbuf(struct simplebuffer *data);
+
+
 /* Get length */
 uint32_t simplebuffer_get_len(struct simplebuffer *data);
 

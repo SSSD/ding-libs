@@ -208,6 +208,13 @@ const unsigned char *simplebuffer_get_buf(struct simplebuffer *data)
     return data->buffer;
 }
 
+/* Get void buffer */
+void *simplebuffer_get_vbuf(struct simplebuffer *data)
+{
+    return (void *)data->buffer;
+}
+
+
 /* Get length */
 uint32_t simplebuffer_get_len(struct simplebuffer *data)
 {
