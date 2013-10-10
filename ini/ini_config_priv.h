@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "collection.h"
+#include "simplebuffer.h"
 #include "ini_comment.h"
 
 /* Configuration object */
@@ -71,6 +72,8 @@ struct ini_cfgfile {
     struct stat file_stats;
     /* Were stats read ? */
     int stats_read;
+    /* Internal buffer */
+    struct simplebuffer *file_data;
 };
 
 /* Parsing error */
