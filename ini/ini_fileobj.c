@@ -18,17 +18,33 @@
     You should have received a copy of the GNU Lesser General Public License
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 #include "config.h"
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <iconv.h>
 #include "trace.h"
 #include "ini_defines.h"
 #include "ini_configobj.h"
 #include "ini_config_priv.h"
 #include "path_utils.h"
 
+#define ICONV_BUFFER    5000
+
+#define BOM4_SIZE 4
+#define BOM3_SIZE 3
+#define BOM2_SIZE 2
+
+enum index_utf_t {
+    INDEX_UTF32BE = 0,
+    INDEX_UTF32LE = 1,
+    INDEX_UTF16BE = 2,
+    INDEX_UTF16LE = 3,
+    INDEX_UTF8 = 4
+};
 
 /* Close file but not destroy the object */
 void ini_config_file_close(struct ini_cfgfile *file_ctx)
@@ -52,6 +68,7 @@ void ini_config_file_destroy(struct ini_cfgfile *file_ctx)
 
     if(file_ctx) {
         free(file_ctx->filename);
+        simplebuffer_free(file_ctx->file_data);
         if(file_ctx->file) fclose(file_ctx->file);
         free(file_ctx);
     }
@@ -59,37 +76,346 @@ void ini_config_file_destroy(struct ini_cfgfile *file_ctx)
     TRACE_FLOW_EXIT();
 }
 
-/* Internal common initialization part */
-static int common_file_init(struct ini_cfgfile *file_ctx)
+/* How much I plan to read? */
+static size_t how_much_to_read(size_t left, size_t increment)
+{
+    if(left > increment) return increment;
+    else return left;
+}
+
+static enum index_utf_t check_bom(enum index_utf_t ind,
+                                  unsigned char *buffer,
+                                  size_t len,
+                                  size_t *bom_shift)
+{
+    TRACE_FLOW_ENTRY();
+
+    if (len >= BOM4_SIZE) {
+        if ((buffer[0] == 0x00) &&
+            (buffer[1] == 0x00) &&
+            (buffer[2] == 0xFE) &&
+            (buffer[3] == 0xFF)) {
+                TRACE_FLOW_RETURN(INDEX_UTF32BE);
+                *bom_shift = BOM4_SIZE;
+                return INDEX_UTF32BE;
+        }
+        else if ((buffer[0] == 0xFF) &&
+                 (buffer[1] == 0xFE) &&
+                 (buffer[2] == 0x00) &&
+                 (buffer[3] == 0x00)) {
+                TRACE_FLOW_RETURN(INDEX_UTF32LE);
+                *bom_shift = BOM4_SIZE;
+                return INDEX_UTF32LE;
+        }
+    }
+
+    if (len >= BOM3_SIZE) {
+        if ((buffer[0] == 0xEF) &&
+            (buffer[1] == 0xBB) &&
+            (buffer[2] == 0xBF)) {
+                TRACE_FLOW_RETURN(INDEX_UTF8);
+                *bom_shift = BOM3_SIZE;
+                return INDEX_UTF8;
+        }
+    }
+
+    if (len >= BOM2_SIZE) {
+        if ((buffer[0] == 0xFE) &&
+            (buffer[1] == 0xFF)) {
+                TRACE_FLOW_RETURN(INDEX_UTF16BE);
+                *bom_shift = BOM2_SIZE;
+                return INDEX_UTF16BE;
+        }
+        else if ((buffer[0] == 0xFF) &&
+                 (buffer[1] == 0xFE)) {
+                TRACE_FLOW_RETURN(INDEX_UTF16LE);
+                *bom_shift = BOM2_SIZE;
+                return INDEX_UTF16LE;
+        }
+    }
+
+    TRACE_FLOW_RETURN(ind);
+    return ind;
+}
+
+static int read_chunk(int raw_file, size_t left, size_t increment,
+                      char *position, size_t *read_num)
 {
     int error = EOK;
+    size_t to_read = 0;
+    size_t read_cnt = 0;
 
     TRACE_FLOW_ENTRY();
 
-    /* Open file */
-    TRACE_INFO_STRING("File", file_ctx->filename);
+    to_read = how_much_to_read(left, increment);
+
+    TRACE_INFO_NUMBER("About to read", to_read);
     errno = 0;
-    file_ctx->file = fopen(file_ctx->filename, "r");
+    read_cnt = read(raw_file, position, to_read);
+    if (read_cnt == -1) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to read data from file", error);
+        return error;
+    }
+
+    if (read_cnt != to_read) {
+        error = EIO;
+        TRACE_ERROR_NUMBER("Read less than required", error);
+        return error;
+    }
+
+    *read_num = read_cnt;
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Function useful for debugging */
+/*
+static void print_buffer(char *read_buffer, int len)
+{
+    int i;
+    for (i=0; i < len; i++) {
+        printf("%02X ", (unsigned char)read_buffer[i]);
+    }
+    printf("\n");
+}
+*/
+
+/* Internal conversion part */
+static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
+{
+    int error = EOK;
+    size_t read_cnt = 0;
+    size_t total_read = 0;
+    size_t in_buffer = 0;
+    enum index_utf_t ind = INDEX_UTF8;
+    iconv_t conv = (iconv_t)-1;
+    size_t conv_res = 0;
+    char read_buf[ICONV_BUFFER+1];
+    char result_buf[ICONV_BUFFER];
+    char *src, *dest;
+    size_t to_convert = 0;
+    size_t room_left = 0;
+    size_t bom_shift = 0;
+    int initialized = 0;
+    const char *encodings[] = {  "UTF-32BE",
+                                 "UTF-32LE",
+                                 "UTF-16BE",
+                                 "UTF-16LE",
+                                 "UTF-8" };
+
+    TRACE_FLOW_ENTRY();
+
+    do {
+        /* print_buffer(read_buf, ICONV_BUFFER); */
+        error = read_chunk(raw_file,
+                           file_ctx->file_stats.st_size - total_read,
+                           ICONV_BUFFER - in_buffer,
+                           read_buf + in_buffer,
+                           &read_cnt);
+        /* print_buffer(read_buf, ICONV_BUFFER); */
+        if (error) {
+            if (conv != (iconv_t) -1) iconv_close(conv);
+            TRACE_ERROR_NUMBER("Failed to read chunk", error);
+            return error;
+        }
+
+        /* Prepare source buffer for conversion */
+        src = read_buf;
+        to_convert = read_cnt + in_buffer;
+        in_buffer = 0;
+
+        /* First time do some initialization */
+        if (initialized == 0) {
+            TRACE_INFO_STRING("Reading first time.","Checking BOM");
+
+            ind = check_bom(ind,
+                            (unsigned char *)read_buf,
+                            read_cnt,
+                            &bom_shift);
+
+            /* Skip BOM the first time */
+            src += bom_shift;
+            to_convert -= bom_shift;
+
+            TRACE_INFO_STRING("Converting to", encodings[INDEX_UTF8]);
+            TRACE_INFO_STRING("Converting from", encodings[ind]);
+
+            errno = 0;
+            conv = iconv_open(encodings[INDEX_UTF8], encodings[ind]);
+            if (conv == (iconv_t) -1) {
+                error = errno;
+                TRACE_ERROR_NUMBER("Failed to create converter", error);
+                return error;
+            }
+            initialized = 1;
+        }
+
+        total_read += read_cnt;
+        TRACE_INFO_NUMBER("Total read", total_read);
+
+        do {
+            /* Do conversion */
+            dest = result_buf;
+            room_left = ICONV_BUFFER;
+
+            TRACE_INFO_NUMBER("To convert", to_convert);
+            TRACE_INFO_NUMBER("Room left", room_left);
+            TRACE_INFO_NUMBER("Total read", total_read);
+
+            errno = 0;
+            conv_res = iconv(conv, &src, &to_convert, &dest, &room_left);
+            if (conv_res == (size_t) -1) {
+                error = errno;
+                switch(error) {
+                case EILSEQ:
+                    TRACE_ERROR_NUMBER("Invalid multibyte encoding", error);
+                    iconv_close(conv);
+                    return error;
+                case EINVAL:
+                    /* We need to just read more if we can */
+                    TRACE_INFO_NUMBER("Incomplete sequence len",
+                                      src - read_buf);
+                    TRACE_INFO_NUMBER("File size.",
+                                        file_ctx->file_stats.st_size);
+                    if (total_read == file_ctx->file_stats.st_size) {
+                        /* Or return error if we can't */
+                        TRACE_ERROR_NUMBER("Incomplete sequence", error);
+                        iconv_close(conv);
+                        return error;
+                    }
+                    memmove(read_buf, src, to_convert);
+                    in_buffer = to_convert;
+                    break;
+
+                case E2BIG:
+                    TRACE_INFO_STRING("No room in the output buffer.", "");
+                    error = simplebuffer_add_raw(file_ctx->file_data,
+                                                 result_buf,
+                                                 ICONV_BUFFER - room_left,
+                                                 ICONV_BUFFER);
+                    if (error) {
+                        TRACE_ERROR_NUMBER("Failed to store converted bytes",
+                                            error);
+                        iconv_close(conv);
+                        return error;
+                    }
+                    continue;
+                default:
+                    TRACE_ERROR_NUMBER("Unexpected internal error",
+                                        error);
+                    iconv_close(conv);
+                    return ENOTSUP;
+                }
+            }
+            /* The whole buffer was sucessfully converted */
+            error = simplebuffer_add_raw(file_ctx->file_data,
+                                         result_buf,
+                                         ICONV_BUFFER - room_left,
+                                         ICONV_BUFFER);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to store converted bytes",
+                                    error);
+                iconv_close(conv);
+                return error;
+            }
+/*
+            TRACE_INFO_STRING("Saved procesed portion.",
+                        (char *)simplebuffer_get_vbuf(file_ctx->file_data));
+*/
+            break;
+        }
+        while (1);
+    }
+    while (total_read < file_ctx->file_stats.st_size);
+
+    iconv_close(conv);
+
+    /* Open file */
+    TRACE_INFO_STRING("File data",
+                      (char *)simplebuffer_get_vbuf(file_ctx->file_data));
+    TRACE_INFO_NUMBER("File len",
+                      simplebuffer_get_len(file_ctx->file_data));
+    TRACE_INFO_NUMBER("Size",
+                      file_ctx->file_data->size);
+    errno = 0;
+    file_ctx->file = fmemopen(simplebuffer_get_vbuf(file_ctx->file_data),
+                              simplebuffer_get_len(file_ctx->file_data),
+                              "r");
     if (!(file_ctx->file)) {
         error = errno;
         TRACE_ERROR_NUMBER("Failed to open file", error);
         return error;
     }
 
-    file_ctx->stats_read = 0;
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
+/* Internal common initialization part */
+static int common_file_init(struct ini_cfgfile *file_ctx)
+{
+    int error = EOK;
+    int raw_file = 0;
+    int stat_ret = 0;
+
+    TRACE_FLOW_ENTRY();
+
+    TRACE_INFO_STRING("File", file_ctx->filename);
+
+    /* Open file in binary mode first */
+    errno = 0;
+    raw_file = open(file_ctx->filename, O_RDONLY);
+    if (raw_file == -1) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to open file in binary mode", error);
+        return error;
+    }
+
+    /* Get the size of the file */
+    errno = 0;
+    stat_ret = fstat(raw_file, &(file_ctx->file_stats));
+    if (stat_ret == -1) {
+        error = errno;
+        close(raw_file);
+        TRACE_ERROR_NUMBER("Failed to get file stats", error);
+        return error;
+    }
+
+    /* Trick to overcome the fact that
+     * fopen and fmemopen behave differently when file
+     * is 0 length
+     */
+    if (file_ctx->file_stats.st_size) {
+        error = common_file_convert(raw_file, file_ctx);
+        close(raw_file);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to convert file",
+                                error);
+            return error;
+        }
+    }
+    else {
+        errno = 0;
+        file_ctx->file = fdopen(raw_file, "r");
+        if (!(file_ctx->file)) {
+            error = errno;
+            close(raw_file);
+            TRACE_ERROR_NUMBER("Failed to fdopen file", error);
+            return error;
+        }
+    }
 
     /* Collect stats */
     if (file_ctx->metadata_flags & INI_META_STATS) {
-        errno = 0;
-        if (fstat(fileno(file_ctx->file),
-                  &(file_ctx->file_stats)) < 0) {
-            error = errno;
-            TRACE_ERROR_NUMBER("Failed to get file stats.", error);
-            return error;
-        }
         file_ctx->stats_read = 1;
     }
-    else memset(&(file_ctx->file_stats), 0, sizeof(struct stat));
+    else {
+        memset(&(file_ctx->file_stats), 0, sizeof(struct stat));
+        file_ctx->stats_read = 0;
+    }
 
     TRACE_FLOW_EXIT();
     return EOK;
@@ -119,6 +445,15 @@ int ini_config_file_open(const char *filename,
 
     new_ctx->filename = NULL;
     new_ctx->file = NULL;
+    new_ctx->file_data = NULL;
+
+    error = simplebuffer_alloc(&(new_ctx->file_data));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate buffer ctx.", error);
+        ini_config_file_destroy(new_ctx);
+        return error;
+
+    }
 
     /* Store flags */
     new_ctx->metadata_flags = metadata_flags;
@@ -176,6 +511,16 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
     }
 
     new_ctx->file = NULL;
+    new_ctx->file_data = NULL;
+    new_ctx->filename = NULL;
+
+    error = simplebuffer_alloc(&(new_ctx->file_data));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate buffer ctx.", error);
+        ini_config_file_destroy(new_ctx);
+        return error;
+
+    }
 
     /* Store flags */
     new_ctx->metadata_flags = file_ctx_in->metadata_flags;
