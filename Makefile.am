@@ -260,7 +260,12 @@ dist_noinst_DATA += \
     ini/ini.d/second.conf \
     ini/ini.d/space.conf \
     ini/ini.d/mergecheck.conf \
-    ini/ini.d/comment.conf
+    ini/ini.d/comment.conf \
+    ini/ini.d/real8.conf \
+    ini/ini.d/real16be.conf \
+    ini/ini.d/real16le.conf \
+    ini/ini.d/real32be.conf \
+    ini/ini.d/real32le.conf
 
 check_PROGRAMS += \
     ini_config_ut \
@@ -297,7 +302,7 @@ endif
 clean-local-ini_config:
 	rm -f ./*.out
 	rm -f test.ini
-	rm -f ./foo.conf #From ini_parse_ut
+	rm -f ./foo.conf ./bom* #From ini_parse_ut
 
 ##############################################################################
 # Additional rules

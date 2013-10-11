@@ -181,6 +181,11 @@ int read_save_test(void)
                             "ipa",
                             "test",
                             "smerge",
+                            "real8",
+                            "real16be",
+                            "real16le",
+                            "real32be",
+                            "real32le",
                             NULL };
 
     INIOUT(printf("<==== Read save test ====>\n"));
@@ -215,6 +220,11 @@ int read_again_test(void)
                             "ipa",
                             "test",
                             "smerge",
+                            "real8",
+                            "real16be",
+                            "real16le",
+                            "real32be",
+                            "real32le",
                             NULL };
 
     INIOUT(printf("<==== Read again test ====>\n"));
@@ -3010,6 +3020,28 @@ int comment_test(void)
     return EOK;
 }
 
+void create_boms(void)
+{
+    FILE *f;
+
+    f = fopen("bom2be","wb");
+    fprintf(f,"%c%c", 0xFE, 0xFF);
+    fclose(f);
+    f = fopen("bom2le","wb");
+    fprintf(f,"%c%c", 0xFF, 0xFE);
+    fclose(f);
+    f = fopen("bom4be","wb");
+    fprintf(f,"%c%c%c%c", 0x00, 0x00, 0xFE, 0xFF);
+    fclose(f);
+    f = fopen("bom4le","wb");
+    fprintf(f,"%c%c%c%c", 0xFF, 0xFE, 0x00, 0x00);
+    fclose(f);
+    f = fopen("bom3","wb");
+    fprintf(f,"%c%c%c", 0xEF, 0xBB, 0xBF);
+    fclose(f);
+}
+
+
 /* Main function of the unit test */
 int main(int argc, char *argv[])
 {
@@ -3035,6 +3067,9 @@ int main(int argc, char *argv[])
         var = getenv("COMMON_TEST_VERBOSE");
         if (var) verbose = 1;
     }
+
+    /* Create boms in case we want to create more test files */
+    create_boms();
 
     INIOUT(printf("Start\n"));
 
