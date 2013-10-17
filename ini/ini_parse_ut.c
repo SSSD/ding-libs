@@ -1423,7 +1423,7 @@ int test_one_array(struct ini_cfgobj *ini_config,
     char **strptr;
     int i;
 
-    INIOUT(printf(message));
+    INIOUT(printf("%s",message));
 
     vo = NULL;
     error = ini_get_config_valueobj(section,
