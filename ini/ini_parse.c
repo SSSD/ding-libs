@@ -1409,7 +1409,7 @@ static int parser_inspect(struct parser_obj *po)
 
         error = handle_kvp(po, &action);
         if (error) {
-            TRACE_ERROR_NUMBER("Failed to save section", error);
+            TRACE_ERROR_NUMBER("Failed to save kvp", error);
             return error;
         }
     }
