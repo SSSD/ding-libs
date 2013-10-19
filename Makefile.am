@@ -265,7 +265,8 @@ dist_noinst_DATA += \
     ini/ini.d/real16be.conf \
     ini/ini.d/real16le.conf \
     ini/ini.d/real32be.conf \
-    ini/ini.d/real32le.conf
+    ini/ini.d/real32le.conf \
+    ini/ini.d/symbols.conf
 
 check_PROGRAMS += \
     ini_config_ut \

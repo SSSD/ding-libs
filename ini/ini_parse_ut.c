@@ -49,7 +49,8 @@ char *confdir = NULL;
 typedef int (*test_fn)(void);
 
 int test_one_file(const char *in_filename,
-                  const char *out_filename)
+                  const char *out_filename,
+                  int edge)
 {
     int error = EOK;
     struct ini_cfgfile *file_ctx = NULL;
@@ -114,7 +115,7 @@ int test_one_file(const char *in_filename,
 
     INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
 
-    error = ini_config_set_wrap(ini_config, 5);
+    error = ini_config_set_wrap(ini_config, edge);
     if (error) {
         printf("Failed to set custom wrapper. Error %d.\n", error);
         ini_config_destroy(ini_config);
@@ -173,6 +174,7 @@ int read_save_test(void)
 {
     int error = EOK;
     int i = 0;
+    int edge = 5;
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
     char *srcdir = NULL;
@@ -186,6 +188,7 @@ int read_save_test(void)
                             "real16le",
                             "real32be",
                             "real32le",
+                            "symbols",
                             NULL };
 
     INIOUT(printf("<==== Read save test ====>\n"));
@@ -193,12 +196,13 @@ int read_save_test(void)
     srcdir = getenv("srcdir");
 
     while(files[i]) {
-
-        snprintf(infile, PATH_MAX, "%s/ini/ini.d/%s.conf",
-                (srcdir == NULL) ? "." : srcdir, files[i]);
-        snprintf(outfile, PATH_MAX, "./%s.conf.out", files[i]);
-        error = test_one_file(infile, outfile);
-        INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
+        for ( edge = 10; edge < 100; edge +=19) {
+            snprintf(infile, PATH_MAX, "%s/ini/ini.d/%s.conf",
+                    (srcdir == NULL) ? "." : srcdir, files[i]);
+            snprintf(outfile, PATH_MAX, "./%s_%d.conf.out", files[i], edge);
+            error = test_one_file(infile, outfile, edge);
+            INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
+        }
         i++;
     }
 
@@ -212,6 +216,7 @@ int read_again_test(void)
 {
     int error = EOK;
     int i = 0;
+    int edge = 5;
     char infile[PATH_MAX];
     char outfile[PATH_MAX];
     char command[PATH_MAX * 3];
@@ -225,27 +230,32 @@ int read_again_test(void)
                             "real16le",
                             "real32be",
                             "real32le",
+                            "symbols",
                             NULL };
 
     INIOUT(printf("<==== Read again test ====>\n"));
 
     while(files[i]) {
+        for ( edge = 10; edge < 100; edge +=19) {
 
-        snprintf(infile, PATH_MAX, "./%s.conf.out", files[i]);
-        snprintf(outfile, PATH_MAX, "./%s.conf.2.out", files[i]);
-        error = test_one_file(infile, outfile);
-        INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
-        if (error) break;
-        snprintf(command, PATH_MAX * 3, "diff -q %s %s", infile, outfile);
-        error = system(command);
-        INIOUT(printf("Comparison of %s %s returned: %d\n",
-                      infile, outfile, error));
-        if ((error) || (WEXITSTATUS(error))) {
-            printf("Failed to run copy command %d %d.\n",  error,
-                   WEXITSTATUS(error));
-            error = -1;
-            break;
+            snprintf(infile, PATH_MAX, "./%s_%d.conf.out", files[i], edge);
+            snprintf(outfile, PATH_MAX, "./%s_%d.conf.2.out", files[i], edge);
+
+            error = test_one_file(infile, outfile, edge);
+            INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
+            if (error) break;
+            snprintf(command, PATH_MAX * 3, "diff -q %s %s", infile, outfile);
+            error = system(command);
+            INIOUT(printf("Comparison of %s %s returned: %d\n",
+                          infile, outfile, error));
+            if ((error) || (WEXITSTATUS(error))) {
+                printf("Failed to run copy command %d %d.\n",  error,
+                       WEXITSTATUS(error));
+                error = -1;
+                break;
+            }
         }
+
         i++;
     }
 
