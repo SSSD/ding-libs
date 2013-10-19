@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "simplebuffer.h"
 #include "ref_array.h"
 #include "ini_comment.h"
@@ -320,6 +321,49 @@ static int value_fold(struct simplebuffer *unfolded,
     return error;
 }
 
+static int trim_last(struct value_obj *vo)
+{
+    int error = EOK;
+    uint32_t last = 0;
+    uint32_t len = 0;
+    uint32_t idx = 0;
+    char *ptr = NULL;
+    char *part = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    last = ref_array_len(vo->raw_lengths);
+    if (last) {
+        last--;
+        ref_array_get(vo->raw_lengths, last, (void *)&len);
+        if (len) {
+            ptr = ref_array_get(vo->raw_lines, last, NULL);
+            if (ptr) {
+                part = *((char **)ptr);
+
+                TRACE_INFO_STRING("Value", part);
+                TRACE_INFO_NUMBER("Length", len);
+
+                idx = len - 1;
+
+                TRACE_INFO_NUMBER("Start index", idx);
+
+                while((idx) && (isspace(part[idx]))) idx--;
+                if (idx != len - 1) {
+                    TRACE_INFO_NUMBER("End index", idx);
+                    len = idx + 1;
+                    error = ref_array_replace(vo->raw_lengths, last, (void *)&len);
+                    if (error) {
+                        TRACE_ERROR_NUMBER("Failed to update length", error);
+                        return error;
+                    }
+                }
+            }
+        }
+    }
+    TRACE_FLOW_EXIT();
+    return error;
+}
 
 /* Create value from a referenced array */
 int value_create_from_refarray(struct ref_array *raw_lines,
@@ -361,6 +405,14 @@ int value_create_from_refarray(struct ref_array *raw_lines,
     new_vo->keylen = key_len;
     new_vo->boundary = boundary;
     new_vo->ic = ic;
+
+    /* Last line might have spaces at the end, trim them */
+    error = trim_last(new_vo);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to trim last", error);
+        value_destroy(new_vo);
+        return error;
+    }
 
     error = value_unfold(new_vo->raw_lines,
                          new_vo->raw_lengths,
