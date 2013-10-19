@@ -136,7 +136,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
     char *val;
     const char *vallines[] = { "Domain1,",
                                "  Domain2 ,",
-                               "  Domain3" };
+                               "  Domain3   " };
     const char *fullstr;
     const char *expected = "Domain1,  Domain2 ,  Domain3";
     int i;
@@ -239,7 +239,10 @@ int other_create_test(FILE *ff, struct value_obj **vo)
 
     if ((len != expected_len) ||
         (strncmp(fullstr, expected, expected_len + 1) != 0)) {
-        printf("The expected value is different.\n%s\n", fullstr);
+        printf("The expected value is different.\n");
+        printf("The expected value is %s\n", expected);
+        printf("The real value is %s\n", fullstr);
+        printf("The expected len is %d, real %d.\n", expected_len, len);
         value_destroy(new_vo);
         return EINVAL;
     }
