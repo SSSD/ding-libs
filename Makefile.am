@@ -282,10 +282,10 @@ ini_comment_ut_SOURCES = ini/ini_comment_ut.c
 ini_comment_ut_LDADD = libini_config.la
 
 ini_valueobj_ut_SOURCES = ini/ini_valueobj_ut.c
-ini_valueobj_ut_LDADD = libini_config.la
+ini_valueobj_ut_LDADD = libini_config.la libbasicobjects.la
 
 ini_parse_ut_SOURCES = ini/ini_parse_ut.c
-ini_parse_ut_LDADD = libini_config.la
+ini_parse_ut_LDADD = libini_config.la libcollection.la libbasicobjects.la
 
 ini_config-docs:
 if HAVE_DOXYGEN
