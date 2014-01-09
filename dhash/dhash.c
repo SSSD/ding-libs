@@ -724,8 +724,6 @@ static hash_entry_t *hash_iter_next(struct hash_iter_context_t *iter_arg)
     while (state != HI_STATE_0) {
 
         switch (state) {
-            case HI_STATE_0:
-                break;
             case HI_STATE_1:
                 iter->i++;
                 if(iter->i >= iter->table->segment_count) return NULL;
