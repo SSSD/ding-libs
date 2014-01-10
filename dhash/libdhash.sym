@@ -1,0 +1,22 @@
+DHASH_0.4.3 {
+global:
+    hash_error_string;
+    hash_create;
+    hash_create_ex;
+    hash_get_statistics;
+    hash_destroy;
+    hash_enter;
+    hash_lookup;
+    hash_get_default;
+    hash_delete;
+    hash_iterate;
+    new_hash_iter_context;
+    hash_count;
+    hash_keys;
+    hash_values;
+    hash_entries;
+    hash_has_key;
+
+local:
+    *;
+};

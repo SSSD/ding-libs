@@ -1,0 +1,20 @@
+PATH_UTILS_0.2.1 {
+global:
+    path_utils_error_string;
+    get_basename;
+    get_dirname;
+    get_directory_and_base_name;
+    is_absolute_path;
+    path_concat;
+    make_path_absolute;
+    split_path;
+    normalize_path;
+    common_path_prefix;
+    make_normalized_absolute_path;
+    find_existing_directory_ancestor;
+    directory_list;
+    is_ancestor_path;
+
+local:
+    *;
+};

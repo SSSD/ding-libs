@@ -8,7 +8,13 @@ builddir ?= .
 dist_noinst_DATA = \
     m4 \
     COPYING \
-    COPYING.LESSER
+    COPYING.LESSER \
+    path_utils/libpath_utils.sym \
+    dhash/libdhash.sym \
+    collection/libcollection.sym \
+    refarray/libref_array.sym \
+    basicobjects/libbasicobjects.sym \
+    ini/libini_config.sym
 
 ##############################################################################
 # Common
@@ -57,8 +63,10 @@ dist_pkgconfig_DATA += path_utils/path_utils.pc
 dist_include_HEADERS += path_utils/path_utils.h
 
 libpath_utils_la_SOURCES = path_utils/path_utils.c
+libpath_utils_la_DEPENDENCIES = path_utils/libpath_utils.sym
 libpath_utils_la_LDFLAGS = \
-    -version-info 1:0:0
+    -version-info 1:0:0 \
+    -Wl,--version-script=$(top_srcdir)/path_utils/libpath_utils.sym
 
 if HAVE_CHECK
     check_PROGRAMS += path_utils_ut
@@ -90,8 +98,10 @@ dist_pkgconfig_DATA += dhash/dhash.pc
 dist_include_HEADERS += dhash/dhash.h
 
 libdhash_la_SOURCES = dhash/dhash.c
+libdhash_la_DEPENDENCIES = dhash/libdhash.sym
 libdhash_la_LDFLAGS = \
-    -version-info 1:1:0
+    -version-info 1:1:0 \
+    -Wl,--version-script=$(top_srcdir)/dhash/libdhash.sym
 
 check_PROGRAMS += dhash_test dhash_example
 TESTS += dhash_test dhash_example
@@ -130,8 +140,10 @@ libcollection_la_SOURCES = \
     collection/collection_iter.c \
     collection/collection_priv.h \
     trace/trace.h
+libcollection_la_DEPENDENCIES = collection/libcollection.sym
 libcollection_la_LDFLAGS = \
-    -version-info 3:0:1
+    -version-info 3:0:1 \
+    -Wl,--version-script=$(top_srcdir)/collection/libcollection.sym
 
 check_PROGRAMS += \
     collection_ut \
@@ -166,8 +178,10 @@ dist_include_HEADERS += refarray/ref_array.h
 libref_array_la_SOURCES = \
     refarray/ref_array.c \
     trace/trace.h
+libref_array_la_DEPENDENCIES = refarray/libref_array.sym
 libref_array_la_LDFLAGS = \
-    -version-info 2:0:1
+    -version-info 2:0:1 \
+    -Wl,--version-script=$(top_srcdir)/refarray/libref_array.sym
 
 check_PROGRAMS += ref_array_ut
 TESTS += ref_array_ut
@@ -193,8 +207,10 @@ dist_include_HEADERS += basicobjects/simplebuffer.h
 libbasicobjects_la_SOURCES = \
     basicobjects/simplebuffer.c \
     trace/trace.h
+libbasicobjects_la_DEPENDENCIES = basicobjects/libbasicobjects.sym
 libbasicobjects_la_LDFLAGS = \
-    -version-info 0:0:0
+    -version-info 0:0:0 \
+    -Wl,--version-script=$(top_srcdir)/basicobjects/libbasicobjects.sym
 
 check_PROGRAMS += simplebuffer_ut
 TESTS += simplebuffer_ut
@@ -240,13 +256,15 @@ libini_config_la_SOURCES = \
     ini/ini_get_array_valueobj.c \
     ini/ini_list_valueobj.c \
     trace/trace.h
+EXTRA_libini_config_la_DEPENDENCIES = ini/libini_config.sym
 libini_config_la_LIBADD = \
     libcollection.la \
     libpath_utils.la \
     libref_array.la \
     libbasicobjects.la
 libini_config_la_LDFLAGS = \
-    -version-info 4:0:1
+    -version-info 4:0:1 \
+    -Wl,--version-script=$(top_srcdir)/ini/libini_config.sym
 
 dist_noinst_DATA += \
     ini/ini.conf \

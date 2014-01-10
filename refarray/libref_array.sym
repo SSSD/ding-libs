@@ -1,0 +1,24 @@
+REF_ARRAY_0.1.1 {
+global:
+    ref_array_create;
+    ref_array_getref;
+    ref_array_destroy;
+    ref_array_append;
+    ref_array_get;
+    ref_array_getlen;
+    ref_array_len;
+    ref_array_insert;
+    ref_array_replace;
+    ref_array_remove;
+    ref_array_swap;
+    ref_array_reset;
+    ref_array_debug;
+
+local:
+    *;
+};
+
+REF_ARRAY_0.1.3 {
+global:
+    ref_array_copy;
+} REF_ARRAY_0.1.1;
