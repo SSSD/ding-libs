@@ -1771,7 +1771,7 @@ int col_insert_int_property(struct collection_item *ci,
                             int32_t number);
 
 /** @brief Insert an unsigned property. */
-int col_insert_unsinged_property(struct collection_item *ci,
+int col_insert_unsigned_property(struct collection_item *ci,
                                  const char *subcollection,
                                  int disposition,
                                  const char *refprop,
@@ -1856,7 +1856,7 @@ int col_insert_int_property_with_ref(struct collection_item *ci,
                                      struct collection_item **ret_ref);
 
 /** @brief Insert an unsigned property and get back a reference. */
-int col_insert_unsinged_property_with_ref(struct collection_item *ci,
+int col_insert_unsigned_property_with_ref(struct collection_item *ci,
                                           const char *subcollection,
                                           int disposition,
                                           const char *refprop,
