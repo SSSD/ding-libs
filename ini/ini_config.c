@@ -36,12 +36,12 @@
 /* Temporarily move the parsing function here */
 /* THIS FUNCTION WILL BE REMOVED AS SOON AS WE SWITCH TO THE NEW INTERFACE */
 /* Reads a line from the file */
-int read_line(FILE *file,
-              char *buf,
-              int read_size,
-              char **key, char **value,
-              int *length,
-              int *ext_error)
+static int read_line(FILE *file,
+                     char *buf,
+                     int read_size,
+                     char **key, char **value,
+                     int *length,
+                     int *ext_error)
 {
 
     char *res;

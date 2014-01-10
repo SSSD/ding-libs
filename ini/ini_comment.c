@@ -82,9 +82,9 @@ void ini_comment_destroy(struct ini_comment *ic)
 
 
 /* Cleanup callback */
-void ini_comment_cb(void *elem,
-                    ref_array_del_enum type,
-                    void *data)
+static void ini_comment_cb(void *elem,
+                           ref_array_del_enum type,
+                           void *data)
 {
 
     TRACE_FLOW_ENTRY();

@@ -110,7 +110,7 @@ static int save_error(struct collection_item *el,
                       const char *err_txt);
 
 
-int is_just_spaces(const char *str, uint32_t len)
+static int is_just_spaces(const char *str, uint32_t len)
 {
     uint32_t i;
 
@@ -132,10 +132,10 @@ int is_just_spaces(const char *str, uint32_t len)
  * the line is OK too.
  * Any other character will cause an error.
  */
-int is_allowed_spaces(const char *str,
-                      uint32_t len,
-                      uint32_t parse_flags,
-                      int *error)
+static int is_allowed_spaces(const char *str,
+                             uint32_t len,
+                             uint32_t parse_flags,
+                             int *error)
 {
     uint32_t i;
     int line_ok = 1;
@@ -1602,7 +1602,7 @@ static int parser_error(struct parser_obj *po)
 
 
 /* Run parser */
-int parser_run(struct parser_obj *po)
+static int parser_run(struct parser_obj *po)
 {
     int error = EOK;
     struct collection_item *item = NULL;

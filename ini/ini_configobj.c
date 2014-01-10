@@ -173,13 +173,13 @@ int ini_config_create(struct ini_cfgobj **ini_config)
 }
 
 /* Callback to set the boundary */
-int ini_boundary_cb(const char *property,
-                     int property_len,
-                     int type,
-                     void *data,
-                     int length,
-                     void *custom_data,
-                     int *dummy)
+static int ini_boundary_cb(const char *property,
+                           int property_len,
+                           int type,
+                           void *data,
+                           int length,
+                           void *custom_data,
+                           int *dummy)
 {
     int error = EOK;
     struct value_obj *vo = NULL;
