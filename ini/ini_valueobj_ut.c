@@ -76,7 +76,7 @@ static int create_comment(int i, struct ini_comment **ic)
 
 /* Save value to the file */
 /* NOTE: might be moved into the API in future */
-int save_value(FILE *ff, const char *key, struct value_obj *vo)
+static int save_value(FILE *ff, const char *key, struct value_obj *vo)
 {
 
     int error = EOK;
@@ -125,7 +125,7 @@ int save_value(FILE *ff, const char *key, struct value_obj *vo)
 }
 
 /* Test to create value object using arrays */
-int other_create_test(FILE *ff, struct value_obj **vo)
+static int other_create_test(FILE *ff, struct value_obj **vo)
 {
     int error = EOK;
     struct value_obj *new_vo = NULL;
@@ -338,7 +338,7 @@ int other_create_test(FILE *ff, struct value_obj **vo)
 }
 
 /* Modify the value object */
-int modify_test(FILE *ff, struct value_obj *vo)
+static int modify_test(FILE *ff, struct value_obj *vo)
 {
     int error = EOK;
     const char *strval = "Domain100, Domain200, Domain300";
@@ -377,7 +377,7 @@ int modify_test(FILE *ff, struct value_obj *vo)
 }
 
 
-int vo_basic_test(void)
+static int vo_basic_test(void)
 {
     int error = EOK;
     const char *strvalue = "Test multi_word_value_that_will_"
@@ -480,7 +480,7 @@ int vo_basic_test(void)
     return EOK;
 }
 
-int vo_copy_test(void)
+static int vo_copy_test(void)
 {
     int error = EOK;
     const char *strvalue = "Test multi word value that "
@@ -623,13 +623,13 @@ int vo_copy_test(void)
     return EOK;
 }
 
-int vo_show_test(void)
+static int vo_show_test(void)
 {
     VOOUT(system("cat test.ini"));
     return EOK;
 }
 
-int vo_mc_test(void)
+static int vo_mc_test(void)
 {
     int error = EOK;
     struct value_obj *vo1 = NULL;

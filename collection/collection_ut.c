@@ -39,7 +39,7 @@ int verbose = 0;
 
 
 
-int ref_collection_test(void)
+static int ref_collection_test(void)
 {
     struct collection_item *peer = NULL;
     struct collection_item *socket = NULL;
@@ -131,7 +131,7 @@ int ref_collection_test(void)
 }
 
 
-int single_collection_test(void)
+static int single_collection_test(void)
 {
     struct collection_item *handle = NULL;
     int error = EOK;
@@ -192,7 +192,7 @@ int single_collection_test(void)
     return error;
 }
 
-int add_collection_test(void)
+static int add_collection_test(void)
 {
     struct collection_item *peer = NULL;
     struct collection_item *socket = NULL;
@@ -250,9 +250,9 @@ int add_collection_test(void)
     return error;
 }
 
-int copy_cb(struct collection_item *item,
-            void *ext_data,
-            int *skip)
+static int copy_cb(struct collection_item *item,
+                   void *ext_data,
+                   int *skip)
 {
     COLOUT(printf("INSIDE Copy Callback\n"));
     COLOUT(col_debug_item(item));
@@ -262,7 +262,7 @@ int copy_cb(struct collection_item *item,
 }
 
 
-int mixed_collection_test(void)
+static int mixed_collection_test(void)
 {
     struct collection_item *peer;
     struct collection_item *socket1;
@@ -643,7 +643,7 @@ int mixed_collection_test(void)
 }
 
 
-int iterator_test(void)
+static int iterator_test(void)
 {
     struct collection_item *peer = NULL;
     struct collection_item *initial = NULL;
@@ -1341,7 +1341,7 @@ int iterator_test(void)
 }
 
 
-int insert_extract_test(void)
+static int insert_extract_test(void)
 {
     struct collection_item *col;
     struct collection_item *col2;
@@ -1531,12 +1531,12 @@ int insert_extract_test(void)
 }
 
 /* Cleanup collback */
-void cb(const char *property,
-        int property_len,
-        int type,
-        void *data,
-        int length,
-        void *ext_data)
+static void cb(const char *property,
+               int property_len,
+               int type,
+               void *data,
+               int length,
+               void *ext_data)
 {
     COLOUT(printf("%s\n", *((const char **)ext_data)));
     COLOUT(printf("Property: %s\n", property));
@@ -1545,7 +1545,7 @@ void cb(const char *property,
     COLOUT(printf("Data len: %d\n", length));
 }
 
-int delete_test(void)
+static int delete_test(void)
 {
 
     struct collection_item *col;
@@ -1605,7 +1605,7 @@ int delete_test(void)
 }
 
 /* Search test */
-int search_test(void)
+static int search_test(void)
 {
     struct collection_item *level1 = NULL;
     struct collection_item *level2 = NULL;
@@ -1782,7 +1782,7 @@ int search_test(void)
 }
 
 /* Sort test */
-int sort_test(void)
+static int sort_test(void)
 {
     struct collection_item *level1 = NULL;
     struct collection_item *level2a = NULL;

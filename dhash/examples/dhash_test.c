@@ -34,7 +34,7 @@ hash_entry_t *iter_result_2 = NULL;
 unsigned long max_test = DEFAULT_MAX_TEST;
 int verbose = 0;
 
-const char *error_string(int error)
+static const char *error_string(int error)
 {
     const char *str;
 
@@ -53,7 +53,7 @@ const char *error_string(int error)
     return str;
 }
 
-char *key_string(hash_key_t *key)
+static char *key_string(hash_key_t *key)
 {
     static char buf[BUF_SIZE];
 
@@ -71,7 +71,7 @@ char *key_string(hash_key_t *key)
     return buf;
 }
 
-char *value_string(hash_value_t *value)
+static char *value_string(hash_value_t *value)
 {
     static char buf[BUF_SIZE];
 
@@ -108,7 +108,7 @@ char *value_string(hash_value_t *value)
     return buf;
 }
 
-char *entry_string(hash_entry_t *entry)
+static char *entry_string(hash_entry_t *entry)
 {
     static char buf[BUF_SIZE];
 
@@ -118,7 +118,7 @@ char *entry_string(hash_entry_t *entry)
 
 }
 
-bool callback(hash_entry_t *item, void *user_data)
+static bool callback(hash_entry_t *item, void *user_data)
 {
     unsigned long *callback_count = (unsigned long *)user_data;
 
@@ -130,7 +130,8 @@ bool callback(hash_entry_t *item, void *user_data)
     return true;
 }
 
-void delete_callback(hash_entry_t *item, hash_destroy_enum type, void *pvt)
+static void delete_callback(hash_entry_t *item, hash_destroy_enum type,
+                            void *pvt)
 {
     if (item->value.type == HASH_VALUE_PTR) free(item->value.ptr);
 }

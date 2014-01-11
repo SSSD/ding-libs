@@ -37,7 +37,7 @@ int verbose = 0;
     } while(0)
 
 
-int simple_test(void)
+static int simple_test(void)
 {
     int error = EOK;
     struct simplebuffer *data = NULL;

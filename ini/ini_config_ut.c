@@ -42,7 +42,7 @@ int verbose = 0;
     } while(0)
 
 
-int basic_test(void)
+static int basic_test(void)
 {
     int error;
     struct collection_item *ini_config = NULL;
@@ -84,7 +84,7 @@ int basic_test(void)
     return 0;
 }
 
-int single_file(void)
+static int single_file(void)
 {
     int error;
     struct collection_item *ini_config = NULL;
@@ -189,7 +189,7 @@ int single_file(void)
     return 0;
 }
 
-int single_fd(void)
+static int single_fd(void)
 {
     int error;
     struct collection_item *ini_config = NULL;
@@ -306,7 +306,7 @@ int single_fd(void)
     return 0;
 }
 
-int negative_test(void)
+static int negative_test(void)
 {
     int error;
     unsigned int count;
@@ -374,7 +374,7 @@ int negative_test(void)
 
 }
 
-int real_test(const char *file)
+static int real_test(const char *file)
 {
     int error;
     struct collection_item *ini_config = NULL;
@@ -456,7 +456,7 @@ int real_test(const char *file)
     return 0;
 }
 
-int get_test(void)
+static int get_test(void)
 {
 
     int error;
@@ -1298,7 +1298,7 @@ int get_test(void)
  * and one needs to parse the configuration file
  * for the first time and load configuration
  */
-int startup_test(void)
+static int startup_test(void)
 {
     int error;
     struct collection_item *ini_config = NULL;
@@ -1417,7 +1417,7 @@ int startup_test(void)
     return 0;
 }
 
-int reload_test(void)
+static int reload_test(void)
 {
 
     int error;

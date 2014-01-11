@@ -40,7 +40,7 @@ extern void ref_array_debug(struct ref_array *ra, int num);
 typedef int (*test_fn)(void);
 
 /* Basic test */
-int ref_array_basic_test(void)
+static int ref_array_basic_test(void)
 {
     const char *line1 = "line1";
     const char *line2 = "line2";
@@ -217,16 +217,16 @@ int ref_array_basic_test(void)
     return EOK;
 }
 
-void array_cleanup(void *elem,
-                   ref_array_del_enum type,
-                   void *data)
+static void array_cleanup(void *elem,
+                          ref_array_del_enum type,
+                          void *data)
 {
     RAOUT(printf("%s%s\n", (char *)data, *((char **)elem)));
     free(*((char **)elem));
 }
 
 /* Free test */
-int ref_array_free_test(void)
+static int ref_array_free_test(void)
 {
     const char *line1 = "line1";
     const char *line2 = "line2";
@@ -308,7 +308,7 @@ int ref_array_free_test(void)
     return EOK;
 }
 
-int ref_array_adv_test(void)
+static int ref_array_adv_test(void)
 {
     int error = EOK;
     const char *lines[] = { "line0",
@@ -559,8 +559,8 @@ int ref_array_adv_test(void)
     return EOK;
 }
 
-int copy_cb(void *elem,
-            void *new_elem)
+static int copy_cb(void *elem,
+                   void *new_elem)
 {
     char *ne = NULL;
 
@@ -573,7 +573,7 @@ int copy_cb(void *elem,
     return EOK;
 }
 
-int ref_array_copy_test(void)
+static int ref_array_copy_test(void)
 {
     const char *line1 = "line1";
     const char *line2 = "line2";
@@ -686,7 +686,7 @@ int ref_array_copy_test(void)
 
 }
 
-int ref_array_copy_num_test(void)
+static int ref_array_copy_num_test(void)
 {
     uint32_t i,j,k;
     struct ref_array *ra;

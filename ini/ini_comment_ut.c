@@ -36,7 +36,7 @@ int verbose = 0;
 
 typedef int (*test_fn)(void);
 
-int file_test(void)
+static int file_test(void)
 {
     int error = EOK;
     struct ini_comment *ic = NULL;
@@ -60,7 +60,7 @@ int file_test(void)
 }
 
 
-int alter_test(void)
+static int alter_test(void)
 {
     int error = EOK;
     struct ini_comment *ic = NULL;
@@ -158,7 +158,7 @@ int alter_test(void)
     return error;
 }
 
-int copy_test(void)
+static int copy_test(void)
 {
     int error = EOK;
     struct ini_comment *ic = NULL;
@@ -233,7 +233,7 @@ int copy_test(void)
     return error;
 }
 
-int add_test(void)
+static int add_test(void)
 {
     int error = EOK;
     struct ini_comment *ic = NULL;

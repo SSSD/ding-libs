@@ -29,12 +29,15 @@ struct my_data_t {
     char bar[128];
 };
 
-void delete_callback(hash_entry_t *entry, hash_destroy_enum type, void *pvt)
+static void delete_callback(hash_entry_t *entry,
+                            hash_destroy_enum type,
+                            void *pvt)
 {
     if (entry->value.type == HASH_VALUE_PTR) free(entry->value.ptr);
 }
 
-bool visit_callback(hash_entry_t *entry, void *user_data)
+static bool visit_callback(hash_entry_t *entry,
+                           void *user_data)
 {
     unsigned long *count = (unsigned long *)user_data;
     struct my_data_t *my_data = (struct my_data_t *) entry->value.ptr;
@@ -45,13 +48,14 @@ bool visit_callback(hash_entry_t *entry, void *user_data)
     return true;
 }
 
-struct my_data_t *new_data(int foo, const char *bar)
+static struct my_data_t *new_data(int foo, const char *bar)
 {
     struct my_data_t *my_data = malloc(sizeof(struct my_data_t));
     my_data->foo = foo;
     strncpy(my_data->bar, bar, sizeof(my_data->bar));
     return my_data;
 }
+
 int main(int argc, char **argv)
 {
     static hash_table_t *table = NULL;

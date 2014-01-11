@@ -48,9 +48,9 @@ char *confdir = NULL;
 
 typedef int (*test_fn)(void);
 
-int test_one_file(const char *in_filename,
-                  const char *out_filename,
-                  int edge)
+static int test_one_file(const char *in_filename,
+                         const char *out_filename,
+                         int edge)
 {
     int error = EOK;
     struct ini_cfgfile *file_ctx = NULL;
@@ -170,7 +170,7 @@ int test_one_file(const char *in_filename,
 
 
 /* Run tests for multiple files */
-int read_save_test(void)
+static int read_save_test(void)
 {
     int error = EOK;
     int i = 0;
@@ -212,7 +212,7 @@ int read_save_test(void)
 }
 
 /* Run tests for multiple files */
-int read_again_test(void)
+static int read_again_test(void)
 {
     int error = EOK;
     int i = 0;
@@ -264,7 +264,7 @@ int read_again_test(void)
     return error;
 }
 
-int create_expect(const char *checkname)
+static int create_expect(const char *checkname)
 {
     FILE *ff;
     int error = EOK;
@@ -333,7 +333,7 @@ int create_expect(const char *checkname)
 }
 
 /* Check merge modes */
-int merge_values_test(void)
+static int merge_values_test(void)
 {
     int error = EOK;
     int i;
@@ -493,7 +493,7 @@ int merge_values_test(void)
 }
 
 /* Check merge modes */
-int merge_section_test(void)
+static int merge_section_test(void)
 {
     int error = EOK;
     int i, j;
@@ -697,9 +697,9 @@ int merge_section_test(void)
     return error;
 }
 
-int read_one_file(char *name,
-                  struct ini_cfgobj *ini_config,
-                  uint32_t collision_flags)
+static int read_one_file(char *name,
+                         struct ini_cfgobj *ini_config,
+                         uint32_t collision_flags)
 {
     int error = EOK;
     struct ini_cfgfile *file_ctx = NULL;
@@ -746,7 +746,7 @@ int read_one_file(char *name,
 }
 
 /* Check merge modes */
-int merge_file_test(void)
+static int merge_file_test(void)
 {
     int error = EOK;
     int i, j;
@@ -1067,7 +1067,7 @@ int merge_file_test(void)
     return EOK;
 }
 
-int startup_test(void)
+static int startup_test(void)
 {
     int error = EOK;
     struct ini_cfgfile *file_ctx = NULL;
@@ -1235,7 +1235,7 @@ int startup_test(void)
     return 0;
 }
 
-int reload_test(void)
+static int reload_test(void)
 {
     int error = EOK;
     struct ini_cfgfile *file_ctx = NULL;
@@ -1428,13 +1428,13 @@ int reload_test(void)
     return 0;
 }
 
-int test_one_array(struct ini_cfgobj *ini_config,
-                   const char *section,
-                   const char *value,
-                   int raw,
-                   int expect,
-                   const char *sep,
-                   const char *message)
+static int test_one_array(struct ini_cfgobj *ini_config,
+                          const char *section,
+                          const char *value,
+                          int raw,
+                          int expect,
+                          const char *sep,
+                          const char *message)
 {
     struct value_obj *vo = NULL;
     int error = 0;
@@ -1496,7 +1496,7 @@ int test_one_array(struct ini_cfgobj *ini_config,
     return EOK;
 }
 
-int get_test(void)
+static int get_test(void)
 {
 
     int error;
@@ -2782,7 +2782,7 @@ int get_test(void)
     return EOK;
 }
 
-int space_test(void)
+static int space_test(void)
 {
 
     int error;
@@ -2866,7 +2866,7 @@ int space_test(void)
 }
 
 
-int trim_test(void)
+static int trim_test(void)
 {
     int error;
     struct ini_cfgfile *file_ctx = NULL;
@@ -2965,7 +2965,7 @@ int trim_test(void)
     return EOK;
 }
 
-int comment_test(void)
+static int comment_test(void)
 {
     int error;
     struct ini_cfgfile *file_ctx = NULL;
@@ -3030,7 +3030,7 @@ int comment_test(void)
     return EOK;
 }
 
-void create_boms(void)
+static void create_boms(void)
 {
     FILE *f;
 

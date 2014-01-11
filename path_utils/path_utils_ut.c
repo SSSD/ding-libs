@@ -580,7 +580,7 @@ START_TEST(test_find_existing_directory_ancestor_neg)
 END_TEST
 
 /**** directory_list ****/
-void setup_directory_list(void)
+static void setup_directory_list(void)
 {
     char *s = NULL;
     int ret;
@@ -602,7 +602,7 @@ void setup_directory_list(void)
     fail_unless(ret != -1, "mkdir %s failed [%d][%s]", dlist_subsubdir, errno, strerror(errno));
 }
 
-void teardown_directory_list(void)
+static void teardown_directory_list(void)
 {
     int ret;
 
@@ -628,9 +628,11 @@ void teardown_directory_list(void)
     }
 }
 
-bool dirlist_cb_nonrecursive(const char *directory, const char *base_name,
-                             const char *path, struct stat *info,
-                             void *user_data)
+static bool dirlist_cb_nonrecursive(const char *directory,
+                                    const char *base_name,
+                                    const char *path,
+                                    struct stat *info,
+                                    void *user_data)
 {
     int *data = (int *) user_data;
 
@@ -640,9 +642,9 @@ bool dirlist_cb_nonrecursive(const char *directory, const char *base_name,
     return true;
 }
 
-bool dirlist_cb_recursive(const char *directory, const char *base_name,
-                          const char *path, struct stat *info,
-                          void *user_data)
+static bool dirlist_cb_recursive(const char *directory, const char *base_name,
+                                 const char *path, struct stat *info,
+                                 void *user_data)
 {
     bool *seen_child = (bool *) user_data;
     static bool seen_parent = false;
@@ -698,7 +700,7 @@ START_TEST(test_is_ancestor_path)
 END_TEST
 
 
-Suite *path_utils_suite(void)
+static Suite *path_utils_suite(void)
 {
     Suite *s = suite_create("path_utils");
 

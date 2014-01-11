@@ -37,7 +37,7 @@ int verbose = 0;
     } while(0)
 
 
-int queue_test(void)
+static int queue_test(void)
 {
     struct collection_item *queue = NULL;
     char binary_dump[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -96,7 +96,7 @@ int queue_test(void)
 }
 
 
-int empty_test(void)
+static int empty_test(void)
 {
     struct collection_item *queue = NULL;
     struct collection_item *item = NULL;
