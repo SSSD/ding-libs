@@ -1579,6 +1579,7 @@ int main(int argc, char *argv[])
     if ((error = basic_test()) ||
         (error = single_file()) ||
         (error = single_fd()) ||
+        (error = negative_test()) ||
         (error = real_test(NULL)) ||
          /* This should result in merged configuration */
         (error = real_test("./ini.conf")) ||
