@@ -35,8 +35,6 @@ int verbose = 0;
         if (verbose) foo; \
     } while(0)
 
-extern void ref_array_debug(struct ref_array *ra, int num);
-
 typedef int (*test_fn)(void);
 
 /* Basic test */

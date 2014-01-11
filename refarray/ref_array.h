@@ -363,6 +363,22 @@ int ref_array_copy(struct ref_array *ra,
                    struct ref_array **copy_ra);
 
 
+
+/**
+ * @brief Print array for debugging purposes.
+ *
+ * Prints array internals.
+ *
+ * @param[in]  ra        Existing array object.
+ * @param[in]  num       If num is 0 elements will be printed as strings.
+ *                       If num is greater than 0 elements will be printed as
+ *                       decimal numbers. Otherwise element will not be
+ *                       interpreted in concrete way.
+ *
+ * No return value.
+ */
+void ref_array_debug(struct ref_array *ra, int num);
+
 /**
  * @}
  */

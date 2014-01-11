@@ -42,9 +42,6 @@ int verbose = 0;
 
 typedef int (*test_fn)(void);
 
-
-extern void ref_array_debug(struct ref_array *ra);
-
 static int create_comment(int i, struct ini_comment **ic)
 {
     int error = EOK;

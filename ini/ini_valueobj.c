@@ -1063,8 +1063,6 @@ int value_serialize(struct value_obj *vo,
 
 #ifdef HAVE_TRACE
 
-extern void ref_array_debug(struct ref_array *ra, int num);
-
         ref_array_debug(vo->raw_lines, 0);
         ref_array_debug(vo->raw_lengths, 1);
 #endif
