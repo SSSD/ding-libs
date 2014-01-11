@@ -17,7 +17,8 @@ AM_CFLAGS =
 if HAVE_GCC
     AM_CFLAGS += \
         -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual \
-        -Wcast-align -Wwrite-strings
+        -Wcast-align -Wwrite-strings -Wextra -Wno-unused-parameter \
+        -Wno-sign-compare -Wformat-security -Wmissing-prototypes -Wundef
 endif
 
 AM_CPPFLAGS = \
