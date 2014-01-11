@@ -32,6 +32,18 @@
 #include "ini_config_priv.h"
 #include "ini_configobj.h"
 
+/* Following declarations are from header file ini_config.h. This file was not
+ * included, because we don't want on include header file
+ * with old interface(ini_config.h) and new interface(ini_configobj.h)
+ * into the one file.
+ */
+void print_config_parsing_errors(FILE *file,
+                                 struct collection_item *error_set);
+
+
+void print_file_parsing_errors(FILE *file,
+                               struct collection_item *error_list);
+
 
 /*============================================================*/
 /* The following classes moved here from the public header
@@ -338,11 +350,13 @@ void print_file_parsing_errors(FILE *file,
 }
 
 
+void print_grammar_errors(FILE *file,
+                          struct collection_item *error_list);
 /* Print errors and warnings that were detected while processing grammar.
  *
  * The following doxygen description is moved here.
  * When the function gets exposed move it into
- * the header file.
+ * the header file and remove prototype from this file.
  */
 /**
  * @brief Print errors and warnings that were detected while
@@ -367,11 +381,13 @@ void print_grammar_errors(FILE *file,
                      INI_FAMILY_GRAMMAR);
 }
 
+void print_validation_errors(FILE *file,
+                             struct collection_item *error_list);
 /* Print errors and warnings that were detected while validating INI file.
  *
  * The following doxygen description is moved here.
  * When the function gets exposed move it into
- * the header file.
+ * the header file and remove prototype from this file.
  */
 /**
  * @brief Print errors and warnings that were detected while
