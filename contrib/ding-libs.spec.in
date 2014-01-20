@@ -33,6 +33,8 @@ BuildRequires: automake
 BuildRequires: libtool
 BuildRequires: m4
 BuildRequires: doxygen
+BuildRequires: pkgconfig
+BuildRequires: check-devel
 
 %description
 A meta-package that pulls in libcollection, libdhash, libini_config,
