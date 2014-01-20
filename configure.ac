@@ -5,7 +5,7 @@ AC_INIT([ding-libs],
 AC_CONFIG_SRCDIR([README])
 AC_CONFIG_AUX_DIR([build])
 AC_GNU_SOURCE
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AM_PROG_CC_C_O
 m4_pattern_allow([AM_PROG_AR])
 AM_PROG_AR
