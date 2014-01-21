@@ -502,7 +502,6 @@ void col_destroy_collection(struct collection_item *ci);
  *                           this parameter.
  * @param[in]  custom_data   Custom data will be passed in
  *                           this parameter.
- * @return No return value.
  */
 
 typedef void (*col_item_cleanup_fn)(const char *property,
@@ -3210,9 +3209,6 @@ int col_get_item_depth(struct collection_iterator *iterator, int *depth);
  * It is a 20% comparison reduction.
  *
  * @param[in]  iterator   Iterator object to use.
- *
- * @return 0          - Success.
- * @return EINVAL     - The value of the argument is invalid.
  */
 void col_pin_iterator(struct collection_iterator *iterator);
 
@@ -3224,9 +3220,6 @@ void col_pin_iterator(struct collection_iterator *iterator);
  * \ref col_pin_iterator function.
  *
  * @param[in]  iterator   Iterator object to use.
- *
- * @return 0          - Success.
- * @return EINVAL     - The value of the argument is invalid.
  */
 void col_rewind_iterator(struct collection_iterator *iterator);
 

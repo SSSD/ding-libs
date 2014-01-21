@@ -154,7 +154,7 @@ static const char *parsing_error_str(int parsing_error)
  * This error is returned when the template
  * is translated into the grammar object.
  *
- * @param[in] parsing_error    Error code for the grammar error.
+ * @param[in] grammar_error    Error code for the grammar error.
  *
  * @return Error string.
  */
@@ -196,7 +196,7 @@ static const char *grammar_error_str(int grammar_error)
  * the INI file is validated against the
  * grammar object.
  *
- * @param[in] parsing_error    Error code for the validation error.
+ * @param[in] validation_error    Error code for the validation error.
  *
  * @return Error string.
  */
