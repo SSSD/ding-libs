@@ -155,7 +155,7 @@ static hash_entry_t *hash_iter_next(struct hash_iter_context_t *iter);
 /*************************  Internal Global Variables  ***********************/
 /*****************************************************************************/
 
-#if DEBUG
+#ifdef DEBUG
 int debug_level = 1;
 #endif
 
@@ -620,7 +620,7 @@ int hash_create_ex(unsigned long count, hash_table_t **tbl,
     table->min_load_factor = min_load_factor == 0 ? HASH_DEFAULT_MIN_LOAD_FACTOR : min_load_factor;
     table->max_load_factor = max_load_factor == 0 ? HASH_DEFAULT_MAX_LOAD_FACTOR : max_load_factor;
 
-#if DEBUG
+#ifdef DEBUG
     if (debug_level >= 1) {
         fprintf(stderr, "hash_create_ex: count=%lu available buckets=%lu bucket_count=%lu maxp=%lu\n",
                 count, table->directory_size*table->segment_size, table->bucket_count, table->maxp);
