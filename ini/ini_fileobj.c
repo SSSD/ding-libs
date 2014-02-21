@@ -182,6 +182,52 @@ static void print_buffer(char *read_buffer, int len)
 }
 */
 
+/* Internal initialization part */
+static int initialize_conv(unsigned char *read_buf,
+                           size_t read_cnt,
+                           int *initialized,
+                           size_t *bom_shift,
+                           iconv_t *conv)
+{
+    int error = EOK;
+    enum index_utf_t ind = INDEX_UTF8;
+    const char *encodings[] = {  "UTF-32BE",
+                                 "UTF-32LE",
+                                 "UTF-16BE",
+                                 "UTF-16LE",
+                                 "UTF-8" };
+
+    TRACE_FLOW_ENTRY();
+
+    if (*initialized == 0) {
+
+        TRACE_INFO_STRING("Reading first time.","Checking BOM");
+
+        ind = check_bom(ind,
+                        (unsigned char *)read_buf,
+                        read_cnt,
+                        bom_shift);
+
+        TRACE_INFO_STRING("Converting to", encodings[INDEX_UTF8]);
+        TRACE_INFO_STRING("Converting from", encodings[ind]);
+
+        errno = 0;
+        *conv = iconv_open(encodings[INDEX_UTF8], encodings[ind]);
+        if (*conv == (iconv_t) -1) {
+            error = errno;
+            TRACE_ERROR_NUMBER("Failed to create converter", error);
+            return error;
+        }
+
+        *initialized = 1;
+    }
+    else *bom_shift = 0;
+
+    TRACE_FLOW_EXIT();
+    return error;
+
+}
+
 /* Internal conversion part */
 static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
 {
@@ -189,7 +235,6 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
     size_t read_cnt = 0;
     size_t total_read = 0;
     size_t in_buffer = 0;
-    enum index_utf_t ind = INDEX_UTF8;
     iconv_t conv = (iconv_t)-1;
     size_t conv_res = 0;
     char read_buf[ICONV_BUFFER+1];
@@ -199,11 +244,6 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
     size_t room_left = 0;
     size_t bom_shift = 0;
     int initialized = 0;
-    const char *encodings[] = {  "UTF-32BE",
-                                 "UTF-32LE",
-                                 "UTF-16BE",
-                                 "UTF-16LE",
-                                 "UTF-8" };
 
     TRACE_FLOW_ENTRY();
 
@@ -226,32 +266,20 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
         to_convert = read_cnt + in_buffer;
         in_buffer = 0;
 
-        /* First time do some initialization */
-        if (initialized == 0) {
-            TRACE_INFO_STRING("Reading first time.","Checking BOM");
-
-            ind = check_bom(ind,
-                            (unsigned char *)read_buf,
-                            read_cnt,
-                            &bom_shift);
-
-            /* Skip BOM the first time */
-            src += bom_shift;
-            to_convert -= bom_shift;
-
-            TRACE_INFO_STRING("Converting to", encodings[INDEX_UTF8]);
-            TRACE_INFO_STRING("Converting from", encodings[ind]);
-
-            errno = 0;
-            conv = iconv_open(encodings[INDEX_UTF8], encodings[ind]);
-            if (conv == (iconv_t) -1) {
-                error = errno;
-                TRACE_ERROR_NUMBER("Failed to create converter", error);
-                return error;
-            }
-            initialized = 1;
+        /* Do initialization if needed */
+        error = initialize_conv((unsigned char *)read_buf,
+                                read_cnt,
+                                &initialized,
+                                &bom_shift,
+                                &conv);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to initialize",
+                                error);
+            return error;
         }
 
+        src += bom_shift;
+        to_convert -= bom_shift;
         total_read += read_cnt;
         TRACE_INFO_NUMBER("Total read", total_read);
 
