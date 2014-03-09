@@ -1534,16 +1534,22 @@ static int parser_error(struct parser_obj *po)
         else po->ret = EIO;
     }
     else if (po->error_level == INI_STOP_ON_NONE) {
-        action = PARSE_READ;
-        if (po->ret == 0) {
-            if (po->last_error & INI_WARNING) po->ret = EILSEQ;
-            else po->ret = EIO;
+        if (po->last_error != ERR_READ) {
+            action = PARSE_READ;
+            if (po->ret == 0) {
+                if (po->last_error & INI_WARNING) po->ret = EILSEQ;
+                else po->ret = EIO;
+            }
+            /* It it was warning but now if it is an error
+             * bump to return code to indicate error. */
+            else if((po->ret == EILSEQ) &&
+                    (!(po->last_error & INI_WARNING))) po->ret = EIO;
         }
-        /* It it was warning but now if it is an error
-         * bump to return code to indicate error. */
-        else if((po->ret == EILSEQ) &&
-                (!(po->last_error & INI_WARNING))) po->ret = EIO;
-
+        else {
+            /* Avoid endless loop */
+            action = PARSE_DONE;
+            po->ret = EIO;
+        }
     }
     else { /* Stop on error */
         if (po->last_error & INI_WARNING) {
