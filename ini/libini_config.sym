@@ -46,6 +46,7 @@ global:
     ini_config_destroy;
     ini_config_clean_state;
     ini_config_file_open;
+    ini_config_file_from_mem;
     ini_config_file_close;
     ini_config_file_reopen;
     ini_config_file_destroy;

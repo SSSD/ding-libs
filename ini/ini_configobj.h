@@ -483,6 +483,31 @@ int ini_config_file_open(const char *filename,
                          struct ini_cfgfile **file_ctx);
 
 /**
+ * @brief Create a configuration file object using memory buffer.
+ *
+ * Create a file object for parsing a configuration file.
+ * Configuration will use provided memory instead of the actual file.
+ *
+ * A "configuration file object" is different from
+ * a "configuration object". The former stores metadata
+ * about a file the configuration data is read from,
+ * while the latter holds the configuration itself.
+ *
+ * @param[in]  data_buf         In memory configuration data.
+ *                              Needs to be NULL terminated.
+ * @param[in]  data_len         Length of memory data
+ *                              not including terminating NULL.
+ * @param[out] file_ctx         Configuration file object.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
+int ini_config_file_from_mem(void *data_buf,
+                             uint32_t data_len,
+                             struct ini_cfgfile **file_ctx);
+
+/**
  * @brief Close configuration file after parsing
  *
  * Closes file but keeps the context. File can be reopened

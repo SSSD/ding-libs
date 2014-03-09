@@ -138,7 +138,7 @@ static enum index_utf_t check_bom(enum index_utf_t ind,
     return ind;
 }
 
-static int read_chunk(int raw_file, size_t left, size_t increment,
+static int read_chunk(FILE *file, size_t left, size_t increment,
                       char *position, size_t *read_num)
 {
     int error = EOK;
@@ -150,21 +150,27 @@ static int read_chunk(int raw_file, size_t left, size_t increment,
     to_read = how_much_to_read(left, increment);
 
     TRACE_INFO_NUMBER("About to read", to_read);
-    errno = 0;
-    read_cnt = read(raw_file, position, to_read);
-    if (read_cnt == -1) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to read data from file", error);
-        return error;
+
+    read_cnt = fread(position, to_read, 1, file);
+
+    TRACE_INFO_NUMBER("Read", read_cnt * to_read);
+
+    if (read_cnt == 0) {
+        error = ferror(file);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to read data from file", error);
+            return error;
+        }
+        error = feof(file);
+        if(error) {
+            TRACE_FLOW_EXIT();
+            return EOK;
+        }
+        TRACE_ERROR_NUMBER("Failed to read data from file", EIO);
+        return EIO;
     }
 
-    if (read_cnt != to_read) {
-        error = EIO;
-        TRACE_ERROR_NUMBER("Read less than required", error);
-        return error;
-    }
-
-    *read_num = read_cnt;
+    *read_num = to_read;
 
     TRACE_FLOW_EXIT();
     return error;
@@ -229,7 +235,9 @@ static int initialize_conv(unsigned char *read_buf,
 }
 
 /* Internal conversion part */
-static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
+static int common_file_convert(FILE *file,
+                               struct ini_cfgfile *file_ctx,
+                               uint32_t size)
 {
     int error = EOK;
     size_t read_cnt = 0;
@@ -249,8 +257,8 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
 
     do {
         /* print_buffer(read_buf, ICONV_BUFFER); */
-        error = read_chunk(raw_file,
-                           file_ctx->file_stats.st_size - total_read,
+        error = read_chunk(file,
+                           size - total_read,
                            ICONV_BUFFER - in_buffer,
                            read_buf + in_buffer,
                            &read_cnt);
@@ -305,9 +313,8 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
                     /* We need to just read more if we can */
                     TRACE_INFO_NUMBER("Incomplete sequence len",
                                       src - read_buf);
-                    TRACE_INFO_NUMBER("File size.",
-                                        file_ctx->file_stats.st_size);
-                    if (total_read == file_ctx->file_stats.st_size) {
+                    TRACE_INFO_NUMBER("File size.", size);
+                    if (total_read == size) {
                         /* Or return error if we can't */
                         TRACE_ERROR_NUMBER("Incomplete sequence", error);
                         iconv_close(conv);
@@ -356,7 +363,7 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
         }
         while (1);
     }
-    while (total_read < file_ctx->file_stats.st_size);
+    while (total_read < size);
 
     iconv_close(conv);
 
@@ -365,8 +372,7 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
                       (char *)simplebuffer_get_vbuf(file_ctx->file_data));
     TRACE_INFO_NUMBER("File len",
                       simplebuffer_get_len(file_ctx->file_data));
-    TRACE_INFO_NUMBER("Size",
-                      file_ctx->file_data->size);
+    TRACE_INFO_NUMBER("Size", size);
     errno = 0;
     file_ctx->file = fmemopen(simplebuffer_get_vbuf(file_ctx->file_data),
                               simplebuffer_get_len(file_ctx->file_data),
@@ -383,58 +389,99 @@ static int common_file_convert(int raw_file, struct ini_cfgfile *file_ctx)
 
 
 /* Internal common initialization part */
-static int common_file_init(struct ini_cfgfile *file_ctx)
+static int common_file_init(struct ini_cfgfile *file_ctx,
+                            void *data_buf,
+                            uint32_t data_len)
 {
     int error = EOK;
-    int raw_file = 0;
+    FILE *file = NULL;
     int stat_ret = 0;
+    uint32_t size = 0;
+    void *internal_data = NULL;
+    uint32_t internal_len = 0;
+    unsigned char alt_buffer[2] = {0, 0};
+    uint32_t alt_buffer_len = 1;
 
     TRACE_FLOW_ENTRY();
 
-    TRACE_INFO_STRING("File", file_ctx->filename);
+    if (data_buf) {
 
-    /* Open file in binary mode first */
-    errno = 0;
-    raw_file = open(file_ctx->filename, O_RDONLY);
-    if (raw_file == -1) {
-        error = errno;
-        TRACE_ERROR_NUMBER("Failed to open file in binary mode", error);
-        return error;
+        if(data_len) {
+            internal_data = data_buf;
+            internal_len = data_len;
+        }
+        else {
+            /* If buffer is empty fmemopen will return an error.
+             * This will prevent creation of adefault config object.
+             * Instead we will use buffer that has at least one character. */
+            internal_data = alt_buffer;
+            internal_len = alt_buffer_len;
+        }
+
+        TRACE_INFO_NUMBER("Inside file_init len", internal_len);
+        TRACE_INFO_STRING("Inside file_init data:", (char *)internal_data);
+
+        file = fmemopen(internal_data, internal_len, "r");
+        if (!file) {
+            error = errno;
+            TRACE_ERROR_NUMBER("Failed to memmap file", error);
+            return error;
+        }
+        size = internal_len;
     }
+    else {
 
-    /* Get the size of the file */
-    errno = 0;
-    stat_ret = fstat(raw_file, &(file_ctx->file_stats));
-    if (stat_ret == -1) {
-        error = errno;
-        close(raw_file);
-        TRACE_ERROR_NUMBER("Failed to get file stats", error);
-        return error;
+        TRACE_INFO_STRING("File", file_ctx->filename);
+
+        /* Open file to get its size */
+        errno = 0;
+        file = fopen(file_ctx->filename, "r");
+        if (!file) {
+            error = errno;
+            TRACE_ERROR_NUMBER("Failed to open file", error);
+            return error;
+        }
+
+        /* Get the size of the file */
+        errno = 0;
+        stat_ret = fstat(fileno(file), &(file_ctx->file_stats));
+        if (stat_ret == -1) {
+            error = errno;
+            fclose(file);
+            TRACE_ERROR_NUMBER("Failed to get file stats", error);
+            return error;
+        }
+        size = file_ctx->file_stats.st_size;
     }
 
     /* Trick to overcome the fact that
      * fopen and fmemopen behave differently when file
      * is 0 length
      */
-    if (file_ctx->file_stats.st_size) {
-        error = common_file_convert(raw_file, file_ctx);
-        close(raw_file);
+    if (size) {
+        error = common_file_convert(file, file_ctx, size);
         if (error) {
             TRACE_ERROR_NUMBER("Failed to convert file",
                                 error);
+            fclose(file);
             return error;
         }
     }
     else {
+
+        TRACE_INFO_STRING("File is 0 length","");
         errno = 0;
-        file_ctx->file = fdopen(raw_file, "r");
+
+        file_ctx->file = fdopen(fileno(file), "r");
         if (!(file_ctx->file)) {
             error = errno;
-            close(raw_file);
+            fclose(file);
             TRACE_ERROR_NUMBER("Failed to fdopen file", error);
             return error;
         }
     }
+
+    fclose(file);
 
     /* Collect stats */
     if (file_ctx->metadata_flags & INI_META_STATS) {
@@ -505,7 +552,7 @@ int ini_config_file_open(const char *filename,
     }
 
     /* Do common init */
-    error = common_file_init(new_ctx);
+    error = common_file_init(new_ctx, NULL, 0);
     if(error) {
         TRACE_ERROR_NUMBER("Failed to do common init", error);
         ini_config_file_destroy(new_ctx);
@@ -516,6 +563,63 @@ int ini_config_file_open(const char *filename,
     TRACE_FLOW_EXIT();
     return error;
 }
+
+/* Create a file object from a memory buffer */
+int ini_config_file_from_mem(void *data_buf,
+                             uint32_t data_len,
+                             struct ini_cfgfile **file_ctx)
+{
+    int error = EOK;
+    struct ini_cfgfile *new_ctx = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    if ((!data_buf) || (!file_ctx)) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    /* Allocate structure */
+    new_ctx = malloc(sizeof(struct ini_cfgfile));
+    if (!new_ctx) {
+        TRACE_ERROR_NUMBER("Failed to allocate file ctx.", ENOMEM);
+        return ENOMEM;
+    }
+
+    new_ctx->filename = NULL;
+    new_ctx->file = NULL;
+    new_ctx->file_data = NULL;
+    new_ctx->metadata_flags = 0;
+
+    error = simplebuffer_alloc(&(new_ctx->file_data));
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate buffer ctx.", error);
+        ini_config_file_destroy(new_ctx);
+        return error;
+    }
+
+    /* Put an empty string into the file name */
+    new_ctx->filename = strdup("");
+    if (!(new_ctx->filename)) {
+        ini_config_file_destroy(new_ctx);
+        TRACE_ERROR_NUMBER("Failed to put empty string into filename.", ENOMEM);
+        return ENOMEM;
+    }
+
+    /* Do common init */
+    error = common_file_init(new_ctx, data_buf, data_len);
+    if(error) {
+        TRACE_ERROR_NUMBER("Failed to do common init", error);
+        ini_config_file_destroy(new_ctx);
+        return error;
+    }
+
+    *file_ctx = new_ctx;
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+
 
 /* Create a file object from existing one */
 int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
@@ -564,7 +668,7 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
     }
 
     /* Do common init */
-    error = common_file_init(new_ctx);
+    error = common_file_init(new_ctx, NULL, 0);
     if(error) {
         TRACE_ERROR_NUMBER("Failed to do common init", error);
         ini_config_file_destroy(new_ctx);
