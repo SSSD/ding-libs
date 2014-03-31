@@ -50,7 +50,8 @@ typedef int (*test_fn)(void);
 
 static int test_one_file(const char *in_filename,
                          const char *out_filename,
-                         int edge)
+                         int edge,
+                         int in_mem)
 {
     int error = EOK;
     struct ini_cfgfile *file_ctx = NULL;
@@ -60,6 +61,11 @@ static int test_one_file(const char *in_filename,
     char **error_list = NULL;
     struct simplebuffer *sbobj = NULL;
     uint32_t left = 0;
+    uint32_t stream_len = 0;
+    void *stream_data = NULL;
+    struct stat file_stats;
+    int stat_ret = 0;
+    FILE *file = NULL;
 
     INIOUT(printf("<==== Testing file %s ====>\n", in_filename));
 
@@ -70,14 +76,73 @@ static int test_one_file(const char *in_filename,
         return error;
     }
 
-    error = ini_config_file_open(in_filename,
-                                 0, /* TBD */
-                                 &file_ctx);
-    if (error) {
-        printf("Failed to open file %s for reading. Error %d.\n",
-               in_filename, error);
-        ini_config_destroy(ini_config);
-        return error;
+    if (in_mem) {
+        /* Get file stats */
+        errno = 0;
+        stat_ret = stat(in_filename, &file_stats);
+        if (stat_ret == -1) {
+            error = errno;
+            printf("Failed to get file stats. Error %d.\n", error);
+            ini_config_destroy(ini_config);
+            return error;
+        }
+        /* Allocate memory to store file */
+        errno = 0;
+        stream_len = file_stats.st_size;
+        stream_data = malloc(file_stats.st_size + 1);
+        if (!stream_data) {
+            error = errno;
+            printf("Failed to allocate memory for stream. Error %d.\n", error);
+            ini_config_destroy(ini_config);
+            return error;
+        }
+        *((unsigned char *)(stream_data) + stream_len) = '\0';
+        /* Open file */
+        errno = 0;
+        file = fopen(in_filename, "r");
+        if (!stream_data) {
+            error = errno;
+            printf("Failed to open file to prepare stream. Error %d.\n", error);
+            free(stream_data);
+            ini_config_destroy(ini_config);
+            return error;
+        }
+        /* Read file into memory */
+        errno = 0;
+        fread(stream_data, stream_len, 1, file);
+        error = ferror(file);
+        if (error) {
+            printf("Failed to read stream data. Error %d.\n", error);
+            free(stream_data);
+            fclose(file);
+            ini_config_destroy(ini_config);
+            return error;
+        }
+        fclose(file);
+
+        INIOUT(printf("Data len %u\n", stream_len));
+        INIOUT(printf("Data:\n%s\n", (char *)stream_data));
+
+        error = ini_config_file_from_mem(stream_data,
+                                         stream_len,
+                                         &file_ctx);
+        if (error) {
+            printf("Failed to open from memory. Error %d.\n", error);
+            free(stream_data);
+            ini_config_destroy(ini_config);
+            return error;
+        }
+    }
+    else {
+        error = ini_config_file_open(in_filename,
+                                     0, /* TBD */
+                                     &file_ctx);
+        if (error) {
+            printf("Failed to open file %s for reading. Error %d.\n",
+                   in_filename, error);
+            ini_config_destroy(ini_config);
+            return error;
+        }
     }
 
     error = ini_config_parse(file_ctx,
@@ -89,15 +154,29 @@ static int test_one_file(const char *in_filename,
         INIOUT(printf("Failed to parse configuration. Error %d.\n", error));
 
         if (ini_config_error_count(ini_config)) {
-            INIOUT(printf("Errors detected while parsing: %s\n",
-                   ini_config_get_filename(file_ctx)));
+            if (in_mem) {
+                INIOUT(printf("Errors detected while parsing"
+                              " configuration stored in memory: %s\n",
+                              in_filename));
+            }
+            else {
+                INIOUT(printf("Errors detected while parsing: %s\n",
+                        ini_config_get_filename(file_ctx)));
+            }
             ini_config_get_errors(ini_config, &error_list);
             INIOUT(ini_config_print_errors(stdout, error_list));
             ini_config_free_errors(error_list);
         }
-        /* We do not return here intentionally */
+        /* If we are testing memory mapped, return error */
+        if (in_mem) {
+            free(stream_data);
+            ini_config_file_destroy(file_ctx);
+            ini_config_destroy(ini_config);
+            return error;
+        }
     }
 
+    if (in_mem) free(stream_data);
     ini_config_file_destroy(file_ctx);
 
     INIOUT(col_debug_collection(ini_config->cfg, COL_TRAVERSE_DEFAULT));
@@ -200,8 +279,9 @@ static int read_save_test(void)
             snprintf(infile, PATH_MAX, "%s/ini/ini.d/%s.conf",
                     (srcdir == NULL) ? "." : srcdir, files[i]);
             snprintf(outfile, PATH_MAX, "./%s_%d.conf.out", files[i], edge);
-            error = test_one_file(infile, outfile, edge);
+            error = test_one_file(infile, outfile, edge, 0);
             INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
+            if (error) return error;
         }
         i++;
     }
@@ -210,6 +290,52 @@ static int read_save_test(void)
 
     return EOK;
 }
+
+
+/* Run tests for multiple files */
+static int read_mem_test(void)
+{
+    int error = EOK;
+    int i = 0;
+    int edge = 5;
+    char infile[PATH_MAX];
+    char outfile[PATH_MAX];
+    char *srcdir = NULL;
+    const char *files[] = { "real",
+                            "mysssd",
+                            "ipa",
+                            "test",
+                            "smerge",
+                            "real8",
+                            "real16be",
+                            "real16le",
+                            "real32be",
+                            "real32le",
+                            "symbols",
+                            "new_line",
+                            NULL };
+
+    INIOUT(printf("<==== Read mem test ====>\n"));
+
+    srcdir = getenv("srcdir");
+
+    while(files[i]) {
+        for ( edge = 15; edge < 100; edge +=25) {
+            snprintf(infile, PATH_MAX, "%s/ini/ini.d/%s.conf",
+                    (srcdir == NULL) ? "." : srcdir, files[i]);
+            snprintf(outfile, PATH_MAX, "./%s_%d.conf.mem.out", files[i], edge);
+            error = test_one_file(infile, outfile, edge, 1);
+            INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
+            if ((error) && (strncmp(files[i], "test", 4) != 0)) return error;
+        }
+        i++;
+    }
+
+    INIOUT(printf("<==== Read mem test end ====>\n"));
+
+    return EOK;
+}
+
 
 /* Run tests for multiple files */
 static int read_again_test(void)
@@ -241,7 +367,7 @@ static int read_again_test(void)
             snprintf(infile, PATH_MAX, "./%s_%d.conf.out", files[i], edge);
             snprintf(outfile, PATH_MAX, "./%s_%d.conf.2.out", files[i], edge);
 
-            error = test_one_file(infile, outfile, edge);
+            error = test_one_file(infile, outfile, edge, 0);
             INIOUT(printf("Test for file: %s returned %d\n", files[i], error));
             if (error) break;
             snprintf(command, PATH_MAX * 3, "diff -q %s %s", infile, outfile);
@@ -3058,6 +3184,7 @@ int main(int argc, char *argv[])
     int error = 0;
     test_fn tests[] = { read_save_test,
                         read_again_test,
+                        read_mem_test,
                         merge_values_test,
                         merge_section_test,
                         merge_file_test,
