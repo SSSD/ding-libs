@@ -1,4 +1,4 @@
-INI_CONFIG_1.0.0 {
+INI_CONFIG_1.1.0 {
 global:
     /* ini_config.h */
     config_from_file;

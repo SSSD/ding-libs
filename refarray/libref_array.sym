@@ -18,7 +18,7 @@ local:
     *;
 };
 
-REF_ARRAY_0.1.3 {
+REF_ARRAY_0.1.4 {
 global:
     ref_array_copy;
 } REF_ARRAY_0.1.1;
