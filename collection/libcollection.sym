@@ -1,8 +1,9 @@
-COLLECTION_0.6.0 {
+COLLECTION_0.6.2 {
 global:
     /* collection.h */
     col_create_collection;
     col_destroy_collection;
+    col_destroy_collection_with_cb;
     col_copy_collection_with_cb;
     col_copy_collection;
     col_add_collection_to_collection;
@@ -142,9 +143,3 @@ global:
 local:
     *;
 };
-
-COLLECTION_0.6.2 {
-global:
-    /* collection.h */
-    col_destroy_collection_with_cb;
-} COLLECTION_0.6.0;

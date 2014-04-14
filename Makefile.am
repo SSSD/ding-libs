@@ -65,7 +65,7 @@ dist_include_HEADERS += path_utils/path_utils.h
 libpath_utils_la_SOURCES = path_utils/path_utils.c
 libpath_utils_la_DEPENDENCIES = path_utils/libpath_utils.sym
 libpath_utils_la_LDFLAGS = \
-    -version-info 1:0:0 \
+    -version-info 1:1:0 \
     -Wl,--version-script=$(top_srcdir)/path_utils/libpath_utils.sym
 
 if HAVE_CHECK
@@ -100,7 +100,7 @@ dist_include_HEADERS += dhash/dhash.h
 libdhash_la_SOURCES = dhash/dhash.c
 libdhash_la_DEPENDENCIES = dhash/libdhash.sym
 libdhash_la_LDFLAGS = \
-    -version-info 1:1:0 \
+    -version-info 1:2:0 \
     -Wl,--version-script=$(top_srcdir)/dhash/libdhash.sym
 
 check_PROGRAMS += dhash_test dhash_example
@@ -142,7 +142,7 @@ libcollection_la_SOURCES = \
     trace/trace.h
 libcollection_la_DEPENDENCIES = collection/libcollection.sym
 libcollection_la_LDFLAGS = \
-    -version-info 3:0:1 \
+    -version-info 4:0:0 \
     -Wl,--version-script=$(top_srcdir)/collection/libcollection.sym
 
 check_PROGRAMS += \
@@ -180,7 +180,7 @@ libref_array_la_SOURCES = \
     trace/trace.h
 libref_array_la_DEPENDENCIES = refarray/libref_array.sym
 libref_array_la_LDFLAGS = \
-    -version-info 2:0:1 \
+    -version-info 3:0:2 \
     -Wl,--version-script=$(top_srcdir)/refarray/libref_array.sym
 
 check_PROGRAMS += ref_array_ut
@@ -209,7 +209,7 @@ libbasicobjects_la_SOURCES = \
     trace/trace.h
 libbasicobjects_la_DEPENDENCIES = basicobjects/libbasicobjects.sym
 libbasicobjects_la_LDFLAGS = \
-    -version-info 0:0:0 \
+    -version-info 1:0:1 \
     -Wl,--version-script=$(top_srcdir)/basicobjects/libbasicobjects.sym
 
 check_PROGRAMS += simplebuffer_ut
@@ -263,7 +263,7 @@ libini_config_la_LIBADD = \
     libref_array.la \
     libbasicobjects.la
 libini_config_la_LDFLAGS = \
-    -version-info 4:0:1 \
+    -version-info 5:0:0 \
     -Wl,--version-script=$(top_srcdir)/ini/libini_config.sym
 
 dist_noinst_DATA += \
