@@ -173,8 +173,8 @@ and serialization
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libcollection.so.3
-%{_libdir}/libcollection.so.3.0.0
+%{_libdir}/libcollection.so.4
+%{_libdir}/libcollection.so.4.0.0
 
 %files -n libcollection-devel
 %defattr(-,root,root,-)
@@ -302,8 +302,8 @@ structure
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libini_config.so.4
-%{_libdir}/libini_config.so.4.0.0
+%{_libdir}/libini_config.so.5
+%{_libdir}/libini_config.so.5.0.0
 
 %files -n libini_config-devel
 %defattr(-,root,root,-)
