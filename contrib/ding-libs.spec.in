@@ -138,7 +138,7 @@ time properties
 %{_libdir}/libdhash.so
 %{_libdir}/pkgconfig/dhash.pc
 %doc dhash/README.dhash
-%doc dhash/examples/
+%doc dhash/examples/*.c
 
 
 ##############################################################################
