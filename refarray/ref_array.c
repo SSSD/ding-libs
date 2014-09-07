@@ -548,6 +548,11 @@ void ref_array_debug(struct ref_array *ra, int num)
 {
     int i,j;
 
+    if (!ra) {
+        printf("\nARRAY is NULL\n");
+        return;
+    }
+
     printf("\nARRAY DUMP START\n");
     printf("Length = %u\n", ra->len);
     printf("Size = %u\n", ra->size);
