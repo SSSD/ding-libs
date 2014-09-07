@@ -705,14 +705,13 @@ const struct stat *ini_config_get_stat(struct ini_cfgfile *file_ctx)
     return ret;
 }
 
-
 /* Check access */
-int ini_config_access_check(struct ini_cfgfile *file_ctx,
-                            uint32_t flags,
-                            uid_t uid,
-                            gid_t gid,
-                            mode_t mode,
-                            mode_t mask)
+int access_check_int(struct stat *file_stats,
+                     uint32_t flags,
+                     uid_t uid,
+                     gid_t gid,
+                     mode_t mode,
+                     mode_t mask)
 {
     mode_t st_mode;
 
@@ -722,13 +721,8 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
              INI_ACCESS_CHECK_GID |
              INI_ACCESS_CHECK_UID;
 
-    if ((file_ctx == NULL) || (flags == 0)) {
+    if (flags == 0) {
         TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
-        return EINVAL;
-    }
-
-    if (file_ctx->stats_read == 0) {
-        TRACE_ERROR_NUMBER("Stats were not collected.", EINVAL);
         return EINVAL;
     }
 
@@ -736,9 +730,9 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
     if (flags & INI_ACCESS_CHECK_MODE) {
 
         TRACE_INFO_NUMBER("File mode as saved.",
-                          file_ctx->file_stats.st_mode);
+                          file_stats->st_mode);
 
-        st_mode = file_ctx->file_stats.st_mode;
+        st_mode = file_stats->st_mode;
         st_mode &= S_IRWXU | S_IRWXG | S_IRWXO;
         TRACE_INFO_NUMBER("File mode adjusted.", st_mode);
 
@@ -761,8 +755,8 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
 
     /* Check uid */
     if (flags & INI_ACCESS_CHECK_UID) {
-        if (file_ctx->file_stats.st_uid != uid) {
-            TRACE_ERROR_NUMBER("GID:", file_ctx->file_stats.st_uid);
+        if (file_stats->st_uid != uid) {
+            TRACE_ERROR_NUMBER("GID:", file_stats->st_uid);
             TRACE_ERROR_NUMBER("GID passed in.", uid);
             TRACE_ERROR_NUMBER("Access denied.", EACCES);
             return EACCES;
@@ -771,8 +765,8 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
 
     /* Check gid */
     if (flags & INI_ACCESS_CHECK_GID) {
-        if (file_ctx->file_stats.st_gid != gid) {
-            TRACE_ERROR_NUMBER("GID:", file_ctx->file_stats.st_gid);
+        if (file_stats->st_gid != gid) {
+            TRACE_ERROR_NUMBER("GID:", file_stats->st_gid);
             TRACE_ERROR_NUMBER("GID passed in.", gid);
             TRACE_ERROR_NUMBER("Access denied.", EACCES);
             return EACCES;
@@ -781,6 +775,40 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
 
     TRACE_FLOW_EXIT();
     return EOK;
+
+}
+
+/* Check access */
+int ini_config_access_check(struct ini_cfgfile *file_ctx,
+                            uint32_t flags,
+                            uid_t uid,
+                            gid_t gid,
+                            mode_t mode,
+                            mode_t mask)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    if (file_ctx == NULL) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    if (file_ctx->stats_read == 0) {
+        TRACE_ERROR_NUMBER("Stats were not collected.", EINVAL);
+        return EINVAL;
+    }
+
+    error =  access_check_int(&(file_ctx->file_stats),
+                              flags,
+                              uid,
+                              gid,
+                              mode,
+                              mask);
+
+    TRACE_FLOW_EXIT();
+    return error;
 
 }
 
