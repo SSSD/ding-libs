@@ -99,6 +99,13 @@ int valid_collision_flags(uint32_t collision_flags);
 /* Empty section */
 int empty_section(struct collection_item *sec);
 
+/* Internal access check function */
+int access_check_int(struct stat *file_stats,
+                     uint32_t flags,
+                     uid_t uid,
+                     gid_t gid,
+                     mode_t mode,
+                     mode_t mask);
 
 
 #endif
