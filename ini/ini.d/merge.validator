@@ -1,0 +1,60 @@
+File merge.validator did not match provided patterns. Skipping.
+File real8.conf did not match provided patterns. Skipping.
+File new_line.conf did not match provided patterns. Skipping.
+File real32be.conf did not match provided patterns. Skipping.
+File real32le.conf did not match provided patterns. Skipping.
+File real16be.conf did not match provided patterns. Skipping.
+File real16le.conf did not match provided patterns. Skipping.
+File foo.conf.in did not match provided patterns. Skipping.
+Errors detected while parsing: %s%s/comment.conf.
+Error (9) on line 22: Invalid space character at the beginning of the line.
+Error (9) on line 24: Invalid space character at the beginning of the line.
+Error (9) on line 26: Invalid space character at the beginning of the line.
+Error (15) on line 32: Incomplete comment at the end of the file.
+No sections found in file %s%s/comment.conf. Skipping.
+Section [section_a] found in file %s%s/first.conf is not allowed.
+Section [section_c] found in file %s%s/first.conf is not allowed.
+Section [section_b] found in file %s%s/first.conf is not allowed.
+File %s%s/first.conf contains sections that are not allowed. Skipping.
+Section [section_a] found in file %s%s/mergecheck.conf is not allowed.
+Section [section_c] found in file %s%s/mergecheck.conf is not allowed.
+Section [section_b] found in file %s%s/mergecheck.conf is not allowed.
+Section [section_d] found in file %s%s/mergecheck.conf is not allowed.
+File %s%s/mergecheck.conf contains sections that are not allowed. Skipping.
+Section [service] found in file %s%s/mysssd.conf is not allowed.
+Section [sssd] found in file %s%s/mysssd.conf is not allowed.
+Section [nss] found in file %s%s/mysssd.conf is not allowed.
+Section [pam] found in file %s%s/mysssd.conf is not allowed.
+Section [domain] found in file %s%s/mysssd.conf is not allowed.
+File %s%s/mysssd.conf contains sections that are not allowed. Skipping.
+Section [section_a] found in file %s%s/second.conf is not allowed.
+Section [section_b] found in file %s%s/second.conf is not allowed.
+Section [section_d] found in file %s%s/second.conf is not allowed.
+File %s%s/second.conf contains sections that are not allowed. Skipping.
+Section [section1] found in file %s%s/sexpect.conf is not allowed.
+Section [section2] found in file %s%s/sexpect.conf is not allowed.
+File %s%s/sexpect.conf contains sections that are not allowed. Skipping.
+Section [section1] found in file %s%s/smerge.conf is not allowed.
+Section [section2] found in file %s%s/smerge.conf is not allowed.
+File %s%s/smerge.conf contains sections that are not allowed. Skipping.
+Errors detected while parsing: %s%s/space.conf.
+Error (9) on line 1: Invalid space character at the beginning of the line.
+Error (9) on line 2: Invalid space character at the beginning of the line.
+Error (9) on line 3: Invalid space character at the beginning of the line.
+Error (9) on line 4: Invalid space character at the beginning of the line.
+No sections found in file %s%s/space.conf. Skipping.
+Section [info] found in file %s%s/symbols.conf is not allowed.
+Section [languages] found in file %s%s/symbols.conf is not allowed.
+Section [text] found in file %s%s/symbols.conf is not allowed.
+File %s%s/symbols.conf contains sections that are not allowed. Skipping.
+Errors detected while parsing: %s%s/test.conf.
+Error (9) on line 11: Invalid space character at the beginning of the line.
+Error (9) on line 12: Invalid space character at the beginning of the line.
+Error (9) on line 14: Invalid space character at the beginning of the line.
+Error (9) on line 15: Invalid space character at the beginning of the line.
+Error (9) on line 16: Invalid space character at the beginning of the line.
+Error (9) on line 26: Invalid space character at the beginning of the line.
+Error (9) on line 35: Invalid space character at the beginning of the line.
+No sections found in file %s%s/test.conf. Skipping.
+%s%s/ipa.conf
+%s%s/real.conf

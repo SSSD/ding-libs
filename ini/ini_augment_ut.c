@@ -189,7 +189,6 @@ int print_list_to_file(struct ref_array *list,
 static int basic_test(void)
 {
     int error = EOK;
-    int error1 = EOK;
     char indir[PATH_MAX];
     char srcname[PATH_MAX];
     char filename[PATH_MAX];
@@ -238,8 +237,8 @@ static int basic_test(void)
 
     /* When run in dev environment there can be some temp files which
      * we need to clean. */
-    snprintf(command, PATH_MAX * 3, "rm %s/*~", indir);
-    system(command);
+    snprintf(command, PATH_MAX * 3, "rm %s/*~ > /dev/null 2>&1", indir);
+    (void)system(command);
 
     /* Make the file path independent */
     snprintf(srcname, PATH_MAX, "%s/ini/ini.d/merge.validator",
@@ -291,12 +290,50 @@ static int basic_test(void)
     }
     else INIOUT(col_debug_collection(result_cfg->cfg, COL_TRAVERSE_DEFAULT));
 
-    error = print_list_to_file(error_list, "merge.validator.out", "w");
-    error1 = print_list_to_file(success_list, "merge.validator.out", "a");
-    /* Save error */
-    if ((error1 !=0) && (error == 0)) error = error1;
+    /* Print results to file */
+    if ((print_list_to_file(error_list, resname, "w")) ||
+        (print_list_to_file(success_list, resname, "a"))) {
+        printf("Failed to save results in %s.\n",  resname);
+        ref_array_destroy(error_list);
+        ref_array_destroy(success_list);
+        ini_config_destroy(in_cfg);
+        ini_config_destroy(result_cfg);
+        return -1;
+    }
 
-    snprintf(command, PATH_MAX * 3, "diff -q %s %s", filename, resname);
+    /* NOTE: The order of the scanning of the files in the ini.d directory
+     * is not predicatble so before comparing the results we have to sort
+     * them since otherwise the projected output and real output might
+     * not match.
+     */
+
+    snprintf(command, PATH_MAX * 3, "sort %s > %s2", filename, filename);
+    error = system(command);
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run first sort command %d %d.\n",  error,
+               WEXITSTATUS(error));
+        ref_array_destroy(error_list);
+        ref_array_destroy(success_list);
+        ini_config_destroy(in_cfg);
+        ini_config_destroy(result_cfg);
+        return -1;
+    }
+
+    snprintf(command, PATH_MAX * 3, "sort %s > %s2", resname, resname);
+    error = system(command);
+    error = system(command);
+    if ((error) || (WEXITSTATUS(error))) {
+        printf("Failed to run second sort command %d %d.\n",  error,
+               WEXITSTATUS(error));
+        ref_array_destroy(error_list);
+        ref_array_destroy(success_list);
+        ini_config_destroy(in_cfg);
+        ini_config_destroy(result_cfg);
+        return -1;
+    }
+
+
+    snprintf(command, PATH_MAX * 3, "diff -q %s2 %s2", filename, resname);
     error = system(command);
     INIOUT(printf("Comparison of %s %s returned: %d\n",
                   filename, resname, error));
