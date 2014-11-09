@@ -736,3 +736,62 @@ void ini_comment_print(struct ini_comment *ic, FILE *file)
 
     TRACE_FLOW_EXIT();
 }
+
+/* Construct a comment out of array or strings. */
+int ini_comment_construct(const char *comments[],
+                          size_t count_comment,
+                          struct ini_comment **ic)
+{
+    int error = EOK;
+    size_t cnt = 0;
+    struct ini_comment *new_ic = NULL;
+
+    TRACE_FLOW_ENTRY();
+    if (!ic) {
+        TRACE_ERROR_STRING("Invalid argument","comment object");
+        return EINVAL;
+    }
+
+    if (comments) {
+        error =  ini_comment_create(&new_ic);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to create comment object",
+                               error);
+            return error;
+        }
+
+        if (count_comment) {
+            /* Base the number of lines on count */
+            for (cnt = 0; cnt < count_comment; cnt++) {
+                error = ini_comment_append(new_ic, comments[cnt]);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to append comment in for loop.",
+                                       error);
+                    ini_comment_destroy(new_ic);
+                    return error;
+                }
+            }
+        }
+        else {
+            /* Assume that the list is NULL terminated */
+            while (comments[cnt]) {
+                error = ini_comment_append(new_ic, comments[cnt]);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to append comment in for loop.",
+                                       error);
+                    ini_comment_destroy(new_ic);
+                    return error;
+                }
+                cnt++;
+            }
+        }
+        *ic = new_ic;
+    }
+    else {
+        /* No comments! */
+        *ic = NULL;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}

@@ -59,6 +59,43 @@ static int file_test(void)
     return error;
 }
 
+static int construct_test(void)
+{
+    int error = EOK;
+    struct ini_comment *ic = NULL;
+    const char *comments[] = { ";Line1", ";Line2", ";Line3", NULL };
+
+    error = ini_comment_construct(comments,
+                                  0,
+                                  &ic);
+    if (error) {
+        printf("Failed to create comment object %d\n",
+               error);
+        return error;
+    }
+
+    INIOUT(printf("<==== Constructed Comment 1 ====>\n"));
+    INIOUT(ini_comment_print(ic, stdout));
+    INIOUT(printf("<=================>\n"));
+    ini_comment_destroy(ic);
+
+    error = ini_comment_construct(comments,
+                                  2,
+                                  &ic);
+    if (error) {
+        printf("Failed to create comment object %d\n",
+               error);
+        return error;
+    }
+
+    INIOUT(printf("<==== Constructed Comment 2 ====>\n"));
+    INIOUT(ini_comment_print(ic, stdout));
+    INIOUT(printf("<=================>\n"));
+    ini_comment_destroy(ic);
+
+    return error;
+}
+
 
 static int alter_test(void)
 {
@@ -365,6 +402,7 @@ int main(int argc, char *argv[])
                         alter_test,
                         copy_test,
                         add_test,
+                        construct_test,
                         NULL };
     test_fn t;
     int i = 0;

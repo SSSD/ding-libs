@@ -141,5 +141,8 @@ INI_CONFIG_1.2.0 {
 global:
     /* ini_configobj.h */
     ini_config_augment;
+
+    /* ini_comment.h */
+    ini_comment_construct;
 } INI_CONFIG_1.1.0;
 

@@ -38,6 +38,19 @@ struct ini_comment;
 int ini_comment_create(struct ini_comment **ic);
 
 /**
+ * Construct a comment out of array or strings.
+ *
+ * If count is 0 then the array of strings must
+ * be NULL terminated i.e. last entry in the array
+ * should point to a NULL string.
+ * If it is not NULL it specifies the number of
+ * strings expected to be in the array.
+ */
+int ini_comment_construct(const char **comments,
+                          size_t count_comment,
+                          struct ini_comment **ic);
+
+/**
  * Destroy the comment object
  */
 void ini_comment_destroy(struct ini_comment *ic);
