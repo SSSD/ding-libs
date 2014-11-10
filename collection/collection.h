@@ -801,6 +801,56 @@ int col_get_item(struct collection_item *ci,
                  struct collection_item **item);
 
 /**
+ * @brief Search function to get one of the duplicate items.
+ *
+ * Convenience function to get an individual item out of the list of duplicates.
+ * Caller should be aware that this is not a copy of the item
+ * but the pointer to actual item stored in the collection.
+ * The returned pointer should never be altered or freed by caller
+ * of the function.
+ * The caller should be sure that the collection does not go out of scope
+ * while the pointer to its data is in use.
+ * Working with the internals of the collection item structure directly
+ * may cause problems in future if the internal implementation changes.
+ * If collection to search or property to find is NULL function returns NULL.
+ *
+ * Use \ref getitem "item management" functions to work with the item.
+ *
+ * @param[in]  ci               Collection object to traverse.
+ * @param[in]  subcollection    Name of the sub collection to find
+ *                              item in. If NULL, the top level collection
+ *                              is used. One can use "foo!bar!baz"
+ *                              notation to identify the sub collection.
+ * @param[in]  property_to_find Name of the property to find.
+ * @param[in]  type             Type filter. Only properties
+ *                              of the given type will match.
+ *                              Can be 0 to indicate that all
+ *                              types should be evaluated.
+ * @param[in]  idx              Index of the duplicate to find.
+ *                              0 - any first instance
+ *                              positive - N-th instance (index is 0-based)
+ *                              negative - last instance
+ * @param[in]  exact            If 0 then if index above is greater than
+ *                              actual number of duplicates the last duplicate
+ *                              if be returned.
+ *                              If non-zero the funtion will return ENOENT
+ *                              in case the index is greater than actual
+ *                              number of duplicates.
+ * @param[out]  item            Pointer to found item or NULL
+ *                              if item is not found.
+ * @return 0                    No errors.
+ * @return EINVAL               Invalid argument.
+ * @return ENOENT               Item is not found.
+ */
+int col_get_dup_item(struct collection_item *ci,
+                     const char *subcollection,
+                     const char *property_to_find,
+                     int type,
+                     int idx,
+                     int exact,
+                     struct collection_item **item);
+
+/**
  * @brief Sort collection.
  *
  * If the sub collections are included in sorting
@@ -2313,6 +2363,56 @@ int col_update_property(struct collection_item *ci,
  *
  */
 #define COL_DSP_NDUP            7
+/**
+ * @brief Use last among nonsequential duplicates
+ *
+ * This mode applies to the list of duplicates that might be scattered
+ * across the collection
+ *
+ * For "insert":
+ * - Add property as the last dup of the given property.
+ *   The property name is taken from the item
+ *   and the value refprop is ignored.
+ *
+ * For "extract" or "delete":
+ * - Delete or extract the last duplicate of the property.
+ *   The property name is taken from the refprop.
+ *   Extracts or deletes last duplicate property in the uninterrupted
+ *   sequence of properties with the same name.
+ *   The property will be extracted or deleted if found
+ *   regardless of whether there are any duplicates or not.
+ */
+#define COL_DSP_LASTDUPNS        8
+/**
+ * @brief Use N-th among nonsequential duplicates
+ *
+ * This mode applies only to the list of duplicate
+ * properties that are going one after another.
+ *
+ * For "insert":
+ * - Add property as a N-th dup of the given property.
+ *   The property name is taken from the item
+ *   and the value refprop is ignored.
+ *   Index is zero based.
+ *   The COL_DSP_NDUPNS is used in case of the multi value property
+ *   to add a new property with the same name into specific place
+ *   in the list of properties with the same name.
+ *   The index of 0 will mean to add the property before the first
+ *   instance of the property with the same name.
+ *   If the property does not exist ENOENT will be returned.
+ *   If the index is greater than the last property with the same
+ *   name the item will be added immediately after last
+ *   property with the same name.
+ *
+ * For "extract" or "delete":
+ * - Delete or extract N-th duplicate property.
+ *   Index is zero based.
+ *   The property name is taken from the refprop.
+ *   If index is greater than number of duplicate
+ *   properties in the sequence ENOENT is returned.
+ *
+ */
+#define COL_DSP_NDUPNS           9
 /**
  * @}
  */

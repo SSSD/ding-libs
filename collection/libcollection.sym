@@ -143,3 +143,9 @@ global:
 local:
     *;
 };
+
+COLLECTION_0.7 {
+global:
+    /* collection.h */
+    col_get_dup_item;
+} COLLECTION_0.6.2;

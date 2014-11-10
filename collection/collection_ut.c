@@ -37,6 +37,82 @@ int verbose = 0;
         if (verbose) foo; \
     } while(0)
 
+static int dup_test(void)
+{
+    int error = EOK;
+    struct collection_item *dup = NULL;
+    struct collection_item *item = NULL;
+    int i;
+    const char *results[] = { "value5",
+                              "value5",
+                              "value0",
+                              "value1",
+                              "value2",
+                              "value3",
+                              "value4",
+                              "value5" };
+
+    TRACE_FLOW_ENTRY();
+
+    COLOUT(printf("\n\nDUP TEST!!!.\n\n\n"));
+    COLOUT(printf("Creating DUP collection.\n"));
+
+    if ((error = col_create_collection(&dup, "dup", 0)) ||
+        (error = col_add_str_property(dup, NULL, "key", "value0", 0)) ||
+        (error = col_add_str_property(dup, NULL, "key", "value1", 0)) ||
+        (error = col_add_str_property(dup, NULL, "key", "value2", 0)) ||
+        (error = col_add_str_property(dup, NULL, "foo", "bar", 0)) ||
+        (error = col_add_str_property(dup, NULL, "key", "value3", 0)) ||
+        (error = col_add_str_property(dup, NULL, "key", "value4", 0)) ||
+        (error = col_add_str_property(dup, NULL, "key", "value5", 0))) {
+        printf("Failed to add property. Error %d\n", error);
+        col_destroy_collection(dup);
+        return error;
+    }
+
+    COLOUT(col_debug_collection(dup, COL_TRAVERSE_DEFAULT));
+
+    if (!col_get_dup_item(NULL, NULL, "key", COL_TYPE_ANY, 10000, 0, &item) ||
+        !col_get_dup_item(dup, NULL, NULL, COL_TYPE_ANY, 10000, 0, &item) ||
+        !col_get_dup_item(dup, NULL, "key", COL_TYPE_ANY, 10000, 1, &item) ||
+        !col_get_dup_item(dup, NULL, "key", COL_TYPE_STRING, 0, 1, NULL)) {
+        /* Expected error but did not get it */
+        printf("Expected error but got success.\n");
+        col_destroy_collection(dup);
+        return EINVAL;
+    }
+
+    for (i = 0; i < 6; i++) {
+        error = col_get_dup_item(dup, NULL, "key",
+                                 COL_TYPE_STRING, i, 1, &item);
+        if (error) {
+            printf("Search returned error %d.\n", error);
+            col_destroy_collection(dup);
+            return error;
+        }
+
+        if (!item) {
+            printf("Item should be found - but in reality is NULL.\n");
+            col_destroy_collection(dup);
+            return EINVAL;
+        }
+
+        if (strcmp((char *)col_get_item_data(item), results[i+2]) != 0) {
+            printf("Expected %s got %s.\n", results[i+2],
+                   (char *)col_get_item_data(item));
+            col_destroy_collection(dup);
+            return EINVAL;
+        }
+    }
+
+    col_destroy_collection(dup);
+
+    TRACE_FLOW_EXIT();
+
+    COLOUT(printf("\n\nEND OF DUP TEST!!!.\n\n\n"));
+
+    return EOK;
+}
 
 
 static int ref_collection_test(void)
@@ -1340,6 +1416,82 @@ static int iterator_test(void)
     return EOK;
 }
 
+static int validate_collection(struct collection_item *col,
+                               const char *varray[][2])
+{
+    struct collection_iterator *iterator = NULL;
+    int error = EOK;
+    struct collection_item *item = NULL;
+    int count = -1;
+
+    COLOUT(printf("\n\n==== Validating collection ====\n\n"));
+
+    /* Bind iterator */
+    error =  col_bind_iterator(&iterator, col, COL_TRAVERSE_DEFAULT);
+    if (error) {
+        COLOUT(printf("Error (bind): %d\n", error));
+        return error;
+    }
+
+    do {
+
+        count++;
+
+        /* Loop through a collection */
+        error = col_iterate_collection(iterator, &item);
+        if (error) {
+            COLOUT(printf("Error (iterate): %d\n", error));
+            col_unbind_iterator(iterator);
+            return error;
+        }
+
+        /* Are we done ? */
+        if (item == NULL) break;
+
+        /* Set count when we skip header */
+        if (col_get_item_type(item) == COL_TYPE_COLLECTION) {
+            count = -1;
+            continue;
+        }
+
+        if (varray[count][0] == NULL) {
+            /* We have reached the end of the array but not the collection.
+             * This means the test failed. Return error.
+             */
+            COLOUT(printf("Got extra item in the collection: %s=%s\n",
+                          col_get_item_property(item, NULL),
+                          (char *)(col_get_item_data(item))));
+            col_unbind_iterator(iterator);
+            return -1;
+        }
+
+        if ((strcmp(col_get_item_property(item, NULL),
+                    varray[count][0]) != 0) ||
+            (strcmp((char *)(col_get_item_data(item)),
+                    varray[count][1]) != 0 )) {
+                COLOUT(printf("Expected %s=\"%s\" got %s=\"%s\" \n",
+                              varray[count][0],
+                              varray[count][1],
+                              col_get_item_property(item, NULL),
+                              (char *)(col_get_item_data(item))));
+                col_unbind_iterator(iterator);
+                return -1;
+        }
+    }
+    while(1);
+
+    col_unbind_iterator(iterator);
+
+    if (varray[count][0] != NULL) {
+        COLOUT(printf("Expected end got %s=\"%s\"\n", varray[count][0],
+                                                      varray[count][1]));
+        return -1;
+    }
+
+    COLOUT(printf("\n\n==== Validating collection - OK ====\n\n"));
+    return EOK;
+}
+
 
 static int insert_extract_test(void)
 {
@@ -1347,6 +1499,34 @@ static int insert_extract_test(void)
     struct collection_item *col2;
     int error = EOK;
     struct collection_item *item = NULL;
+    const char *varray1[][2] = { { "property_-1", "value_-1" },
+                           { "property0", "value0lastdup" },
+                           { "property0_5", "value0_5" },
+                           { "property1", "value1update" },
+                           { "second", "second" },
+                           { "property1_5", "value1_5" },
+                           { "property2", "value2" },
+                           { "property10", "value10" },
+                           { "property10", "value10lastdup" },
+                           { "property_-2", "value-2moved_to_bottom" },
+                           { "property0", "extra_1" },
+                           { "property100", "value100" },
+                           { NULL, NULL } };
+
+    const char *varray2[][2] = { { "property_-1_5","value_-1_5" },
+                           { "property1_6", "value_1_6_moved_to_front" },
+                           { "property0", "very_last" },
+                           { "property10", "value10dup" },
+                           { "property_-0_5", "value_-0_5" },
+                           { "property0", "value0firstdupupdate" },
+                           { "property0", "value0" },
+                           { "property0", "before 0_5" },
+                           { "property0", "value0middledup" },
+                           { "property0", "extra_2" },
+                           { "property0", "after_extra2" },
+                           { "property0", "before_extra2" },
+                           { NULL, NULL } };
+
 
     COLOUT(printf("\n\n==== INSERTION TEST ====\n\n"));
 
@@ -1398,13 +1578,15 @@ static int insert_extract_test(void)
                                          "property0", "value0middledup", 0)) ||
         (error = col_insert_str_property(col, NULL, 0,
                                          NULL, 0, COL_INSERT_DUPOVER ,
-                                         "property0", "value0firstdupupdate", 0)) ||
+                                         "property0",
+                                         "value0firstdupupdate", 0)) ||
         (error = col_insert_str_property(col, NULL, 0,
                                          NULL, 0, COL_INSERT_DUPOVERT,
                                          "property1", "value1update", 0)) ||
         ((error = col_insert_str_property(col, NULL, 0,
                                           NULL, 0, COL_INSERT_DUPERROR,
-                                          "property0", "does not matter", 0)) != EEXIST) ||
+                                          "property0",
+                                          "does not matter", 0)) != EEXIST) ||
          (error = col_insert_str_property(col, NULL, COL_DSP_NDUP,
                                           NULL, 5, COL_INSERT_NOCHECK,
                                           "property10", "value10dup", 0)) ||
@@ -1413,12 +1595,32 @@ static int insert_extract_test(void)
                                           "property10", "value10lastdup", 0)) ||
          (error = col_insert_str_property(col, NULL, COL_DSP_END,
                                           NULL, 0, COL_INSERT_DUPMOVET,
-                                          "property_-2", "value-2moved_to_bottom", 0)) ||
+                                          "property_-2",
+                                          "value-2moved_to_bottom", 0)) ||
          (error = col_insert_str_property(col, NULL, COL_DSP_FRONT,
                                           NULL, 0, COL_INSERT_DUPMOVE,
-                                          "property1_6", "value_1_6_moved_moved_to_front", 0))) {
+                                          "property1_6",
+                                          "value_1_6_moved_to_front", 0)) ||
+         (error = col_insert_str_property(col, NULL, COL_DSP_END,
+                                          NULL, 0, COL_INSERT_NOCHECK,
+                                          "property0", "extra_1", 0)) ||
+         (error = col_insert_str_property(col, NULL, COL_DSP_END,
+                                          NULL, 0, COL_INSERT_NOCHECK,
+                                         "property0", "extra_2", 0)) ||
+         (error = col_insert_str_property(col, NULL, COL_DSP_NDUP,
+                                          "property0", 10, COL_INSERT_NOCHECK,
+                                          "property0", "before 0_5", 0)) ||
+         (error = col_insert_str_property(col, NULL, COL_DSP_NDUPNS,
+                                          "property0", 10, COL_INSERT_NOCHECK,
+                                          "property0", "after_extra2", 0)) ||
+         (error = col_insert_str_property(col, NULL, COL_DSP_NDUPNS,
+                                          "property0", 6, COL_INSERT_NOCHECK,
+                                          "property0", "before_extra2", 0)) ||
+         (error = col_insert_str_property(col, NULL, COL_DSP_LASTDUPNS,
+                                          "property0", 0, COL_INSERT_NOCHECK,
+                                          "property0", "very_last", 0))) {
 
-        printf("ERROR in the ITERATION TEST\n");
+        printf("ERROR in the ITERATION TEST %d\n", error);
         col_debug_collection(col, COL_TRAVERSE_DEFAULT);
         col_destroy_collection(col);
         return error;
@@ -1432,81 +1634,165 @@ static int insert_extract_test(void)
 
     if ((error = col_create_collection(&col2, "extraction", 0)) ||
 
+        /* Extracting "property 1_6" value "value_1_6_moved_to_front" */
         (error = col_extract_item(col, NULL, COL_DSP_FRONT,
                                   NULL, 0, 0, &item)) ||
 
         (error = col_insert_item(col2, NULL, item, COL_DSP_FRONT,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        /* Extracting "property_-1_5" value "value_-1_5" */
         (error = col_extract_item(col, NULL, COL_DSP_FRONT,
                                   NULL, 0, 0, &item)) ||
 
+        /* Putting it in front */
         (error = col_insert_item(col2, NULL, item, COL_DSP_FRONT,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        /* Extracting "property0" value "very_last" */
         (error = col_extract_item(col, NULL, COL_DSP_END,
                                   NULL, 0, 0, &item)) ||
 
+        /* Putting it to the end */
         (error = col_insert_item(col2, NULL, item, COL_DSP_END,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        /* Inserting extra property to the end of first collection */
         (error = col_insert_str_property(col, NULL, COL_DSP_INDEX,
                                          NULL, 100, COL_INSERT_NOCHECK,
                                          "property100", "value100", 0)) ||
 
+        /* This will extract "property10" with value "value10dup" */
         (error = col_extract_item(col, NULL, COL_DSP_AFTER,
                                   "property10", 0, COL_TYPE_STRING, &item)) ||
 
+        /* Putting it to the end */
         (error = col_insert_item(col2, NULL, item, COL_DSP_END,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        /* Extracting "property_-0_5" value "value_-0_5" */
         (error = col_extract_item(col, NULL, COL_DSP_BEFORE,
                                   "property0", 0, COL_TYPE_STRING, &item)) ||
 
+        /* Putting it to the end */
         (error = col_insert_item(col2, NULL, item, COL_DSP_END,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        /* Printing initial collection to see its state */
+        ((verbose) && (error = col_debug_collection(col,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
+
+        /* Going for the second item in the collection which is
+         * at this moment "property0" with value "value0firstdupupdate"
+         */
         (error = col_extract_item(col, NULL, COL_DSP_INDEX,
                                   NULL, 1, 0, &item)) ||
 
+        /* Putting it to the end */
         (error = col_insert_item(col2, NULL, item, COL_DSP_END,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        /* Extracting first sequextial duplicate of property0 whic is value
+         * "value0"
+         */
         (error = col_extract_item(col, NULL, COL_DSP_NDUP,
                                   "property0", 1, 0, &item)) ||
 
+        /* Putting it to the end */
         (error = col_insert_item(col2, NULL, item, COL_DSP_END,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        /* Extracting last sequential dup of "property0"
+         * which is at this moment "before 0_5"
+         */
         (error = col_extract_item(col, NULL, COL_DSP_LASTDUP,
                                   "property0", 0, 0, &item)) ||
 
+        /* Putting it to the end */
         (error = col_insert_item(col2, NULL, item, COL_DSP_END,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT))) ||
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
 
+        /* Extracting first dup of "property0"
+         * which is at this moment "value0middledup"
+         */
         (error = col_extract_item(col, NULL, COL_DSP_FIRSTDUP,
                                   "property0", 0, 0, &item)) ||
 
         (error = col_insert_item(col2, NULL, item, COL_DSP_END,
                                  NULL, 0, COL_INSERT_NOCHECK)) ||
 
-        ((verbose) && (error = col_debug_collection(col2, COL_TRAVERSE_DEFAULT)))) {
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
+
+        /* Printing initial collection to see its state */
+        ((verbose) && (error = col_debug_collection(col,
+                                                    COL_TRAVERSE_DEFAULT))) ||
+
+        /* Should extract extra_2 */
+        (error = col_extract_item(col, NULL, COL_DSP_NDUPNS,
+                                  "property0", 3, 0, &item)) ||
+
+        (error = col_insert_item(col2, NULL, item, COL_DSP_END,
+                                 NULL, 0, COL_INSERT_NOCHECK)) ||
+
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
+
+        /* Printing initial collection to see its state */
+        ((verbose) && (error = col_debug_collection(col,
+                                                    COL_TRAVERSE_DEFAULT))) ||
+
+        /* Try extracting something that is out of index, expect ENOENT */
+        ((error = col_extract_item(col, NULL, COL_DSP_NDUPNS,
+                                  "property0", 10, 0, &item)) != ENOENT) ||
+
+        /* Should extract after_extra_2 */
+        (error = col_extract_item(col, NULL, COL_DSP_NDUPNS,
+                                  "property0", 3, 0, &item)) ||
+
+        (error = col_insert_item(col2, NULL, item, COL_DSP_END,
+                                 NULL, 0, COL_INSERT_NOCHECK)) ||
+
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT))) ||
+
+        /* Printing initial collection to see its state */
+        ((verbose) && (error = col_debug_collection(col,
+                                                    COL_TRAVERSE_DEFAULT))) ||
+
+        /* Should extract before_extra_2 */
+        (error = col_extract_item(col, NULL, COL_DSP_LASTDUPNS,
+                                  "property0", 0, 0, &item)) ||
+
+        (error = col_insert_item(col2, NULL, item, COL_DSP_END,
+                                 NULL, 0, COL_INSERT_NOCHECK)) ||
+
+        ((verbose) && (error = col_debug_collection(col2,
+                                                    COL_TRAVERSE_DEFAULT)))) {
 
         COLOUT(printf("ERROR in the EXTRACTION TEST\n"));
         COLOUT(printf("Collection 1\n"));
@@ -1523,9 +1809,24 @@ static int insert_extract_test(void)
     COLOUT(printf("Collection 2\n"));
     COLOUT(col_debug_collection(col2, COL_TRAVERSE_DEFAULT));
 
+    error = validate_collection(col, varray1);
+    if (error) {
+        COLOUT(printf("Collection 1 validation failed.\n"));
+        col_destroy_collection(col);
+        col_destroy_collection(col2);
+        return error;
+    }
+
+    error = validate_collection(col2, varray2);
+    if (error) {
+        COLOUT(printf("Collection 2 validation failed.\n"));
+        col_destroy_collection(col);
+        col_destroy_collection(col2);
+        return error;
+    }
+
     col_destroy_collection(col2);
     col_destroy_collection(col);
-
 
     return EOK;
 }
@@ -1747,7 +2048,7 @@ static int search_test(void)
         }
         else {
             printf("Found unexpected item with NULL & 0. Error %d\n", error);
-            error = EINVAL; 
+            error = EINVAL;
         }
         return error;
     }
@@ -1765,7 +2066,7 @@ static int search_test(void)
         }
         else {
             printf("Found unexpected item with \"\" & 0. Error %d\n", error);
-            error = EINVAL; 
+            error = EINVAL;
         }
         return error;
     }
@@ -1936,6 +2237,7 @@ int main(int argc, char *argv[])
                         delete_test,
                         search_test,
                         sort_test,
+                        dup_test,
                         NULL };
     test_fn t;
     int i = 0;
