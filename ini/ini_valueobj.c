@@ -971,7 +971,7 @@ int value_put_comment(struct value_obj *vo, struct ini_comment *ic)
 
     TRACE_FLOW_ENTRY();
 
-    if ((!vo) || (!ic)) {
+    if (!vo) {
         TRACE_ERROR_NUMBER("Invalid input parameter", EINVAL);
         return EINVAL;
     }
