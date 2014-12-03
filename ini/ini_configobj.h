@@ -374,6 +374,46 @@ enum INI_GET {
  * @}
  */
 
+
+/**
+ * @defgroup augment Constants and structures related to augmentation.
+ *
+ * @{
+ */
+
+/** Structure to pass access check parameters to augmentation function.
+ *
+ * flags            Define what to check.
+ *                  One can check file
+ *                  permissions with mask,
+ *                  uid, and gid of the file.
+ * uid              Expected uid of the file.
+ * gid              Expected gid of the file.
+ * mode             Expected mode of the file.
+ * mask             Mask to use in the mode check.
+ *                  Mask is always adjusted to
+ *                  include at least S_IRWXU,
+ *                  S_IRWXG and S_IRWXO
+ */
+struct access_check {
+    uint32_t flags;
+    uid_t uid;
+    gid_t gid;
+    mode_t mode;
+    mode_t mask;
+};
+
+/** Enumeration of augmentation modes. */
+enum augmode {
+    INI_AUG_ANY   = 0, /**< Allow any augmentation. */
+    INI_AUG_ADD   = 1, /**< Allow only new sections. */
+    INI_AUG_OVER  = 2  /**< Allow section updates. */
+};
+
+/**
+ * @}
+ */
+
 /**
  * @brief Name of the default section.
  *
@@ -779,6 +819,81 @@ int ini_config_merge(struct ini_cfgobj *first,
                      struct ini_cfgobj *second,
                      uint32_t collision_flags,
                      struct ini_cfgobj **result);
+
+
+/**
+ * @brief Augment configuration
+ *
+ * Function merges the main configuration file 
+ * with the configuration file snippets 
+ * read from a specified directory.
+ *
+ * @param[in]  base_cfg         A configuration object
+ *                              that will be augmented.
+ * @param[in]  path             Path to a directory where
+ *                              configuration snippets
+ *                              will be read from.
+ * @param[in]  patterns         List of regular expressions
+ *                              that the name of a snippet file
+ *                              has to match to be considered
+ *                              for merge.
+ * @param[in]  sections         List of regular expressions
+ *                              that the section names in the snippet
+ *                              file need to match. If file contains
+ *                              sections that do not match any patterns
+ *                              the file is skipped and error is recorded.
+ * @param[in]  check_perm       Pointer to structure that
+ *                              holds criteria for the 
+ *                              access check.
+ * @param[in]  error_level      Flags that control actions
+ *                              in case of parsing error in a snippet file.
+ * @param[in]  collision_flags  These flags control how the potential
+ *                              collisions between keys and sections
+ *                              within the snippet file will be handled.
+ *                              For more information
+ *                              see collision flag definitions.
+ * @param[in]  parse_flags      Flags that control parsing process,
+ *                              for example how to handle spaces at
+ *                              the beginning of the line.
+ * @param[in]  merge_flags      Flags that control handling
+ *                              of the duplicate sections or keys
+ *                              during merging of the snippets.
+ *                              They are different from the collision flags
+ *                              because duplicate sections and keys inside
+ *                              are snippets most likely will be handled as
+ *                              'last value wins' while during merge
+ *                              the attempt to overwrite
+ *                              a specific section might be treated as
+ *                              an error.
+ * @param[out] result_cfg       A new configuration object,
+ *                              the result of the merge.
+ * @param[out] error_list       List of strings that
+ *                              contains all encountered
+ *                              errors.
+ *                              It can be NULL, in this case list of errors
+ *                              is not populated.
+ * @param[out] success_list     List of strings that
+ *                              contains file names of snippets that were
+ *                              successfully merged.
+ *                              It can be NULL, in this case list of files
+ *                              is not populated.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
+int ini_config_augment(struct ini_cfgobj *base_cfg,
+                       const char *path,
+                       const char *patterns[],
+                       const char *sections[],
+                       struct access_check *check_perm,
+                       int error_level,
+                       uint32_t collision_flags,
+                       uint32_t parse_flags,
+                       uint32_t merge_flags,
+                       struct ini_cfgobj **result_cfg,
+                       struct ref_array **error_list,
+                       struct ref_array **success_list);
 
 /**
  * @brief Set the folding boundary

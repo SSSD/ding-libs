@@ -255,6 +255,7 @@ libini_config_la_SOURCES = \
     ini/ini_get_valueobj.c \
     ini/ini_get_array_valueobj.c \
     ini/ini_list_valueobj.c \
+    ini/ini_augment.c \
     trace/trace.h
 EXTRA_libini_config_la_DEPENDENCIES = ini/libini_config.sym
 libini_config_la_LIBADD = \
@@ -286,19 +287,23 @@ dist_noinst_DATA += \
     ini/ini.d/real32be.conf \
     ini/ini.d/real32le.conf \
     ini/ini.d/symbols.conf \
-    ini/ini.d/new_line.conf
+    ini/ini.d/new_line.conf \
+    ini/ini.d/merge.validator
 
 check_PROGRAMS += \
     ini_config_ut \
     ini_comment_ut \
     ini_valueobj_ut \
-    ini_parse_ut
+    ini_parse_ut \
+    ini_augment_ut
 
 TESTS += \
     ini_config_ut \
     ini_comment_ut \
     ini_valueobj_ut \
-    ini_parse_ut
+    ini_parse_ut \
+    ini_augment_ut
+
 
 ini_config_ut_SOURCES = ini/ini_config_ut.c
 ini_config_ut_LDADD = \
@@ -314,6 +319,11 @@ ini_valueobj_ut_LDADD = libini_config.la libbasicobjects.la
 ini_parse_ut_SOURCES = ini/ini_parse_ut.c
 ini_parse_ut_LDADD = libini_config.la libcollection.la libbasicobjects.la
 
+ini_augment_ut_SOURCES = ini/ini_augment_ut.c
+ini_augment_ut_LDADD = libini_config.la libcollection.la \
+                       libbasicobjects.la libpath_utils.la libref_array.la
+
+
 ini_config-docs:
 if HAVE_DOXYGEN
 	cd ini; \
@@ -324,6 +334,7 @@ clean-local-ini_config:
 	rm -f ./*.out
 	rm -f test.ini
 	rm -f ./foo.conf ./bom* #From ini_parse_ut
+	rm -f ./merge.validator.* #From ini_augment_ut
 
 ##############################################################################
 # Additional rules

@@ -135,3 +135,11 @@ global:
 local:
     *;
 };
+
+
+INI_CONFIG_1.2.0 {
+global:
+    /* ini_configobj.h */
+    ini_config_augment;
+} INI_CONFIG_1.1.0;
+
