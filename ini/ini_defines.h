@@ -81,6 +81,15 @@
 /* This constant belongs here. */
 #define COL_CLASS_INI_BASE        20000
 #define COL_CLASS_INI_CONFIG      COL_CLASS_INI_BASE + 0
+#define COL_CLASS_INI_SECTION     COL_CLASS_INI_BASE + 1
+
+/**
+ * @brief Name of the default section.
+ *
+ * This is the name of the implied section where orphan key-value
+ * pairs will be put.
+ */
+#define INI_DEFAULT_SECTION "default"
 
 /**
  * @brief A one level collection of parse errors.
