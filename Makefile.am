@@ -230,7 +230,9 @@ endif
 
 lib_LTLIBRARIES += libini_config.la
 dist_pkgconfig_DATA += ini/ini_config.pc
-dist_include_HEADERS += ini/ini_config.h ini/ini_configobj.h ini/ini_valueobj.h ini/ini_comment.h
+dist_include_HEADERS += ini/ini_config.h ini/ini_configobj.h \
+                        ini/ini_valueobj.h ini/ini_comment.h \
+                        ini/ini_configmod.h
 
 libini_config_la_SOURCES = \
     ini/ini_config.c \
@@ -251,6 +253,8 @@ libini_config_la_SOURCES = \
     ini/ini_fileobj.c \
     ini/ini_configobj.c \
     ini/ini_configobj.h \
+    ini/ini_configmod.h \
+    ini/ini_configmod.c \
     ini/ini_config_priv.h \
     ini/ini_get_valueobj.c \
     ini/ini_get_array_valueobj.c \
@@ -295,14 +299,16 @@ check_PROGRAMS += \
     ini_comment_ut \
     ini_valueobj_ut \
     ini_parse_ut \
-    ini_augment_ut
+    ini_augment_ut \
+    ini_configmod_ut
 
 TESTS += \
     ini_config_ut \
     ini_comment_ut \
     ini_valueobj_ut \
     ini_parse_ut \
-    ini_augment_ut
+    ini_augment_ut \
+    ini_configmod_ut
 
 
 ini_config_ut_SOURCES = ini/ini_config_ut.c
@@ -323,6 +329,9 @@ ini_augment_ut_SOURCES = ini/ini_augment_ut.c
 ini_augment_ut_LDADD = libini_config.la libcollection.la \
                        libbasicobjects.la libpath_utils.la libref_array.la
 
+ini_configmod_ut_SOURCES = ini/ini_configmod_ut.c
+ini_configmod_ut_LDADD = libini_config.la libcollection.la \
+                         libbasicobjects.la libpath_utils.la libref_array.la
 
 ini_config-docs:
 if HAVE_DOXYGEN
@@ -335,6 +344,10 @@ clean-local-ini_config:
 	rm -f test.ini
 	rm -f ./foo.conf ./bom* #From ini_parse_ut
 	rm -f ./merge.validator.* #From ini_augment_ut
+	rm -f ./real.conf.manual
+	rm -f ./modtest.conf.real
+	rm -f ./modtest.conf.exp
+
 
 ##############################################################################
 # Additional rules
