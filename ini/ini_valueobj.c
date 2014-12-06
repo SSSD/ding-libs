@@ -247,8 +247,9 @@ static int value_fold(struct simplebuffer *unfolded,
              * Fold if we found the separator or the first line
              * is too long right away
              */
-            else if (((buf[i] == ' ') || (buf[i] == '\t')) ||
-                     ((best_place == 0) && (i == 0))) {
+            else if (((!((best_place > 0) && (idx == 0) && (i == 0))) &&
+                       ((buf[i] == ' ') || (buf[i] == '\t'))) ||
+                       ((best_place == 0) && (i == 0))) {
                 next_place = i;
                 TRACE_INFO_NUMBER("Next place:", next_place);
             }
