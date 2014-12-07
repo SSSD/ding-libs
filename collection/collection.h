@@ -2624,7 +2624,9 @@ int col_compare_items(struct collection_item *first,
  *
  * If you want the data to remain unchanged use 0 as a length parameter.
  *
- * If item is a reference or a collection the call will return an error.
+ * If the item is a reference or a collection and you attempt to change
+ * the data, i.e. length is not 0, the call will return an error EINVAL.
+ * If the item is a reference or a collection it can only be renamed.
  *
  * The are several convenience function that are wrappers
  * around this function. For more information

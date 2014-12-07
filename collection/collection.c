@@ -3061,9 +3061,10 @@ int col_modify_item(struct collection_item *item,
 {
     TRACE_FLOW_STRING("col_modify_item", "Entry");
 
+    /* Allow renameing only */
     if ((item == NULL) ||
-        (item->type == COL_TYPE_COLLECTION) ||
-        (item->type == COL_TYPE_COLLECTIONREF)) {
+        ((item->type == COL_TYPE_COLLECTION) && (length != 0)) ||
+        ((item->type == COL_TYPE_COLLECTIONREF) && (length != 0))) {
         TRACE_ERROR_NUMBER("Invalid argument or invalid argument type", EINVAL);
         return EINVAL;
     }
