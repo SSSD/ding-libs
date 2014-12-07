@@ -383,24 +383,21 @@ enum INI_GET {
 
 /** Structure to pass access check parameters to augmentation function.
  *
- * flags            Define what to check.
- *                  One can check file
- *                  permissions with mask,
- *                  uid, and gid of the file.
- * uid              Expected uid of the file.
- * gid              Expected gid of the file.
- * mode             Expected mode of the file.
- * mask             Mask to use in the mode check.
- *                  Mask is always adjusted to
- *                  include at least S_IRWXU,
- *                  S_IRWXG and S_IRWXO
  */
 struct access_check {
-    uint32_t flags;
-    uid_t uid;
-    gid_t gid;
-    mode_t mode;
-    mode_t mask;
+    uint32_t flags; /**< Define what to check.
+                     * One can check file
+                     * permissions with mask,
+                     * uid, and gid of the file.
+                     */
+    uid_t uid;      /**< Expected uid of the file. */
+    gid_t gid;      /**< Expected gid of the file.*/
+    mode_t mode;    /**< Expected mode of the file. */
+    mode_t mask;    /**< Mask to use in the mode check.
+                     * Mask is always adjusted to
+                     * include at least S_IRWXU,
+                     * S_IRWXG and S_IRWXO.
+                     */
 };
 
 /** Enumeration of augmentation modes. */
@@ -449,10 +446,8 @@ struct ini_parse_error;
  * parsing data from the configuration file and storing it in a configuration
  * object, merging configuration objects and other operations.
  *
- * This interface is currently incomplete as it does not allow:
- * - constructing configuration in memory
- * - altering existing configuration by adding, modifying or removing sections
- *   and keys.
+ * For functions to create or alter configuration object in memory
+ * see \ref ini_mod.
  *
  * @{
  *
@@ -824,8 +819,8 @@ int ini_config_merge(struct ini_cfgobj *first,
 /**
  * @brief Augment configuration
  *
- * Function merges the main configuration file 
- * with the configuration file snippets 
+ * Function merges the main configuration file
+ * with the configuration file snippets
  * read from a specified directory.
  *
  * @param[in]  base_cfg         A configuration object
@@ -843,7 +838,7 @@ int ini_config_merge(struct ini_cfgobj *first,
  *                              sections that do not match any patterns
  *                              the file is skipped and error is recorded.
  * @param[in]  check_perm       Pointer to structure that
- *                              holds criteria for the 
+ *                              holds criteria for the
  *                              access check.
  * @param[in]  error_level      Flags that control actions
  *                              in case of parsing error in a snippet file.
@@ -929,8 +924,8 @@ int ini_config_serialize(struct ini_cfgobj *ini_config,
                          struct simplebuffer *sbobj);
 
 
-/* TODO: Functions that add, modify or delete sections and values in
- * the configuration object.
+/* Functions that add, modify or delete sections and values in
+ * the configuration object can be found in section \ref ini_mod.
  */
 
 /**
