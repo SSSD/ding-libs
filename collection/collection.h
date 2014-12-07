@@ -3132,6 +3132,24 @@ int col_insert_item_into_current(struct collection_item *ci,
 void col_delete_item(struct collection_item *item);
 
 /**
+ * @brief Delete extracted item with callback.
+ *
+ * This function is similar to \ref col_delete_item but allows
+ * passing a callback function so that value stored in the collection can
+ * be properly distroyed.
+ *
+ * @param[in]  item            Item to delete.
+ * @param[in]  cb              Callback to use.
+ * @param[in]  custom_data     Caller defined data that can be passed
+                               to the callback.
+ *
+ */
+void col_delete_item_with_cb(struct collection_item *item,
+                             col_item_cleanup_fn cb,
+                             void *custom_data);
+
+
+/**
  * @}
  */
 

@@ -174,9 +174,9 @@ static int col_validate_property(const char *property)
 
 
 /* Function that cleans the item with callback */
-static void col_delete_item_with_cb(struct collection_item *item,
-                                    col_item_cleanup_fn cb,
-                                    void *custom_data)
+void col_delete_item_with_cb(struct collection_item *item,
+                             col_item_cleanup_fn cb,
+                             void *custom_data)
 {
     struct collection_item *other_collection;
 
