@@ -74,6 +74,8 @@ struct ini_cfgfile {
     int stats_read;
     /* Internal buffer */
     struct simplebuffer *file_data;
+    /* BOM indicator */
+    enum index_utf_t bom;
 };
 
 /* Parsing error */

@@ -38,14 +38,6 @@
 #define BOM3_SIZE 3
 #define BOM2_SIZE 2
 
-enum index_utf_t {
-    INDEX_UTF32BE = 0,
-    INDEX_UTF32LE = 1,
-    INDEX_UTF16BE = 2,
-    INDEX_UTF16LE = 3,
-    INDEX_UTF8 = 4
-};
-
 /* Close file but not destroy the object */
 void ini_config_file_close(struct ini_cfgfile *file_ctx)
 {

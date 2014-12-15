@@ -169,5 +169,11 @@ global:
     ini_config_add_double_arr_value;
     ini_config_delete_value;
     ini_config_update_comment;
+    ini_config_file_backup;
+    ini_config_change_access;
+    ini_config_save;
+    ini_config_save_as;
+    ini_config_get_bom;
+    ini_config_set_bom;
 } INI_CONFIG_1.1.0;
 

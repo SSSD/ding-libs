@@ -130,6 +130,29 @@
 
 
 /**
+ * @defgroup bomType Types of configutration file encodings
+ *
+ * Constants that define how configuration file is encoded.
+ *
+ * @{
+ */
+/** Enumeration of the encoding types. */
+
+enum index_utf_t {
+    INDEX_UTF32BE = 0,  /**< The file is encoded in 'big-endian' 32-bit */
+    INDEX_UTF32LE = 1,  /**< The file is encoded in 'little-endian' 32-bit */
+    INDEX_UTF16BE = 2,  /**< The file is encoded in 'big-endian' 16-bit */
+    INDEX_UTF16LE = 3,  /**< The file is encoded in 'little-endian' 16-bit */
+    INDEX_UTF8 = 4,     /**< The file is encoded in standard UTF8 but has BOM */
+    INDEX_UTF8NOBOM = 5 /**< The file is encoded in standard UTF8 without BOM */
+};
+
+/**
+ * @}
+ */
+
+
+/**
  * @defgroup errorlevel Error tolerance constants
  *
  * Constants in this section define what to do if
@@ -389,6 +412,7 @@ struct access_check {
                      * One can check file
                      * permissions with mask,
                      * uid, and gid of the file.
+                     * See \ref accesscheck constants.
                      */
     uid_t uid;      /**< Expected uid of the file. */
     gid_t gid;      /**< Expected gid of the file.*/
@@ -581,6 +605,166 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
  *
  */
 void ini_config_file_destroy(struct ini_cfgfile *file_ctx);
+
+/**
+ * @brief Save configuration in a backup configuration file
+ *
+ * Creates a backup version of the data in a given configuration file.
+ * It is expected that file context was created by some open or reopen
+ * function first. Then the caller can make this call to save the data
+ * aside before parsing the configuration file and making changes to it.
+ *
+ * The caller can specify a backup directory to save the file in.
+ * If directory is not specified then a current working directory will
+ * be used. If the directory is invalid or caller does not have access to it
+ * an error will be returned.
+ *
+ *>The template specifies the file name to use for the backup.
+ *>For example:
+ *>    my_file.conf.%d.save
+ *>    my_file%d.conf.bak
+ *>The template can contain only one '%d' placeholder. This placeholder
+ * will be replaced by a number. If previously created backup files
+ * are found in the given directory. The function will start with 1 and will
+ * try to find an available unused file name in the given directory
+ * up until it reaches the limit specified in the max_num argument.
+ * Function will return EEXIST if it runs out of attempts to save the file.
+ *
+ * The caller can optionally pass an access structure. The access structure
+ * would specify what mode and ownership to use for the newly created file.
+ * If the access structure is not specified the access data of the original
+ * file context will be used. If file object does not have stats explicitly
+ * read at the time when the object is created then the stats will be collected
+ * but not saved. If the file was a memory mapped file and no access
+ * structure is passed in, the function will use effective UID and GID of the
+ * running process and mode will be set to: S_IFREG | S_IRUSR | S_IWUSR
+ *
+ * @param[in] file_ctx              File context of the file to backup.
+ * @param[in] backup_dir            Path to backup directory. Can be NULL.
+ * @param[in] backup_tpl            File name template with %d placeholder.
+ * @param[in] backup_access         Optional access overwrite structure.
+ *                                  See \ref access_check for more details.
+ * @param[in] max_num               Maximum number of retries to try to create
+ *                                  a specific backup file.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return EIXIST - All possible backup file names are already taken.
+ * @return ENOMEM - No memory.
+ *
+ * Function can return other errors that standard libc functions line open,
+ * chmod, and chown return.
+ */
+int ini_config_file_backup(struct ini_cfgfile *file_ctx,
+                           const char *backup_dir,
+                           const char *backup_tpl,
+                           struct access_check *backup_access,
+                           unsigned max_num);
+
+/**
+ * @brief Change permissions and ownership of the file
+ *
+ * Function changes access mode and permissions of the file associated
+ * with the given context. If there is no file associated with the context
+ * because the context is created using a memory buffer, then the function
+ * will return an error EINVAL.
+ *
+ * @param[in] file_ctx              File context of the file to change access.
+ * @param[in] new_access            Structure that defines what access should
+ *                                  be set on the file.
+ *                                  See \ref access_check for more details.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ *
+ * Function can return other errors that standard chmod and chown
+ * functions return.
+ */
+int ini_config_change_access(struct ini_cfgfile *file_ctx,
+                             struct access_check *new_access);
+
+/**
+ * @brief Save configuration in a file
+ *
+ * Function is a wrapper around \ref ini_config_save_as with
+ * argument filename as NULL.
+ *
+ * For more information see \ref ini_config_save_as.
+ */
+int ini_config_save(struct ini_cfgfile *file_ctx,
+                    struct access_check *new_access,
+                    struct ini_cfgobj *ini_config);
+
+
+/* Save configuration in a file using existing context but with a new name */
+/**
+ * @brief Save configuration with a new name.
+ *
+ * Function uses an existing file context but a new file name.
+ * The file context will be used to perform operation to save file.
+ * By default the ownership, mode and BOM of the new file will be derived
+ * from the existing context. The rest of the context will be reinitialized.
+ * Configuration will be serialized and saved in the file using encoding
+ * specified by BOM type. The BOM prefix will also be added if needed.
+ * After saving the file the function initializes the context and reads the
+ * file back. At this moment the file context is ready for the parsing
+ * again.
+ *
+ * @param[in] file_ctx              File context to use for saving.
+ * @param[in] filename              Name of the file to save into. If NULL
+ *                                  the file name of the context will be used.
+ *                                  If the context was originally created
+ *                                  as a memory mapped configuration buffer
+ *                                  and filename is NULL the function will
+ *                                  return error EINVAL.
+ * @param[in] new_access            Structure that defines what access should
+ *                                  be set on the file.
+ *                                  See \ref access_check for more details.
+ * @param[in] ini_config            Configuration to save.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ *
+ * Function can return other errors that standard open, chmod and chown
+ * functions return.
+ */
+int ini_config_save_as(struct ini_cfgfile *file_ctx,
+                       const char *filename,
+                       struct access_check *new_access,
+                       struct ini_cfgobj *ini_config);
+
+
+
+/**
+ * @brief Return the encoding indicator.
+ *
+ * When the file object is created the configuration data is inspected for
+ * encoding indicator called BOM. This function returns a constant that
+ * indicates what type of BOM was detected.
+ *
+ * @param[in] file_ctx              File context.
+ *
+ * Function returns the constant of type enum index_utf_t.
+ */
+enum index_utf_t ini_config_get_bom(struct ini_cfgfile *file_ctx);
+
+/**
+ * @brief Set the encoding indicator.
+ *
+ * When the file object is created the configuration data is inspected for
+ * encoding indicator called BOM. The BOM indicator is recorded in the file
+ * object and used when the file is saved. If the caller wants to change
+ * the encoding before saving he can use this function to alter the BOM type.
+ *
+ * @param[in] file_ctx              File context.
+ * @param[in] bom                   BOM type indicator to set.
+ *
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ */
+int ini_config_set_bom(struct ini_cfgfile *file_ctx, enum index_utf_t bom);
+
 
 /**
  * @brief Check parsing errors count
