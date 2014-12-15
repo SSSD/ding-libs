@@ -30,8 +30,8 @@
 #include "collection.h"
 #include "collection_tools.h"
 #include "ini_defines.h"
-#include "ini_config_priv.h"
 #include "ini_configobj.h"
+#include "ini_config_priv.h"
 #include "ini_valueobj.h"
 
 /* Macro co convert to HEX value */

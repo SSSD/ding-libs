@@ -29,8 +29,8 @@
 #include "collection.h"
 #include "collection_tools.h"
 #include "ini_defines.h"
-#include "ini_config_priv.h"
 #include "ini_configobj.h"
+#include "ini_config_priv.h"
 
 /* Following declarations are from header file ini_config.h. This file was not
  * included, because we don't want on include header file

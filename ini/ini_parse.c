@@ -29,8 +29,8 @@
 #include "trace.h"
 #include "ini_defines.h"
 #include "ini_valueobj.h"
-#include "ini_config_priv.h"
 #include "ini_configobj.h"
+#include "ini_config_priv.h"
 #include "collection.h"
 #include "collection_queue.h"
 
