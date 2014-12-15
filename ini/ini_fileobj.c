@@ -18,14 +18,17 @@
     You should have received a copy of the GNU Lesser General Public License
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
+#define _GNU_SOURCE /* for asprintf */
 #include "config.h"
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <iconv.h>
+#include <dirent.h>
 #include "trace.h"
 #include "ini_defines.h"
 #include "ini_configobj.h"
@@ -37,6 +40,13 @@
 #define BOM4_SIZE 4
 #define BOM3_SIZE 3
 #define BOM2_SIZE 2
+
+static const char *encodings[] = { "UTF-32BE",
+                                   "UTF-32LE",
+                                   "UTF-16BE",
+                                   "UTF-16LE",
+                                   "UTF-8",
+                                   "UTF-8" };
 
 /* Close file but not destroy the object */
 void ini_config_file_close(struct ini_cfgfile *file_ctx)
@@ -185,15 +195,11 @@ static int initialize_conv(unsigned char *read_buf,
                            size_t read_cnt,
                            int *initialized,
                            size_t *bom_shift,
+                           enum index_utf_t *in_ind,
                            iconv_t *conv)
 {
     int error = EOK;
-    enum index_utf_t ind = INDEX_UTF8;
-    const char *encodings[] = {  "UTF-32BE",
-                                 "UTF-32LE",
-                                 "UTF-16BE",
-                                 "UTF-16LE",
-                                 "UTF-8" };
+    enum index_utf_t ind = INDEX_UTF8NOBOM;
 
     TRACE_FLOW_ENTRY();
 
@@ -206,7 +212,7 @@ static int initialize_conv(unsigned char *read_buf,
                         read_cnt,
                         bom_shift);
 
-        TRACE_INFO_STRING("Converting to", encodings[INDEX_UTF8]);
+        TRACE_INFO_STRING("Converting to", encodings[INDEX_UTF8NOBOM]);
         TRACE_INFO_STRING("Converting from", encodings[ind]);
 
         errno = 0;
@@ -218,12 +224,12 @@ static int initialize_conv(unsigned char *read_buf,
         }
 
         *initialized = 1;
+        *in_ind = ind;
     }
     else *bom_shift = 0;
 
     TRACE_FLOW_EXIT();
     return error;
-
 }
 
 /* Internal conversion part */
@@ -244,6 +250,7 @@ static int common_file_convert(FILE *file,
     size_t room_left = 0;
     size_t bom_shift = 0;
     int initialized = 0;
+    enum index_utf_t ind = INDEX_UTF8NOBOM;
 
     TRACE_FLOW_ENTRY();
 
@@ -271,6 +278,7 @@ static int common_file_convert(FILE *file,
                                 read_cnt,
                                 &initialized,
                                 &bom_shift,
+                                &ind,
                                 &conv);
         if (error) {
             TRACE_ERROR_NUMBER("Failed to initialize",
@@ -281,6 +289,7 @@ static int common_file_convert(FILE *file,
         src += bom_shift;
         to_convert -= bom_shift;
         total_read += read_cnt;
+        file_ctx->bom = ind;
         TRACE_INFO_NUMBER("Total read", total_read);
 
         do {
@@ -513,6 +522,7 @@ int ini_config_file_open(const char *filename,
     new_ctx->filename = NULL;
     new_ctx->file = NULL;
     new_ctx->file_data = NULL;
+    new_ctx->bom = INDEX_UTF8NOBOM;
 
     error = simplebuffer_alloc(&(new_ctx->file_data));
     if (error) {
@@ -582,6 +592,7 @@ int ini_config_file_from_mem(void *data_buf,
     new_ctx->file = NULL;
     new_ctx->file_data = NULL;
     new_ctx->metadata_flags = 0;
+    new_ctx->bom = INDEX_UTF8NOBOM;
 
     error = simplebuffer_alloc(&(new_ctx->file_data));
     if (error) {
@@ -659,6 +670,8 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
         return error;
     }
 
+    new_ctx->bom = file_ctx_in->bom;
+
     /* Do common init */
     error = common_file_init(new_ctx, NULL, 0);
     if(error) {
@@ -671,6 +684,780 @@ int ini_config_file_reopen(struct ini_cfgfile *file_ctx_in,
     TRACE_FLOW_EXIT();
     return error;
 }
+
+/* Function to construct file name */
+static int create_file_name(const char *dir,
+                            const char *tpl,
+                            unsigned count,
+                            char **filename)
+{
+    char *resolved = NULL;
+    char *full_name = NULL;
+    int ret = 0;
+    const char *dir_to_use;
+    char dirbuf[PATH_MAX * 2 + 1];
+
+    TRACE_FLOW_ENTRY();
+
+    /* We checked the template so it should be safe */
+    ret = asprintf(&resolved, tpl, count);
+    if (ret == -1) {
+        TRACE_ERROR_NUMBER("First asprintf falied.", ENOMEM);
+        return ENOMEM;
+    }
+
+    /* If directory is not provided use current */
+    if (dir) dir_to_use = dir;
+    else {
+        memset(dirbuf, 0 , PATH_MAX * 2 + 1);
+        dir_to_use = getcwd(dirbuf, PATH_MAX * 2);
+    }
+
+    ret = asprintf(&full_name, "%s/%s", dir_to_use, resolved);
+    free(resolved);
+    if (ret == -1) {
+        TRACE_ERROR_NUMBER("Second asprintf falied.", ENOMEM);
+        return ENOMEM;
+    }
+
+    *filename = full_name;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+
+/* Function to determine which permissions to use */
+static int determine_permissions(struct ini_cfgfile *file_ctx,
+                                 struct access_check *overwrite,
+                                 uid_t *uid_ptr,
+                                 gid_t *gid_ptr,
+                                 mode_t *mode_ptr)
+{
+    int error = EOK;
+    uid_t uid = 0;
+    gid_t gid = 0;
+    mode_t mode = 0;
+    struct stat stats;
+    int ret = 0;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Prepare default uid, gid, mode */
+    if (file_ctx->stats_read) {
+        uid = file_ctx->file_stats.st_uid;
+        gid = file_ctx->file_stats.st_gid;
+        mode = file_ctx->file_stats.st_mode;
+    }
+    else if (*(file_ctx->filename) != '\0') {
+        /* If file name is known check the file */
+        memset(&stats, 0, sizeof(struct stat));
+        ret = stat(file_ctx->filename, &stats);
+        if (ret == -1) {
+            error = errno;
+            TRACE_ERROR_NUMBER("Stat falied.", error);
+            return error;
+        }
+        uid = stats.st_uid;
+        gid = stats.st_gid;
+        mode = stats.st_mode;
+    }
+    else {
+        /* Use process properties */
+        uid = geteuid();
+        gid = getegid();
+        /* Regular file that can be read or written by owner only */
+        mode = S_IRUSR | S_IWUSR;
+    }
+
+    /* If caller specified "overwrite" data overwrite the defaults */
+    if (overwrite) {
+
+        overwrite->flags &= INI_ACCESS_CHECK_MODE |
+                            INI_ACCESS_CHECK_GID |
+                            INI_ACCESS_CHECK_UID;
+
+        if (overwrite->flags == 0) {
+            TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+            return EINVAL;
+        }
+
+        /* Mode is specified */
+        if (overwrite->flags & INI_ACCESS_CHECK_MODE) {
+            mode = overwrite->mode;
+        }
+
+        /* Check uid */
+        if (overwrite->flags & INI_ACCESS_CHECK_UID) {
+            uid = overwrite->uid;
+        }
+
+        /* Check gid */
+        if (overwrite->flags & INI_ACCESS_CHECK_GID) {
+            gid = overwrite->gid;
+        }
+    }
+
+    *uid_ptr = uid;
+    *gid_ptr = gid;
+    *mode_ptr = mode;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Create file and set proper permissions */
+static int open_new_file(const char *filename,
+                         uid_t uid,
+                         gid_t gid,
+                         mode_t mode,
+                         int check,
+                         int *fd_ptr)
+{
+    int error = EOK;
+    int ret = 0;
+    int fd;
+
+    TRACE_FLOW_ENTRY();
+
+    if (check) {
+        errno = 0;
+        fd = open(filename, O_RDONLY);
+        if (fd != -1) {
+            close(fd);
+            TRACE_ERROR_NUMBER("File already exists.", error);
+            return EEXIST;
+        }
+        else {
+            error = errno;
+            if (error == EACCES) {
+                TRACE_ERROR_NUMBER("Failed to open file.", error);
+                return error;
+            }
+        }
+    }
+
+    /* Keep in mind that umask of the process has impactm, see man pages. */
+    errno = 0;
+    fd = creat(filename, mode);
+    if (fd == -1) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to create file.", error);
+        return error;
+    }
+
+    errno = 0;
+    ret = fchmod(fd, mode);
+    if (ret == -1) {
+        error = errno;
+        close(fd);
+        TRACE_ERROR_NUMBER("Failed to chmod file.", error);
+        return error;
+    }
+
+    errno = 0;
+    ret = fchown(fd, uid, gid);
+    if (ret == -1) {
+        error = errno;
+        close(fd);
+        TRACE_ERROR_NUMBER("Failed to chown file.", error);
+        return error;
+    }
+
+    *fd_ptr = fd;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+
+}
+
+/* Function to do the encoding */
+static int do_encoding(struct ini_cfgfile *file_ctx,
+                       struct simplebuffer *sb)
+{
+    int error = EOK;
+    iconv_t encoder;
+    char *src, *dest;
+    size_t to_convert = 0;
+    size_t room_left = 0;
+    char result_buf[ICONV_BUFFER];
+    size_t conv_res = 0;
+
+    TRACE_FLOW_ENTRY();
+
+    encoder = iconv_open(encodings[file_ctx->bom], encodings[INDEX_UTF8NOBOM]);
+    if (encoder == (iconv_t) -1) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to create converter", error);
+        return error;
+    }
+
+    src = (char *)simplebuffer_get_vbuf(file_ctx->file_data);
+    to_convert = (size_t)simplebuffer_get_len(file_ctx->file_data);
+
+    do {
+        /* There is only one loop since everything is already read.
+         * We loop only if output buffer is not enough. */
+
+        dest = result_buf;
+        room_left = ICONV_BUFFER;
+
+        errno = 0;
+        conv_res = iconv(encoder, &src, &to_convert, &dest, &room_left);
+        if (conv_res == (size_t) -1) {
+            error = errno;
+            switch(error) {
+            case EILSEQ:
+                TRACE_ERROR_NUMBER("Invalid multibyte encoding", error);
+                iconv_close(encoder);
+                return error;
+            case EINVAL:
+                TRACE_ERROR_NUMBER("Incomplete sequence", error);
+                iconv_close(encoder);
+                return error;
+            case E2BIG:
+                TRACE_INFO_STRING("No room in the output buffer.", "");
+                error = simplebuffer_add_raw(sb,
+                                             result_buf,
+                                             ICONV_BUFFER - room_left,
+                                             ICONV_BUFFER);
+                if (error) {
+                    TRACE_ERROR_NUMBER("Failed to store converted bytes",
+                                        error);
+                    iconv_close(encoder);
+                    return error;
+                }
+                continue;
+            default:
+                TRACE_ERROR_NUMBER("Unexpected internal error",
+                                    error);
+                iconv_close(encoder);
+                return ENOTSUP;
+            }
+        }
+
+        /* The whole buffer was sucessfully converted */
+        error = simplebuffer_add_raw(sb,
+                                     result_buf,
+                                     ICONV_BUFFER - room_left,
+                                     ICONV_BUFFER);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to store converted bytes",
+                                error);
+            iconv_close(encoder);
+            return error;
+        }
+/*
+        TRACE_INFO_STRING("Saved procesed portion.",
+                    (char *)simplebuffer_get_vbuf(sb));
+*/
+        break;
+
+    }
+    while(1);
+
+    iconv_close(encoder);
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Function to do the encoding */
+static int write_bom(int fd,
+                     enum index_utf_t bom)
+{
+    unsigned char buffer[4];
+    size_t size = 0;
+    ssize_t ret;
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    switch (bom) {
+
+    case INDEX_UTF32BE:
+            buffer[0] = 0x00;
+            buffer[1] = 0x00;
+            buffer[2] = 0xFE;
+            buffer[3] = 0xFF;
+            size = BOM4_SIZE;
+            break;
+
+    case INDEX_UTF32LE:
+            buffer[0] = 0xFF;
+            buffer[1] = 0xFE;
+            buffer[2] = 0x00;
+            buffer[3] = 0x00;
+            size = BOM4_SIZE;
+            break;
+
+    case INDEX_UTF8:
+            buffer[0] = 0xEF;
+            buffer[1] = 0xBB;
+            buffer[2] = 0xBF;
+            size = BOM3_SIZE;
+            break;
+
+    case INDEX_UTF16BE:
+            buffer[0] = 0xFE;
+            buffer[1] = 0xFF;
+            size = BOM2_SIZE;
+            break;
+
+    case INDEX_UTF16LE:
+            buffer[0] = 0xFF;
+            buffer[1] = 0xFE;
+            size = BOM2_SIZE;
+            break;
+
+    default:
+            /* Should not happen - but then size will be 0 and
+             * nothing will be written*/
+            TRACE_ERROR_NUMBER("Invalid bom type", bom);
+            break;
+    }
+
+    ret = write(fd, buffer, size);
+    if (ret == -1) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to write bom bytes.", error);
+        return error;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Function to write to file */
+static int write_to_file(struct ini_cfgfile *file_ctx,
+                         const char *filename,
+                         struct access_check *overwrite,
+                         int check)
+{
+    int error = EOK;
+    uid_t uid = 0;
+    gid_t gid = 0;
+    mode_t mode = 0;
+    int fd = -1;
+    uint32_t left = 0;
+    struct simplebuffer *sb = NULL;
+    struct simplebuffer *sb_ptr = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Determine which permissions and ownership to use */
+    error = determine_permissions(file_ctx,
+                                  overwrite,
+                                  &uid,
+                                  &gid,
+                                  &mode);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to determine permissions.", error);
+        return error;
+    }
+
+    /* Open file and set proper permissions and ownership */
+    error = open_new_file(filename,
+                          uid,
+                          gid,
+                          mode,
+                          check,
+                          &fd);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to open new file.", error);
+        return error;
+    }
+
+    /* Write to file */
+    if (file_ctx->bom != INDEX_UTF8NOBOM) {
+
+        if (file_ctx->bom != INDEX_UTF8) {
+
+            error = simplebuffer_alloc(&sb);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to allocate buffer for conversion",
+                                   error);
+                close(fd);
+                return error;
+            }
+
+            /* Convert buffer */
+            error = do_encoding(file_ctx, sb);
+            if (error) {
+                TRACE_ERROR_NUMBER("Failed to re-encode", error);
+                simplebuffer_free(sb); /* Checks for NULL */
+                close(fd);
+                return error;
+            }
+            sb_ptr = sb;
+
+        }
+        else sb_ptr = file_ctx->file_data;
+
+        /* Write bom into file */
+        error = write_bom(fd, file_ctx->bom);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to save bom", error);
+            simplebuffer_free(sb); /* Checks for NULL */
+            close(fd);
+            return error;
+        }
+
+    }
+    else sb_ptr = file_ctx->file_data;
+
+    left = simplebuffer_get_len(sb_ptr);
+    do {
+        error = simplebuffer_write(fd, sb_ptr, &left);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to write data", error);
+            simplebuffer_free(sb); /* Checks for NULL */
+            close(fd);
+            return error;
+        }
+    }
+    while (left > 0);
+
+    simplebuffer_free(sb); /* Checks for NULL */
+    close(fd);
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Function to check the template
+ * Template is allowed to have '%%' as many times  and caller wants
+ * but only one %d. No other combination with a percent is allowed.
+ */
+static int check_template(const char *tpl)
+{
+    char *ptr;
+    char *ptr_pcnt = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    /* To be able to scan const char we need a non const pointer */
+    ptr = (char *)(intptr_t)tpl;
+
+    for (;;) {
+        /* Find first % */
+        ptr = strchr(ptr, '%');
+        if (ptr == NULL) {
+            TRACE_ERROR_NUMBER("No '%%d' found in format", EINVAL);
+            return EINVAL;
+        }
+        else { /* Found */
+            if (*(ptr + 1) == 'd') {
+                ptr_pcnt = ptr + 2;
+                /* We got a valid %d. Check the rest of the string. */
+                for (;;) {
+                    ptr_pcnt = strchr(ptr_pcnt, '%');
+                    if (ptr_pcnt) {
+                        ptr_pcnt++;
+                        if (*ptr_pcnt != '%') {
+                            TRACE_ERROR_NUMBER("Single '%%' "
+                                               "symbol after '%%d'.", EINVAL);
+                            return EINVAL;
+                        }
+                        ptr_pcnt++;
+                    }
+                    else break;
+                }
+                break;
+            }
+            /* This is %% - skip */
+            else if (*(ptr + 1) == '%') {
+                ptr += 2;
+                continue;
+            }
+            else {
+                TRACE_ERROR_NUMBER("Single '%%' "
+                                   "symbol before '%%d'.", EINVAL);
+                return EINVAL;
+            }
+        }
+    }
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Backup a file */
+int ini_config_file_backup(struct ini_cfgfile *file_ctx,
+                           const char *backup_dir,
+                           const char *backup_tpl,
+                           struct access_check *backup_access,
+                           unsigned max_num)
+{
+    int error = EOK;
+    DIR *ddir = NULL;
+    char *filename = NULL;
+    unsigned i;
+
+    TRACE_FLOW_ENTRY();
+
+    if (file_ctx == NULL) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    if (backup_tpl == NULL) {
+        TRACE_ERROR_NUMBER("Name template is required.", EINVAL);
+        return EINVAL;
+    }
+
+    /* Check the template */
+    error = check_template(backup_tpl);
+    if (error) {
+        TRACE_ERROR_NUMBER("Name template is invalid.", error);
+        return error;
+    }
+
+    if (backup_dir) {
+        /* Check that directory exists */
+        errno = 0;
+        ddir = opendir(backup_dir);
+        if (!ddir) {
+            error = errno;
+            TRACE_ERROR_NUMBER("Something is wrong with the directory.", error);
+            return error;
+        }
+    }
+
+    for (i = 1; i <= max_num; i++) {
+
+        error = create_file_name(backup_dir, backup_tpl, i, &filename);
+        if (error) {
+            TRACE_ERROR_NUMBER("Failed to create path.", error);
+            if (ddir) closedir(ddir);
+            return error;
+        }
+
+        error = write_to_file(file_ctx, filename, backup_access, 1);
+        free(filename);
+        if (error) {
+            if ((error == EEXIST) || (error == EACCES)) {
+                /* There is a file that already exists,
+                 * we need to retry.
+                 */
+                TRACE_INFO_STRING("File existis.", "Retrying.");
+                continue;
+            }
+            TRACE_ERROR_NUMBER("Failed to write file.", error);
+            if (ddir) closedir(ddir);
+            return error;
+        }
+        break;
+    }
+
+    if (ddir) closedir(ddir);
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Change access and ownership */
+int ini_config_change_access(struct ini_cfgfile *file_ctx,
+                             struct access_check *new_access)
+{
+    int error = EOK;
+    uid_t uid = 0;
+    gid_t gid = 0;
+    mode_t mode = 0;
+    int ret;
+
+    TRACE_FLOW_ENTRY();
+
+    /* Check that file has name */
+    if (*(file_ctx->filename) == '\0') {
+        TRACE_ERROR_NUMBER("Invalid file context.", EINVAL);
+        return EINVAL;
+    }
+
+    if (!(new_access)) {
+        TRACE_ERROR_NUMBER("Access structure is required.", EINVAL);
+        return EINVAL;
+    }
+
+    /* Determine which permissions and ownership to use */
+    error = determine_permissions(file_ctx,
+                                  new_access,
+                                  &uid,
+                                  &gid,
+                                  &mode);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to determine permissions.", error);
+        return error;
+    }
+
+    errno = 0;
+    ret = chmod(file_ctx->filename, mode);
+    if (ret == -1) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to chmod file.", error);
+        return error;
+    }
+
+    errno = 0;
+    ret = chown(file_ctx->filename, uid, gid);
+    if (ret == -1) {
+        error = errno;
+        TRACE_ERROR_NUMBER("Failed to chown file.", error);
+        return error;
+    }
+
+    if (file_ctx->metadata_flags & INI_META_STATS) {
+        file_ctx->stats_read = 1;
+        ret = stat(file_ctx->filename, &(file_ctx->file_stats));
+        if (ret == -1) {
+            error = errno;
+            TRACE_ERROR_NUMBER("Failed to get file stats", error);
+            return error;
+        }
+    }
+    else {
+        memset(&(file_ctx->file_stats), 0, sizeof(struct stat));
+        file_ctx->stats_read = 0;
+    }
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Save configuration in a file */
+int ini_config_save(struct ini_cfgfile *file_ctx,
+                    struct access_check *new_access,
+                    struct ini_cfgobj *ini_config)
+{
+    int error = EOK;
+
+    TRACE_FLOW_ENTRY();
+
+    error = ini_config_save_as(file_ctx,
+                               NULL,
+                               new_access,
+                               ini_config);
+
+    TRACE_FLOW_EXIT();
+    return error;
+}
+
+/* Save configuration in a file using existing context but with a new name */
+int ini_config_save_as(struct ini_cfgfile *file_ctx,
+                       const char *filename,
+                       struct access_check *new_access,
+                       struct ini_cfgobj *ini_config)
+{
+    int error = EOK;
+    struct simplebuffer *sbobj = NULL;
+
+    TRACE_FLOW_ENTRY();
+
+    if (*(file_ctx->filename) == '\0') {
+        TRACE_ERROR_NUMBER("Attempt to use wrong file context", EINVAL);
+        return EINVAL;
+    }
+
+    error = simplebuffer_alloc(&sbobj);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate buffer.", error);
+        return error;
+    }
+
+    error = ini_config_serialize(ini_config, sbobj);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to serialize.", error);
+        simplebuffer_free(sbobj);
+        return error;
+    }
+
+    /* Close the internal file handle we control */
+    ini_config_file_close(file_ctx);
+
+    /* Free old buffer and assign a new one */
+    simplebuffer_free(file_ctx->file_data);
+    file_ctx->file_data = sbobj;
+    sbobj = NULL;
+
+    if (filename) {
+        /* Clean existing file name */
+        free(file_ctx->filename);
+        file_ctx->filename = NULL;
+
+        /* Allocate new */
+        file_ctx->filename = malloc(PATH_MAX + 1);
+        if (!(file_ctx->filename)) {
+            TRACE_ERROR_NUMBER("Failed to allocate memory for file path.",
+                               ENOMEM);
+            return ENOMEM;
+        }
+
+        /* Construct path */
+        error = make_normalized_absolute_path(file_ctx->filename,
+                                              PATH_MAX,
+                                              filename);
+        if(error) {
+            TRACE_ERROR_NUMBER("Failed to resolve path", error);
+            return error;
+        }
+    }
+
+    /* Write the buffer we have to the file */
+    error = write_to_file(file_ctx, file_ctx->filename, new_access, 0);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to write file.", error);
+        return error;
+    }
+
+    /* Free again to truncate and prepare for re-read */
+    simplebuffer_free(file_ctx->file_data);
+    file_ctx->file_data = NULL;
+
+    error = simplebuffer_alloc(&sbobj);
+    if (error) {
+        TRACE_ERROR_NUMBER("Failed to allocate buffer.", error);
+        return error;
+    }
+
+    file_ctx->file_data = sbobj;
+
+    /* Reopen and re-read */
+    error = common_file_init(file_ctx, NULL, 0);
+    if(error) {
+        TRACE_ERROR_NUMBER("Failed to do common init", error);
+        return error;
+    }
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
+/* Get the BOM type */
+enum index_utf_t ini_config_get_bom(struct ini_cfgfile *file_ctx)
+{
+    enum index_utf_t ret;
+    TRACE_FLOW_ENTRY();
+
+    ret = file_ctx->bom;
+
+    TRACE_FLOW_EXIT();
+    return ret;
+}
+
+
+/* Set the BOM type */
+int ini_config_set_bom(struct ini_cfgfile *file_ctx, enum index_utf_t bom)
+{
+    TRACE_FLOW_ENTRY();
+
+    if (file_ctx == NULL) {
+        TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
+        return EINVAL;
+    }
+
+    file_ctx->bom = bom;
+
+    TRACE_FLOW_EXIT();
+    return EOK;
+}
+
 
 /* Get the fully resolved file name */
 const char *ini_config_get_filename(struct ini_cfgfile *file_ctx)
@@ -859,8 +1646,10 @@ void ini_config_file_print(struct ini_cfgfile *file_ctx)
         printf("No file object\n.");
     }
     else {
-        printf("File name: %s\n", (file_ctx->filename) ? file_ctx->filename : "NULL");
+        printf("File name: %s\n",
+               (file_ctx->filename) ? file_ctx->filename : "NULL");
         printf("File is %s\n", (file_ctx->file) ? "open" : "closed");
+        printf("File BOM %d\n", file_ctx->bom);
         printf("Metadata flags %u\n", file_ctx->metadata_flags);
         printf("Stats flag st_dev %li\n", file_ctx->file_stats.st_dev);
         printf("Stats flag st_ino %li\n", file_ctx->file_stats.st_ino);
