@@ -292,7 +292,13 @@ dist_noinst_DATA += \
     ini/ini.d/real32le.conf \
     ini/ini.d/symbols.conf \
     ini/ini.d/new_line.conf \
-    ini/ini.d/merge.validator
+    ini/ini.d/merge.validator \
+    ini/ini2.d/real8.conf \
+    ini/ini2.d/real16be.conf \
+    ini/ini2.d/real16le.conf \
+    ini/ini2.d/real32be.conf \
+    ini/ini2.d/real32le.conf
+
 
 check_PROGRAMS += \
     ini_config_ut \
@@ -300,7 +306,8 @@ check_PROGRAMS += \
     ini_valueobj_ut \
     ini_parse_ut \
     ini_augment_ut \
-    ini_configmod_ut
+    ini_configmod_ut \
+    ini_save_ut
 
 TESTS += \
     ini_config_ut \
@@ -308,7 +315,8 @@ TESTS += \
     ini_valueobj_ut \
     ini_parse_ut \
     ini_augment_ut \
-    ini_configmod_ut
+    ini_configmod_ut \
+    ini_save_ut
 
 
 ini_config_ut_SOURCES = ini/ini_config_ut.c
@@ -333,6 +341,10 @@ ini_configmod_ut_SOURCES = ini/ini_configmod_ut.c
 ini_configmod_ut_LDADD = libini_config.la libcollection.la \
                          libbasicobjects.la libpath_utils.la libref_array.la
 
+ini_save_ut_SOURCES = ini/ini_save_ut.c
+ini_save_ut_LDADD = libini_config.la libcollection.la \
+                         libbasicobjects.la libpath_utils.la libref_array.la
+
 ini_config-docs:
 if HAVE_DOXYGEN
 	cd ini; \
@@ -347,6 +359,8 @@ clean-local-ini_config:
 	rm -f ./real.conf.manual
 	rm -f ./modtest.conf.real
 	rm -f ./modtest.conf.exp
+	rm -f ./test_*
+
 
 
 ##############################################################################
