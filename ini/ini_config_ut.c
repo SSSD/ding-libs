@@ -1548,8 +1548,13 @@ int main(int argc, char *argv[])
     char *rundir = NULL;
     const char inidir[] = "/ini";
     int len = 0;
+    char *var;
 
     if ((argc > 1) && (strcmp(argv[1], "-v") == 0)) verbose = 1;
+    else {
+        var = getenv("COMMON_TEST_VERBOSE");
+        if (var) verbose = 1;
+    }
 
     COLOUT(printf("Start\n"));
 
