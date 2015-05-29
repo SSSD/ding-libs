@@ -2955,6 +2955,64 @@ int col_remove_item(struct collection_item *ci,
                     int idx,
                     int type);
 
+/**
+ * @brief Remove item from the collection.
+ *
+ * Function internally calls \ref col_extract_item and then
+ * \ref col_delete_item for the extracted item.
+ *
+ * Function is similar to \ref col_delete_property function
+ * but allows more specific information about what item (property)
+ * to remove.
+ *
+ * The header will not be considered for deletion.
+ *
+ * @param[in]  ci              Collection object.
+ * @param[in]  subcollection   Name of the sub collection to remove
+ *                             item from. If NULL, the top level collection
+ *                             is used. One can use "foo!bar!baz"
+ *                             notation to identify the sub collection.
+ * @param[in]  disposition     Constant that controls how the relative
+ *                             position of the item to remove is determined.
+ *                             For more information see \ref dispvalues
+ *                             "disposition constants".
+ * @param[in]  refprop         Name of the property to relate to.
+ *                             This can be used to specify that function
+ *                             should remove next item after the item
+ *                             with this name. Leave NULL if the
+ *                             disposition you are using does not
+ *                             relate to an item in the collection.
+ * @param[in]  idx             Index of the property to remove.
+ *                             Useful for multi-value properties where
+ *                             several properties have same name in a row.
+ * @param[in]  type            Type filter. Only the item of the matching
+ *                             type will be used. It can be a bit mask of
+ *                             more than one type. Use 0 if you do not
+ *                             need to filter by type.
+ * @param[in]  cb              Callback to use.
+ * @param[in]  custom_data     Caller defined data that can be passed
+ *                             to the callback.
+ *
+ * @return 0          - Item was successfully removed.
+ * @return ENOMEM     - No memory.
+ * @return EINVAL     - The value of some of the arguments is invalid.
+ * @return ENOENT     - Sub collection is not found.
+ *                      The position can't be determined. For example
+ *                      deleting next item after item with name "foo"
+ *                      will cause this error if item "foo" is the last
+ *                      item in the collection. There are other cases
+ *                      when this error can be returned but the common
+ *                      theme is that something was not found.
+ * @return ENOSYS       Unknown disposition value.
+ */
+int col_remove_item_with_cb(struct collection_item *ci,
+                            const char *subcollection,
+                            int disposition,
+                            const char *refprop,
+                            int idx,
+                            int type,
+                            col_item_cleanup_fn cb,
+                            void *custom_data);
 
 /**
  * @brief Remove item from the current collection.

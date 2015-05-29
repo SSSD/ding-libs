@@ -149,4 +149,5 @@ global:
     /* collection.h */
     col_get_dup_item;
     col_delete_item_with_cb;
+    col_remove_item_with_cb;
 } COLLECTION_0.6.2;

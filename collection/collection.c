@@ -995,18 +995,20 @@ int col_extract_item(struct collection_item *collection,
 }
 
 
-/* Remove item (property) from collection.*/
-int col_remove_item(struct collection_item *ci,
-                    const char *subcollection,
-                    int disposition,
-                    const char *refprop,
-                    int idx,
-                    int type)
+/* Remove item (property) from collection with callback.*/
+int col_remove_item_with_cb(struct collection_item *ci,
+                            const char *subcollection,
+                            int disposition,
+                            const char *refprop,
+                            int idx,
+                            int type,
+                            col_item_cleanup_fn cb,
+                            void *custom_data)
 {
     int error = EOK;
     struct collection_item *ret_ref = NULL;
 
-    TRACE_FLOW_STRING("col_remove_item", "Exit");
+    TRACE_FLOW_STRING("col_remove_item", "Enter");
 
     /* Extract from the current collection */
     error = col_extract_item(ci,
@@ -1021,10 +1023,28 @@ int col_remove_item(struct collection_item *ci,
         return error;
     }
 
-    col_delete_item(ret_ref);
+    col_delete_item_with_cb(ret_ref, cb, custom_data);
 
     TRACE_FLOW_STRING("col_remove_item", "Exit");
     return EOK;
+}
+
+/* Remove item (property) from collection.*/
+int col_remove_item(struct collection_item *ci,
+                    const char *subcollection,
+                    int disposition,
+                    const char *refprop,
+                    int idx,
+                    int type)
+{
+    return col_remove_item_with_cb(ci,
+                                   subcollection,
+                                   disposition,
+                                   refprop,
+                                   idx,
+                                   type,
+                                   NULL,
+                                   NULL);
 }
 
 /* Remove item (property) from current collection.
