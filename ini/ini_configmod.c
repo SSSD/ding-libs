@@ -1076,12 +1076,15 @@ int ini_config_add_str_value(struct ini_cfgobj *ini_config,
                             break;
     case INI_VA_CLEAN:      /*  Delete all instaces of the key first */
                             while (!error) {
-                                error = col_remove_item(ini_config->cfg,
-                                                        section,
-                                                        COL_DSP_FIRSTDUP,
-                                                        key,
-                                                        0,
-                                                        COL_TYPE_ANY);
+                                error = col_remove_item_with_cb(
+                                            ini_config->cfg,
+                                            section,
+                                            COL_DSP_FIRSTDUP,
+                                            key,
+                                            0,
+                                            COL_TYPE_ANY,
+                                            cb,
+                                            NULL);
                                 if (error) {
                                     if (error != ENOENT) {
                                         TRACE_ERROR_NUMBER("Failed to clean "
