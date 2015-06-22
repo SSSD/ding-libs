@@ -461,6 +461,13 @@ int col_get_dup_item(struct collection_item *ci,
                               type,
                               &parent)) {
         *item = parent->next;
+        /* function col_get_dup_item with big value of idx should
+         * return the last item with the same property name. */
+        if (strncmp(property_to_find,
+                    parent->next->property,
+                    parent->next->property_len) != 0) {
+            *item = parent;
+        }
     }
     else error = ENOENT;
 
