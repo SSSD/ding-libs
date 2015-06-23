@@ -1,5 +1,5 @@
 # Primary version number
-m4_define([VERSION_NUMBER], [0.4.0])
+m4_define([VERSION_NUMBER], [0.5.0])
 
 # If the PRERELEASE_VERSION_NUMBER is set, we'll append
 # it to the release tag when creating an RPM or SRPM
@@ -13,6 +13,6 @@ m4_define([PRERELEASE_VERSION_NUMBER], [])
 m4_define([PATH_UTILS_VERSION_NUMBER], [0.2.1])
 m4_define([DHASH_VERSION_NUMBER], [0.4.3])
 m4_define([COLLECTION_VERSION_NUMBER], [0.7.0])
-m4_define([REF_ARRAY_VERSION_NUMBER], [0.1.4])
+m4_define([REF_ARRAY_VERSION_NUMBER], [0.1.5])
 m4_define([BASICOBJECTS_VERSION_NUMBER], [0.1.1])
-m4_define([INI_CONFIG_VERSION_NUMBER], [1.1.0])
+m4_define([INI_CONFIG_VERSION_NUMBER], [1.2.0])
