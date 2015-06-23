@@ -174,7 +174,7 @@ and serialization
 %doc COPYING
 %doc COPYING.LESSER
 %{_libdir}/libcollection.so.4
-%{_libdir}/libcollection.so.4.0.0
+%{_libdir}/libcollection.so.4.1.0
 
 %files -n libcollection-devel
 %defattr(-,root,root,-)
@@ -218,7 +218,7 @@ A dynamically-growing, reference-counted array
 %doc COPYING
 %doc COPYING.LESSER
 %{_libdir}/libref_array.so.1
-%{_libdir}/libref_array.so.1.2.0
+%{_libdir}/libref_array.so.1.2.1
 
 %files -n libref_array-devel
 %defattr(-,root,root,-)
@@ -303,7 +303,7 @@ structure
 %doc COPYING
 %doc COPYING.LESSER
 %{_libdir}/libini_config.so.5
-%{_libdir}/libini_config.so.5.0.0
+%{_libdir}/libini_config.so.5.1.0
 
 %files -n libini_config-devel
 %defattr(-,root,root,-)
