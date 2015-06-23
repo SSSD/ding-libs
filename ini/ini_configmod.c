@@ -1032,6 +1032,20 @@ int ini_config_add_str_value(struct ini_cfgobj *ini_config,
 
 
     case INI_VA_MODADD:
+                            error = col_get_dup_item(ini_config->cfg,
+                                                     section,
+                                                     key,
+                                                     COL_TYPE_ANY,
+                                                     idx,
+                                                     0, /* no exact */
+                                                     &item);
+                            if ((error) && (error != ENOENT)) {
+                                TRACE_ERROR_NUMBER("Unexpected error "
+                                                   "looking for item.",
+                                                   error);
+                                return error;
+                            }
+                            break;
     case INI_VA_MODADD_E:
                             /* Find the value by index.
                              * If value is not found it is OK.
@@ -1041,9 +1055,33 @@ int ini_config_add_str_value(struct ini_cfgobj *ini_config,
                                                      key,
                                                      COL_TYPE_ANY,
                                                      idx,
-                                                     EXACT(flags),
+                                                     1, /* use exact */
                                                      &item);
-                            if ((error) && (error != ENOENT)) {
+                            switch (error) {
+                            case EOK: /* we matched entry even with exact
+                                       * just return it. */
+                                break;
+                            case ENOENT: /* Entry can be missing or index was
+                                          * to big. Try one more time without
+                                          * exact flag */
+                                error = col_get_dup_item(ini_config->cfg,
+                                                         section,
+                                                         key,
+                                                         COL_TYPE_ANY,
+                                                         idx,
+                                                         0,
+                                                         &item);
+                                if (error == EOK) {
+                                    /* index was to big */
+                                    return ENOENT;
+                                } else if (error != EOK && error != ENOENT) {
+                                    TRACE_ERROR_NUMBER("Unexpected error "
+                                                       "looking for item.",
+                                                       error);
+                                    return error;
+                                }
+                                break;
+                            default:
                                 TRACE_ERROR_NUMBER("Unexpected error "
                                                    "looking for item.",
                                                    error);
