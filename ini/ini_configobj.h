@@ -1005,7 +1005,8 @@ int ini_config_merge(struct ini_cfgobj *first,
  *
  * Function merges the main configuration file
  * with the configuration file snippets
- * read from a specified directory.
+ * read from a specified directory
+ * ordered according to the locale setting.
  *
  * @param[in]  base_cfg         A configuration object
  *                              that will be augmented.
