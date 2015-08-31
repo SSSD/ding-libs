@@ -51,6 +51,7 @@ Requires: libpath_utils-devel = %{path_utils_version}-%{release}
 Requires: libdhash-devel = %{dhash_version}-%{release}
 Requires: libcollection-devel = %{collection_version}-%{release}
 Requires: libref_array-devel = %{ref_array_version}-%{release}
+Requires: libbasicobjects-devel = %{basicobjects_version}-%{release}
 Requires: libini_config-devel = %{ini_config_version}-%{release}
 
 %description devel
