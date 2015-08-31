@@ -214,9 +214,8 @@ static int basic_test(void)
                                "^real\\.conf$",
                                NULL };
 
-    /* Match all that do not start with 'r'
-    * and end with '.conf' and then match all
-    * ending with '.conf' */
+    /* Match only the config, monitor, domains, services, and provider
+    * sections */
     const char *sections[] = { "config",
                                "monitor",
                                "domains",
