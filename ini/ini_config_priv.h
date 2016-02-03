@@ -109,5 +109,18 @@ int access_check_int(struct stat *file_stats,
                      mode_t mode,
                      mode_t mask);
 
+struct ini_errmsg;
+
+struct ini_errobj {
+    size_t count;
+    struct ini_errmsg *first_msg;
+    struct ini_errmsg *last_msg;
+    struct ini_errmsg *cur_msg;
+};
+
+struct ini_errmsg {
+    char *str;
+    struct ini_errmsg *next;
+};
 
 #endif

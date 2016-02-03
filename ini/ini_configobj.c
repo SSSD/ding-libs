@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdarg.h>
 /* For error text */
 #include <libintl.h>
 #define _(String) gettext (String)
@@ -1038,4 +1039,315 @@ int ini_config_get_errors(struct ini_cfgobj *cfg_ctx,
 
     TRACE_FLOW_EXIT();
     return error;
+}
+
+int ini_rules_read_from_file(const char *filename,
+                             struct ini_cfgobj **_rules_obj)
+{
+    int ret;
+    struct ini_cfgfile *cfgfile = NULL;
+
+    if (_rules_obj == NULL) {
+        return EINVAL;
+    }
+
+    ret = ini_config_create(_rules_obj);
+    if (ret != EOK) {
+        return ret;
+    }
+
+    ret = ini_config_file_open(filename, 0, &cfgfile);
+    if (ret != EOK) {
+        goto done;
+    }
+
+    ret = ini_config_parse(cfgfile, 0, INI_MV1S_ALLOW, 0, *_rules_obj);
+    if (ret != EOK) {
+        goto done;
+    }
+
+done:
+    if (ret != EOK) {
+        ini_config_destroy(*_rules_obj);
+        *_rules_obj = NULL;
+    }
+
+    ini_config_file_destroy(cfgfile);
+    return ret;
+}
+
+/* This is used for testing only */
+static int ini_dummy_noerror(const char *rule_name,
+                             struct ini_cfgobj *rules_obj,
+                             struct ini_cfgobj *config_obj,
+                             struct ini_errobj *errobj)
+{
+    return 0;
+}
+
+/* This is used for testing only */
+static int ini_dummy_error(const char *rule_name,
+                           struct ini_cfgobj *rules_obj,
+                           struct ini_cfgobj *config_obj,
+                           struct ini_errobj *errobj)
+{
+    return ini_errobj_add_msg(errobj, "Error");
+}
+
+static ini_validator_func *
+get_validator(char *validator_name,
+              struct ini_validator *validators,
+              int num_validators)
+{
+    int i;
+
+    /* First we check all internal validators */
+    if (strcmp(validator_name, "ini_dummy_noerror") == 0) {
+        return ini_dummy_noerror;
+    } else if (strcmp(validator_name, "ini_dummy_error") == 0) {
+        return ini_dummy_error;
+    }
+
+    /* Now check the custom validators */
+    if (validators == NULL) {
+        return NULL;
+    }
+
+    for (i = 0; i < num_validators; i++) {
+        /* Skip invalid external validator. Name is required */
+        if (validators[i].name == NULL) {
+            continue;
+        }
+        if (strcmp(validator_name, validators[i].name) == 0) {
+            return validators[i].func;
+        }
+    }
+
+    return NULL;
+}
+
+int ini_rules_check(struct ini_cfgobj *rules_obj,
+                    struct ini_cfgobj *config_obj,
+                    struct ini_validator *extra_validators,
+                    int num_extra_validators,
+                    struct ini_errobj *errobj)
+{
+    char **sections;
+    int ret;
+    int num_sections;
+    char *vname;
+    ini_validator_func *vfunc;
+    struct value_obj *vo = NULL;
+    struct ini_errobj *localerr = NULL;
+    int i;
+
+    /* Get all sections from the rules object */
+    sections = ini_get_section_list(rules_obj, &num_sections, &ret);
+    if (ret != EOK) {
+        return ret;
+    }
+
+    /* Now iterate through all the sections. If the section
+     * name begins with a prefix "rule/", then it is a rule
+     * name. */
+    for (i = 0; i < num_sections; i++) {
+        if (!strncmp(sections[i], "rule/", sizeof("rule/") - 1)) {
+            ret = ini_get_config_valueobj(sections[i],
+                                          "validator",
+                                          rules_obj,
+                                          INI_GET_FIRST_VALUE,
+                                          &vo);
+            if (ret != 0) {
+                /* Failed to get value object. This should not
+                 * happen. */
+                continue;
+            }
+
+            if (vo == NULL) {
+                ret = ini_errobj_add_msg(errobj,
+                                         "Rule '%s' has no validator.",
+                                         sections[i]);
+                if (ret != EOK) {
+                    return ret;
+                }
+                /* Skip problematic rule */
+                continue;
+            }
+
+            vname = ini_get_string_config_value(vo, NULL);
+            vfunc = get_validator(vname, extra_validators,
+                                  num_extra_validators);
+            if (vfunc == NULL) {
+                ret = ini_errobj_add_msg(errobj,
+                                         "Rule '%s' uses unknown "
+                                         "validator '%s'.",
+                                         sections[i], vname);
+                if (ret != EOK) {
+                    goto done;
+                }
+                /* Skip problematic rule */
+                free(vname);
+                continue;
+            }
+            free(vname);
+
+            /* Do not pass global errobj to validators, they
+             * could corrupt it. Create local one for each
+             * validator. */
+            ret = ini_errobj_create(&localerr);
+            if (ret != EOK) {
+                goto done;
+            }
+
+            ret = vfunc(sections[i], rules_obj, config_obj, localerr);
+            if (ret != 0) {
+                /* Just report the error and continue normally,
+                 * maybe there are some errors in localerr */
+                ret = ini_errobj_add_msg(errobj,
+                                         "Rule '%s' returned error code '%d'",
+                                         sections[i], ret);
+                if (ret != EOK) {
+                    goto done;
+                }
+            }
+
+            /* Bad validator could destroy the localerr, check
+             * for NULL */
+            if (localerr == NULL) {
+                continue;
+            }
+
+            ini_errobj_reset(localerr);
+            while (!ini_errobj_no_more_msgs(localerr)) {
+                ret = ini_errobj_add_msg(errobj,
+                                         "[%s]: %s",
+                                         sections[i],
+                                         ini_errobj_get_msg(localerr));
+                if (ret != EOK) {
+                    goto done;
+                }
+                ini_errobj_next(localerr);
+            }
+
+            ini_errobj_destroy(&localerr);
+        }
+    }
+
+    ret = EOK;
+done:
+    ini_free_section_list(sections);
+    ini_errobj_destroy(&localerr);
+    return ret;
+}
+
+/* This is just convenience function, so that
+ * we manipulate with ini_rules_* functions. */
+void ini_rules_destroy(struct ini_cfgobj *rules)
+{
+    ini_config_destroy(rules);
+}
+
+int ini_errobj_create(struct ini_errobj **_errobj)
+{
+    struct ini_errobj *new_errobj = NULL;
+
+    if (_errobj == NULL) {
+        return EINVAL;
+    }
+
+    new_errobj = calloc(1, sizeof(struct ini_errobj));
+    if (new_errobj == NULL) {
+        return ENOMEM;
+    }
+
+    *_errobj = new_errobj;
+    return EOK;
+}
+
+void ini_errobj_destroy(struct ini_errobj **errobj)
+{
+    struct ini_errmsg *to_remove;
+
+    if (errobj == NULL || *errobj == NULL) {
+        return;
+    }
+
+    while ((*errobj)->first_msg) {
+        to_remove = (*errobj)->first_msg;
+        (*errobj)->first_msg = (*errobj)->first_msg->next;
+        free(to_remove->str);
+        free(to_remove);
+    }
+
+    free(*errobj);
+    *errobj = NULL;
+}
+
+int ini_errobj_add_msg(struct ini_errobj *errobj, const char *format, ...)
+{
+    int ret;
+    va_list args;
+    struct ini_errmsg *new;
+
+    new = calloc(1, sizeof(struct ini_errmsg));
+    if (new == NULL) {
+        return ENOMEM;
+    }
+
+    va_start(args, format);
+    ret = vasprintf(&new->str, format, args);
+    va_end(args);
+    if (ret == -1) {
+        free(new);
+        return ENOMEM;
+    }
+
+    if (errobj->count == 0) {
+        /* First addition to the list, all pointers are NULL */
+        errobj->first_msg = new;
+        errobj->last_msg = new;
+        errobj->cur_msg = new;
+        errobj->count++;
+    } else {
+        errobj->last_msg->next = new;
+        errobj->last_msg = errobj->last_msg->next;
+        errobj->count++;
+    }
+
+    return EOK;
+}
+
+void ini_errobj_reset(struct ini_errobj *errobj)
+{
+    errobj->cur_msg = errobj->first_msg;
+}
+
+const char *ini_errobj_get_msg(struct ini_errobj *errobj)
+{
+    if (errobj->cur_msg != NULL) {
+        return errobj->cur_msg->str;
+    }
+
+    /* Should this be allowed? */
+    return NULL;
+}
+
+void ini_errobj_next(struct ini_errobj *errobj)
+{
+    if (errobj->cur_msg != NULL) {
+        errobj->cur_msg = errobj->cur_msg->next;
+    }
+
+    /* If we can not move next, just return */
+    return;
+}
+
+int ini_errobj_no_more_msgs(struct ini_errobj *errobj)
+{
+    return errobj->cur_msg == NULL;
+}
+
+size_t ini_errobj_count(struct ini_errobj *errobj)
+{
+    return errobj->count;
 }

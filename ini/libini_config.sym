@@ -177,3 +177,18 @@ global:
     ini_config_set_bom;
 } INI_CONFIG_1.1.0;
 
+INI_CONFIG_1.3.0 {
+global:
+    /* ini_configobj.h */
+    ini_errobj_create;
+    ini_errobj_destroy;
+    ini_errobj_add_msg;
+    ini_errobj_reset;
+    ini_errobj_get_msg;
+    ini_errobj_count;
+    ini_errobj_next;
+    ini_errobj_no_more_msgs;
+    ini_rules_read_from_file;
+    ini_rules_check;
+    ini_rules_destroy;
+} INI_CONFIG_1.2.0;
