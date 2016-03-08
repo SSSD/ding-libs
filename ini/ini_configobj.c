@@ -20,6 +20,8 @@
 */
 
 #include "config.h"
+#include <sys/types.h>
+#include <regex.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -1094,6 +1096,189 @@ static int ini_dummy_error(const char *rule_name,
     return ini_errobj_add_msg(errobj, "Error");
 }
 
+static int check_if_allowed(char *section, char *attr, char **allowed,
+                            int num_allowed, struct ini_errobj *errobj)
+{
+    int is_allowed = 0;
+    int ret;
+    int i;
+
+    for (i = 0; i < num_allowed; i++) {
+        if (strcmp(attr, allowed[i]) == 0) {
+            is_allowed = 1;
+            break;
+        }
+    }
+
+    if (!is_allowed) {
+        ret = ini_errobj_add_msg(errobj,
+                                 "Attribute '%s' is not allowed in "
+                                 "section '%s'. Check for typos.",
+                                 attr, section);
+        return ret;
+    }
+
+    return 0;
+}
+
+static int ini_allowed_options(const char *rule_name,
+                               struct ini_cfgobj *rules_obj,
+                               struct ini_cfgobj *config_obj,
+                               struct ini_errobj *errobj)
+{
+    struct value_obj *vo = NULL;
+    int ret;
+    char *section_regex;
+    int num_sections;
+    char **sections = NULL;
+    char **attributes = NULL;
+    int num_attributes;
+    int num_opts = 0;
+    int i;
+    int a;
+    regex_t preg;
+    size_t buf_size;
+    char *err_str = NULL;
+    int reg_err;
+    char **allowed = NULL;
+
+    /* Get section regex */
+    ret = ini_get_config_valueobj(rule_name,
+                                  "section_re",
+                                  rules_obj,
+                                  INI_GET_FIRST_VALUE,
+                                  &vo);
+    if (ret != 0) {
+        return ret;
+    }
+
+    if (vo == NULL) {
+        ret = ini_errobj_add_msg(errobj,
+                                 "Validator misses 'section_re' parameter");
+        if (ret) {
+            return ret;
+        }
+        return EINVAL;
+    }
+
+    section_regex = ini_get_string_config_value(vo, NULL);
+    if (section_regex == NULL || section_regex[0] == '\0') {
+        ret = ini_errobj_add_msg(errobj,
+                                 "Validator misses 'section_re' parameter");
+        if (ret) {
+            return ret;
+        }
+
+        free(section_regex);
+        return EINVAL;
+    }
+
+    /* compile the regular expression */
+    reg_err = regcomp(&preg, section_regex, REG_NOSUB);
+    if (reg_err) {
+        buf_size = regerror(reg_err, &preg, NULL, 0);
+        err_str = malloc(buf_size);
+        if (err_str == NULL) {
+            ret = ENOMEM;
+            goto done;
+        }
+
+        regerror(reg_err, &preg, err_str, buf_size);
+        ret = ini_errobj_add_msg(errobj,
+                                 "Validator misses 'section_re' parameter");
+        ret = ret ? ret : EINVAL;
+        goto done;
+    }
+
+    /* Get all sections from config_obj */
+    sections = ini_get_section_list(config_obj, &num_sections, &ret);
+    if (ret != EOK) {
+        goto done;
+    }
+
+    /* Get number of 'option' attributes in this rule
+     * and create an array long enough to store them all */
+    attributes = ini_get_attribute_list(rules_obj,
+                                        rule_name,
+                                        &num_attributes,
+                                        NULL);
+    if (attributes == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    for (i = 0; i < num_attributes; i++) {
+        if (strcmp("option", attributes[i]) == 0) {
+            num_opts++;
+        }
+    }
+
+    ini_free_attribute_list(attributes);
+    attributes = NULL;
+
+    allowed = calloc(num_opts + 1, sizeof(char *));
+    if (allowed == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    for (i = 0; i < num_opts; i++) {
+        ret = ini_get_config_valueobj(rule_name,
+                                      "option",
+                                      rules_obj,
+                                      INI_GET_NEXT_VALUE,
+                                      &vo);
+        if (ret) {
+            goto done;
+        }
+
+        allowed[i] = ini_get_string_config_value(vo, &ret);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    for (i = 0; i < num_sections; i++) {
+        if (regexec(&preg, sections[i], 0, NULL, 0) == 0) {
+            /* Regex matched section */
+            /* Get options from this section */
+            attributes = ini_get_attribute_list(config_obj,
+                                                sections[i],
+                                                &num_attributes,
+                                                NULL);
+            if (attributes == NULL) {
+                ret = ENOMEM;
+                goto done;
+            }
+
+            for (a = 0; a < num_attributes; a++) {
+                ret = check_if_allowed(sections[i], attributes[a], allowed,
+                                       num_opts, errobj);
+                if (ret != 0) {
+                    goto done;
+                }
+            }
+            ini_free_attribute_list(attributes);
+            attributes = NULL;
+        }
+    }
+
+    ret = 0;
+done:
+    if (allowed != NULL) {
+        for (i = 0; allowed[i] != NULL; i++) {
+            free(allowed[i]);
+        }
+        free(allowed);
+    }
+    ini_free_section_list(sections);
+    free(section_regex);
+    ini_free_attribute_list(attributes);
+    regfree(&preg);
+    free(err_str);
+    return ret;
+}
+
 static ini_validator_func *
 get_validator(char *validator_name,
               struct ini_validator *validators,
@@ -1106,6 +1291,8 @@ get_validator(char *validator_name,
         return ini_dummy_noerror;
     } else if (strcmp(validator_name, "ini_dummy_error") == 0) {
         return ini_dummy_error;
+    } else if (strcmp(validator_name, "ini_allowed_options") == 0) {
+        return ini_allowed_options;
     }
 
     /* Now check the custom validators */
