@@ -966,8 +966,18 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     /* Check if we have the key */
     if (*(str) == '=') {
         TRACE_ERROR_STRING("No key", str);
-        po->last_error = ERR_NOKEY;
-        *action = PARSE_ERROR;
+
+        if (po->parse_flags & INI_PARSE_IGNORE_NON_KVP) {
+        /* Clean everything as if nothing happened  */
+            free(po->last_read);
+            po->last_read = NULL;
+            po->last_read_len = 0;
+            *action = PARSE_READ;
+        } else {
+            po->last_error = ERR_NOKEY;
+            *action = PARSE_ERROR;
+        }
+
         TRACE_FLOW_EXIT();
         return EOK;
     }
@@ -975,9 +985,18 @@ static int handle_kvp(struct parser_obj *po, uint32_t *action)
     /* Find "=" */
     eq = strchr(str, '=');
     if (eq == NULL) {
-        TRACE_ERROR_STRING("No equal sign", str);
-        po->last_error = ERR_NOEQUAL;
-        *action = PARSE_ERROR;
+        if (po->parse_flags & INI_PARSE_IGNORE_NON_KVP) {
+        /* Clean everything as if nothing happened  */
+            free(po->last_read);
+            po->last_read = NULL;
+            po->last_read_len = 0;
+            *action = PARSE_READ;
+        } else {
+            TRACE_ERROR_STRING("No equal sign", str);
+            po->last_error = ERR_NOEQUAL;
+            *action = PARSE_ERROR;
+        }
+
         TRACE_FLOW_EXIT();
         return EOK;
     }

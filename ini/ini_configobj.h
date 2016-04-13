@@ -363,6 +363,8 @@ enum ERR_PARSE {
 #define INI_PARSE_NOTAB            0x0004
 /** @brief Do not allow C-style comments */
 #define INI_PARSE_NO_C_COMMENTS    0x0008
+/** @brief Skip lines that are not KVPs */
+#define INI_PARSE_IGNORE_NON_KVP    0x0010
 
 /**
  * @}
