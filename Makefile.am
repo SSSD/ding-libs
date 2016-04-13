@@ -69,8 +69,11 @@ libpath_utils_la_LDFLAGS = \
     -Wl,--version-script=$(top_srcdir)/path_utils/libpath_utils.sym
 
 if HAVE_CHECK
-    check_PROGRAMS += path_utils_ut ini_configmod_ut_check
-    TESTS += path_utils_ut ini_configmod_ut_check
+    check_PROGRAMS += path_utils_ut ini_configmod_ut_check ini_parse_ut_check
+    TESTS += path_utils_ut \
+             ini_configmod_ut_check \
+             ini_parse_ut_check \
+             $(NULL)
 endif
 
 path_utils_ut_SOURCES = path_utils/path_utils_ut.c
@@ -347,6 +350,12 @@ ini_configmod_ut_check_LDADD = libini_config.la libcollection.la \
                                libbasicobjects.la libpath_utils.la \
                                libref_array.la \
                                $(CHECK_LIBS)
+
+ini_parse_ut_check_SOURCES = ini/ini_parse_ut_check.c
+ini_parse_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
+ini_parse_ut_check_LDADD = libini_config.la \
+                           libref_array.la \
+                           $(CHECK_LIBS)
 
 ini_save_ut_SOURCES = ini/ini_save_ut.c
 ini_save_ut_LDADD = libini_config.la libcollection.la \
