@@ -502,17 +502,216 @@ START_TEST(test_ini_allowed_sections_str_ok)
     ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
-    /* validator is not implemented yet. */
-    ret = strcmp("Rule 'rule/section_list' uses unknown validator "
-                 "'ini_allowed_sections'.",
-                 ini_errobj_get_msg(errobj));
-    fail_unless(ret == 0,
-                "Unexpected errors found: [%s]", ini_errobj_get_msg(errobj));
-    ini_errobj_next(errobj);
-
     /* Should generate 0 errors */
     fail_unless(ini_errobj_no_more_msgs(errobj),
                 "Unexpected errors found: [%s]", ini_errobj_get_msg(errobj));
+
+    ini_errobj_destroy(&errobj);
+    ini_config_destroy(cfg_obj);
+    ini_rules_destroy(rules_obj);
+}
+END_TEST
+
+START_TEST(test_ini_allowed_sections_str_typos)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int num_err;
+    int ret;
+
+    /* Only bar and baz are allowed for foo section */
+    char input_rules[] =
+        "[rule/section_list]\n"
+        "validator = ini_allowed_sections\n"
+        "section = foo\n"
+        "section = bar\n";
+
+    /* Make 4 typos */
+    char input_cfg[] =
+        "[fooo]\n"
+        "br = 0\n"
+        "bra = 0\n"
+        "[baar]\n"
+        "abz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 2 errors */
+    fail_if(ini_errobj_no_more_msgs(errobj),
+            "Expected 2 errors but none found");
+    num_err = ini_errobj_count(errobj);
+    fail_unless(num_err == 2, "Expected 2 errors, got %d", num_err);
+
+    ini_errobj_destroy(&errobj);
+    ini_config_destroy(cfg_obj);
+    ini_rules_destroy(rules_obj);
+}
+END_TEST
+
+START_TEST(test_ini_allowed_sections_str_insensitive)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int ret;
+
+    /* Only bar and baz are allowed for foo section */
+    char input_rules[] =
+        "[rule/section_list]\n"
+        "validator = ini_allowed_sections\n"
+        "case_insensitive = yes\n"
+        "section = foo\n"
+        "section = bar\n";
+
+    /* Make 4 typos */
+    char input_cfg[] =
+        "[FOo]\n"
+        "br = 0\n"
+        "bra = 0\n"
+        "[baR]\n"
+        "abz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 0 errors */
+    fail_unless(ini_errobj_no_more_msgs(errobj), "Unexpected errors found");
+
+    ini_errobj_destroy(&errobj);
+    ini_config_destroy(cfg_obj);
+    ini_rules_destroy(rules_obj);
+}
+END_TEST
+
+START_TEST(test_ini_allowed_sections_re_ok)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int ret;
+
+    char input_rules[] =
+        "[rule/section_list]\n"
+        "validator = ini_allowed_sections\n"
+        "section_re = ^foo*$\n"
+        "section_re = bar\n";
+
+    char input_cfg[] =
+        "[foooooooooooo]\n"
+        "br = 0\n"
+        "bra = 0\n"
+        "[my_bar]\n"
+        "abz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 0 errors */
+    fail_unless(ini_errobj_no_more_msgs(errobj), "Unexpected errors found");
+
+    ini_errobj_destroy(&errobj);
+    ini_config_destroy(cfg_obj);
+    ini_rules_destroy(rules_obj);
+}
+END_TEST
+
+START_TEST(test_ini_allowed_sections_re_typos)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int num_err;
+    int ret;
+
+    char input_rules[] =
+        "[rule/section_list]\n"
+        "validator = ini_allowed_sections\n"
+        "section_re = ^foo*$\n"
+        "section_re = bar\n";
+
+    /* Make 4 typos */
+    char input_cfg[] =
+        "[fooooooOooooo]\n"
+        "br = 0\n"
+        "bra = 0\n"
+        "[my_bra]\n"
+        "abz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 2 errors */
+    fail_if(ini_errobj_no_more_msgs(errobj),
+            "Expected 2 errors but none found");
+    num_err = ini_errobj_count(errobj);
+    fail_unless(num_err == 2, "Expected 2 errors, got %d", num_err);
+
+    ini_errobj_destroy(&errobj);
+    ini_config_destroy(cfg_obj);
+    ini_rules_destroy(rules_obj);
+}
+END_TEST
+
+START_TEST(test_ini_allowed_sections_re_insensitive)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int ret;
+
+    /* Only bar and baz are allowed for foo section */
+    char input_rules[] =
+        "[rule/section_list]\n"
+        "validator = ini_allowed_sections\n"
+        "case_insensitive = yes\n"
+        "section_re = ^foo*$\n"
+        "section_re = bar\n";
+
+    /* Make 4 typos */
+    char input_cfg[] =
+        "[FOoOoOoOoOOOOooo]\n"
+        "br = 0\n"
+        "bra = 0\n"
+        "[my_Bar]\n"
+        "abz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 0 errors */
+    fail_unless(ini_errobj_no_more_msgs(errobj), "Unexpected errors found");
 
     ini_errobj_destroy(&errobj);
     ini_config_destroy(cfg_obj);
@@ -539,6 +738,13 @@ static Suite *ini_validators_utils_suite(void)
 
     TCase *tc_allowed_sections = tcase_create("ini_allowed_sections");
     tcase_add_test(tc_allowed_sections, test_ini_allowed_sections_str_ok);
+    tcase_add_test(tc_allowed_sections, test_ini_allowed_sections_str_typos);
+    tcase_add_test(tc_allowed_sections,
+                   test_ini_allowed_sections_str_insensitive);
+    tcase_add_test(tc_allowed_sections, test_ini_allowed_sections_re_ok);
+    tcase_add_test(tc_allowed_sections, test_ini_allowed_sections_re_typos);
+    tcase_add_test(tc_allowed_sections,
+                   test_ini_allowed_sections_re_insensitive);
 
     suite_add_tcase(s, tc_infrastructure);
     suite_add_tcase(s, tc_allowed_options);
