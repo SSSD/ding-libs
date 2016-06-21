@@ -1515,10 +1515,9 @@ done:
 
 static ini_validator_func *
 get_validator(char *validator_name,
-              struct ini_validator *validators,
-              int num_validators)
+              struct ini_validator **validators)
 {
-    int i;
+    struct ini_validator *ext_validator;
 
     /* First we check all internal validators */
     if (strcmp(validator_name, "ini_dummy_noerror") == 0) {
@@ -1531,18 +1530,19 @@ get_validator(char *validator_name,
         return ini_allowed_sections;
     }
 
-    /* Now check the custom validators */
     if (validators == NULL) {
         return NULL;
     }
 
-    for (i = 0; i < num_validators; i++) {
+    for (; *validators != NULL; ++validators) {
+        ext_validator = *validators;
+
         /* Skip invalid external validator. Name is required */
-        if (validators[i].name == NULL) {
+        if (ext_validator->name == NULL) {
             continue;
         }
-        if (strcmp(validator_name, validators[i].name) == 0) {
-            return validators[i].func;
+        if (strcmp(validator_name, ext_validator->name) == 0) {
+            return ext_validator->func;
         }
     }
 
@@ -1551,8 +1551,7 @@ get_validator(char *validator_name,
 
 int ini_rules_check(struct ini_cfgobj *rules_obj,
                     struct ini_cfgobj *config_obj,
-                    struct ini_validator *extra_validators,
-                    int num_extra_validators,
+                    struct ini_validator **extra_validators,
                     struct ini_errobj *errobj)
 {
     char **sections;
@@ -1598,8 +1597,7 @@ int ini_rules_check(struct ini_cfgobj *rules_obj,
             }
 
             vname = ini_get_string_config_value(vo, NULL);
-            vfunc = get_validator(vname, extra_validators,
-                                  num_extra_validators);
+            vfunc = get_validator(vname, extra_validators);
             if (vfunc == NULL) {
                 ret = ini_errobj_add_msg(errobj,
                                          "Rule '%s' uses unknown "

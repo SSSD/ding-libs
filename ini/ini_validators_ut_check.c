@@ -169,7 +169,7 @@ START_TEST(test_ini_noerror)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
     fail_unless(ini_errobj_no_more_msgs(errobj));
 
@@ -205,7 +205,7 @@ START_TEST(test_ini_error)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate exactly one error */
@@ -225,7 +225,7 @@ START_TEST(test_ini_error)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate exactly one error */
@@ -263,7 +263,7 @@ START_TEST(test_unknown_validator)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate exactly one error */
@@ -299,10 +299,14 @@ START_TEST(test_custom_noerror)
     struct ini_cfgobj *cfg_obj;
     struct ini_errobj *errobj;
     int ret;
-    struct ini_validator noerror = { "custom_noerror", custom_noerror };
-    struct ini_validator missing_name[] = {
-        { NULL, custom_noerror },
-        { "custom_noerror", custom_noerror },
+    struct ini_validator *noerror[] = {
+        &(struct ini_validator){ "custom_noerror", custom_noerror },
+        NULL
+    };
+    struct ini_validator *missing_name[] = {
+        &(struct ini_validator){ NULL, custom_noerror },
+        &(struct ini_validator){ "custom_noerror", custom_noerror },
+        NULL
     };
 
     char input_rules[] =
@@ -320,7 +324,7 @@ START_TEST(test_custom_noerror)
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
     /* Pass the custom validator to ini_rules_check() */
-    ret = ini_rules_check(rules_obj, cfg_obj, &noerror, 1, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, noerror, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate no errors */
@@ -328,7 +332,7 @@ START_TEST(test_custom_noerror)
 
     /* Pass wrong external validator to ini_rules_check() */
     /* It should be skipped */
-    ret = ini_rules_check(rules_obj, cfg_obj, missing_name, 2, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, missing_name, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate no errors */
@@ -346,9 +350,13 @@ START_TEST(test_custom_error)
     struct ini_cfgobj *cfg_obj;
     struct ini_errobj *errobj;
     int ret;
-    struct ini_validator error = { "custom_error", custom_error };
-    struct ini_validator missing_function[] = {
-        { "custom_noerror", NULL },
+    struct ini_validator *error[] = {
+        &(struct ini_validator){ "custom_error", custom_error },
+        NULL
+    };
+    struct ini_validator *missing_function[] = {
+        &(struct ini_validator){ "custom_noerror", NULL },
+        NULL
     };
     const char *errmsg;
 
@@ -367,7 +375,7 @@ START_TEST(test_custom_error)
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
     /* Pass the custom validator to ini_rules_check() */
-    ret = ini_rules_check(rules_obj, cfg_obj, &error, 1, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, error, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate one error */
@@ -384,7 +392,7 @@ START_TEST(test_custom_error)
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
     /* Pass the custom validator to ini_rules_check() */
-    ret = ini_rules_check(rules_obj, cfg_obj, missing_function, 1, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, missing_function, errobj);
 
     /* Should generate one error for missing validator */
     fail_if(ini_errobj_no_more_msgs(errobj));
@@ -433,7 +441,7 @@ START_TEST(test_ini_allowed_options_ok)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate no errors */
@@ -482,7 +490,7 @@ START_TEST(test_ini_allowed_options_no_section)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 2 errors (one from rules_check and one
@@ -516,7 +524,7 @@ START_TEST(test_ini_allowed_options_no_section)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 2 errors (one from rules_check and one
@@ -576,7 +584,7 @@ START_TEST(test_ini_allowed_options_wrong_regex)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 2 errors (one from rules_check and one
@@ -638,7 +646,7 @@ START_TEST(test_ini_allowed_options_typos)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 4 errors */
@@ -681,7 +689,7 @@ START_TEST(test_ini_allowed_sections_str_ok)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 0 errors */
@@ -723,7 +731,7 @@ START_TEST(test_ini_allowed_sections_str_typos)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 2 errors */
@@ -778,7 +786,7 @@ START_TEST(test_ini_allowed_sections_str_insensitive)
                     "ini_errobj_create() failed for case_insensitive = %s: %s",
                     case_insensitive_values[i], strerror(ret));
 
-        ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+        ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
         fail_unless(ret == 0,
                     "ini_rules_check() failed for case_insensitive = %s: %s",
                     case_insensitive_values[i], strerror(ret));
@@ -822,7 +830,7 @@ START_TEST(test_ini_allowed_sections_re_ok)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 0 errors */
@@ -862,7 +870,7 @@ START_TEST(test_ini_allowed_sections_re_typos)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 2 errors */
@@ -906,7 +914,7 @@ START_TEST(test_ini_allowed_sections_re_insensitive)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 0 errors */
@@ -946,7 +954,7 @@ START_TEST(test_ini_allowed_sections_missing_section)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 1 errors */
@@ -999,7 +1007,7 @@ START_TEST(test_ini_allowed_sections_wrong_regex)
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, errobj);
     fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
 
     /* Should generate 2 errors */

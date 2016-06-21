@@ -2206,11 +2206,9 @@ int ini_rules_read_from_file(const char *filename,
  * @param[in] rules_obj            config object representing the rules
  * @param[in] config_obj           config object representing the
  *                                 configuration
- * @param[in] extra_validators     Array of extrenal validators. Can be
- *                                 NULL if no external validators are
- *                                 used.
- * @param[in] num_extra_validators Number of external validators in
- *                                 extra_validators array.
+ * @param[in] extra_validators     NULL terminated array of external
+ *                                 validators. Can be NULL if no external
+ *                                 validators are used.
  *
  * @param[in] errobj               errobj to store generated errors
  *                                 from validators.
@@ -2219,8 +2217,7 @@ int ini_rules_read_from_file(const char *filename,
  */
 int ini_rules_check(struct ini_cfgobj *rules_obj,
                     struct ini_cfgobj *config_obj,
-                    struct ini_validator *extra_validators,
-                    int num_extra_validators,
+                    struct ini_validator **extra_validators,
                     struct ini_errobj *errobj);
 
 /**
