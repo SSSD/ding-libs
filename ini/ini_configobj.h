@@ -32,6 +32,14 @@
 #include "simplebuffer.h"
 #include "ini_valueobj.h"
 
+#ifndef DING_ATTR_FORMAT
+#  if ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 3)))
+#    define DING_ATTR_FORMAT(fmt, args) __attribute__((__format__(__printf__, fmt, args)))
+#  else
+#    define DING_ATTR_FORMAT(fmt, args)
+#  endif
+#endif
+
 /** @mainpage The INI configuration interface
  *
  * The goal of the this interface is to allow applications
@@ -2089,7 +2097,9 @@ void ini_errobj_destroy(struct ini_errobj **errobj);
  *
  * @return Zero on success, nonzero value in case of error.
  */
-int ini_errobj_add_msg(struct ini_errobj *errobj, const char *format, ...);
+int ini_errobj_add_msg(struct ini_errobj *errobj,
+                       const char *format, ...)
+                       DING_ATTR_FORMAT(2, 3);
 
 /**
  * @brief Reset iterator in errobj.
