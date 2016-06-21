@@ -93,6 +93,11 @@ START_TEST(test_ini_errobj)
     const char TEST_MSG2[] = "Test message two.";
     const char TEST_MSG3[] = "Test message three.";
 
+    ret = ini_errobj_create(NULL);
+    fail_unless(ret == EINVAL,
+                "ini_errobj_create(NULL) failed with wrong error [%s]",
+                strerror(ret));
+
     ret = ini_errobj_create(&errobj);
     fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
 
@@ -186,6 +191,10 @@ START_TEST(test_ini_error)
         "[rule/generate_error]\n"
         "validator = ini_dummy_error\n";
 
+    char input_wrong_rule[] =
+        "[rule/generate_error]\n"
+        "valid = ini_dummy_error\n";
+
     char input_cfg[] =
         "[section]\n"
         "# Content of this file should not matter\n";
@@ -203,13 +212,33 @@ START_TEST(test_ini_error)
     fail_if(ini_errobj_no_more_msgs(errobj));
     errmsg = ini_errobj_get_msg(errobj);
     ret = strcmp(errmsg, "[rule/generate_error]: Error");
-    fail_unless(ret == 0, "Got msg: %s", errmsg);
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
     ini_errobj_next(errobj);
     fail_unless(ini_errobj_no_more_msgs(errobj));
 
     ini_errobj_destroy(&errobj);
-    ini_config_destroy(cfg_obj);
     ini_rules_destroy(rules_obj);
+
+    /* test rule with missing validator */
+    create_rules_from_str(input_wrong_rule, &rules_obj);
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate exactly one error */
+    fail_if(ini_errobj_no_more_msgs(errobj));
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg, "Rule 'rule/generate_error' has no validator.");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+    fail_unless(ini_errobj_no_more_msgs(errobj));
+
+    ini_errobj_destroy(&errobj);
+    ini_rules_destroy(rules_obj);
+    ini_config_destroy(cfg_obj);
 }
 END_TEST
 
@@ -271,6 +300,10 @@ START_TEST(test_custom_noerror)
     struct ini_errobj *errobj;
     int ret;
     struct ini_validator noerror = { "custom_noerror", custom_noerror };
+    struct ini_validator missing_name[] = {
+        { NULL, custom_noerror },
+        { "custom_noerror", custom_noerror },
+    };
 
     char input_rules[] =
         "[rule/custom_succeed]\n"
@@ -293,6 +326,14 @@ START_TEST(test_custom_noerror)
     /* Should generate no errors */
     fail_unless(ini_errobj_no_more_msgs(errobj));
 
+    /* Pass wrong external validator to ini_rules_check() */
+    /* It should be skipped */
+    ret = ini_rules_check(rules_obj, cfg_obj, missing_name, 2, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate no errors */
+    fail_unless(ini_errobj_no_more_msgs(errobj), "%s", ini_errobj_get_msg(errobj));
+
     ini_errobj_destroy(&errobj);
     ini_config_destroy(cfg_obj);
     ini_rules_destroy(rules_obj);
@@ -306,6 +347,9 @@ START_TEST(test_custom_error)
     struct ini_errobj *errobj;
     int ret;
     struct ini_validator error = { "custom_error", custom_error };
+    struct ini_validator missing_function[] = {
+        { "custom_noerror", NULL },
+    };
     const char *errmsg;
 
     char input_rules[] =
@@ -330,13 +374,32 @@ START_TEST(test_custom_error)
     fail_if(ini_errobj_no_more_msgs(errobj));
     errmsg = ini_errobj_get_msg(errobj);
     ret = strcmp(errmsg, "[rule/custom_error]: Error");
-    fail_unless(ret == 0, "Got msg: %s", errmsg);
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
     ini_errobj_next(errobj);
     fail_unless(ini_errobj_no_more_msgs(errobj));
 
     ini_errobj_destroy(&errobj);
-    ini_config_destroy(cfg_obj);
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    /* Pass the custom validator to ini_rules_check() */
+    ret = ini_rules_check(rules_obj, cfg_obj, missing_function, 1, errobj);
+
+    /* Should generate one error for missing validator */
+    fail_if(ini_errobj_no_more_msgs(errobj));
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "Rule 'rule/custom_error' uses unknown validator "
+                 "'custom_error'.");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+    fail_unless(ini_errobj_no_more_msgs(errobj));
+
+    ini_errobj_destroy(&errobj);
+
     ini_rules_destroy(rules_obj);
+    ini_config_destroy(cfg_obj);
 }
 END_TEST
 
@@ -389,12 +452,21 @@ START_TEST(test_ini_allowed_options_no_section)
     struct ini_errobj *errobj;
     int ret;
     size_t num_err;
+    const char *errmsg;
 
     /* Ommit section_re to generate error */
     char input_rules[] =
         "[rule/options_for_foo]\n"
         "validator = ini_allowed_options\n"
         /* "section_re = ^foo$\n" */
+        "option = bar\n"
+        "option = baz\n";
+
+    /* section_re without value */
+    char input_rules2[] =
+        "[rule/options_for_foo]\n"
+        "validator = ini_allowed_options\n"
+        "section_re = \n"
         "option = bar\n"
         "option = baz\n";
 
@@ -419,6 +491,116 @@ START_TEST(test_ini_allowed_options_no_section)
 
     num_err = ini_errobj_count(errobj);
     fail_unless(num_err == 2, "Expected 2 errors, got %d", num_err);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "Rule 'rule/options_for_foo' returned error code '22'");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "[rule/options_for_foo]: Validator misses 'section_re' "
+                 "parameter");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+    fail_unless(ini_errobj_no_more_msgs(errobj));
+
+    ini_errobj_destroy(&errobj);
+    ini_rules_destroy(rules_obj);
+
+    /* the second test with missing value for section_re */
+
+    create_rules_from_str(input_rules2, &rules_obj);
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 2 errors (one from rules_check and one
+     * from the validator itself) */
+    fail_if(ini_errobj_no_more_msgs(errobj));
+
+    num_err = ini_errobj_count(errobj);
+    fail_unless(num_err == 2, "Expected 2 errors, got %d", num_err);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "Rule 'rule/options_for_foo' returned error code '22'");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "[rule/options_for_foo]: Validator misses 'section_re' "
+                 "parameter");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+    fail_unless(ini_errobj_no_more_msgs(errobj));
+
+    ini_errobj_destroy(&errobj);
+    ini_rules_destroy(rules_obj);
+
+    ini_config_destroy(cfg_obj);
+}
+END_TEST
+
+START_TEST(test_ini_allowed_options_wrong_regex)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int ret;
+    size_t num_err;
+    const char *errmsg;
+
+    /* Ommit section_re to generate error */
+    char input_rules[] =
+        "[rule/options_for_foo]\n"
+        "validator = ini_allowed_options\n"
+        "section_re = ^foo[$\n"
+        "option = bar\n"
+        "option = baz\n";
+
+    /* Make 4 typos */
+    char input_cfg[] =
+        "[foo]\n"
+        "bar = 0\n"
+        "baz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 2 errors (one from rules_check and one
+     * from the validator itself) */
+    fail_if(ini_errobj_no_more_msgs(errobj));
+
+    num_err = ini_errobj_count(errobj);
+    fail_unless(num_err == 2, "Expected 2 errors, got %d", num_err);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "Rule 'rule/options_for_foo' returned error code '22'");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "[rule/options_for_foo]: Cannot compile regular expression "
+                 "from option 'section_re'. "
+                 "Error: 'Unmatched [ or [^'");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+
+    fail_unless(ini_errobj_no_more_msgs(errobj));
 
     ini_errobj_destroy(&errobj);
     ini_config_destroy(cfg_obj);
@@ -562,15 +744,20 @@ START_TEST(test_ini_allowed_sections_str_insensitive)
     struct ini_cfgobj *cfg_obj;
     struct ini_errobj *errobj;
     int ret;
+    int i;
 
     /* Only bar and baz are allowed for foo section */
-    char input_rules[] =
+    char input_rules_template[] =
         "[rule/section_list]\n"
         "validator = ini_allowed_sections\n"
-        "case_insensitive = yes\n"
+        "case_insensitive = %s\n"
         "section = foo\n"
         "section = bar\n";
 
+    char input_rules[sizeof(input_rules_template) + 10];
+
+    const char *case_insensitive_values[] = { "yes", "Yes", "true", "True",
+                                              "1", NULL };
     /* Make 4 typos */
     char input_cfg[] =
         "[FOo]\n"
@@ -579,21 +766,33 @@ START_TEST(test_ini_allowed_sections_str_insensitive)
         "[baR]\n"
         "abz = 0\n";
 
-    create_rules_from_str(input_rules, &rules_obj);
     cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
 
-    ret = ini_errobj_create(&errobj);
-    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+    for (i = 0; case_insensitive_values[i] != NULL; i++) {
+        sprintf(input_rules, input_rules_template, case_insensitive_values[i]);
 
-    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
-    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+        create_rules_from_str(input_rules, &rules_obj);
 
-    /* Should generate 0 errors */
-    fail_unless(ini_errobj_no_more_msgs(errobj), "Unexpected errors found");
+        ret = ini_errobj_create(&errobj);
+        fail_unless(ret == 0,
+                    "ini_errobj_create() failed for case_insensitive = %s: %s",
+                    case_insensitive_values[i], strerror(ret));
 
-    ini_errobj_destroy(&errobj);
+        ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+        fail_unless(ret == 0,
+                    "ini_rules_check() failed for case_insensitive = %s: %s",
+                    case_insensitive_values[i], strerror(ret));
+
+        /* Should generate 0 errors */
+        fail_unless(ini_errobj_no_more_msgs(errobj),
+                    "Unexpected errors found for case_insensitive = %s: [%s]",
+                    case_insensitive_values[i], ini_errobj_get_msg(errobj));
+
+        ini_errobj_destroy(&errobj);
+        ini_rules_destroy(rules_obj);
+    }
+
     ini_config_destroy(cfg_obj);
-    ini_rules_destroy(rules_obj);
 }
 END_TEST
 
@@ -719,6 +918,117 @@ START_TEST(test_ini_allowed_sections_re_insensitive)
 }
 END_TEST
 
+START_TEST(test_ini_allowed_sections_missing_section)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int num_err;
+    int ret;
+    const char *errmsg;
+
+    /* Only bar and baz are allowed for foo section */
+    char input_rules[] =
+        "[rule/section_list]\n"
+        "validator = ini_allowed_sections\n";
+
+    /* Make 4 typos */
+    char input_cfg[] =
+        "[fooo]\n"
+        "br = 0\n"
+        "bra = 0\n"
+        "[baar]\n"
+        "abz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 1 errors */
+    fail_if(ini_errobj_no_more_msgs(errobj),
+            "Expected 1 errors but none found");
+    num_err = ini_errobj_count(errobj);
+    fail_unless(num_err == 1, "Expected 1 errors, got %d", num_err);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "[rule/section_list]: No allowed sections specified. "
+                 "Use 'section = default' to allow only default section");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+
+    fail_unless(ini_errobj_no_more_msgs(errobj));
+
+    ini_errobj_destroy(&errobj);
+    ini_config_destroy(cfg_obj);
+    ini_rules_destroy(rules_obj);
+}
+END_TEST
+
+START_TEST(test_ini_allowed_sections_wrong_regex)
+{
+    struct ini_cfgobj *rules_obj;
+    struct ini_cfgobj *cfg_obj;
+    struct ini_errobj *errobj;
+    int num_err;
+    int ret;
+    const char *errmsg;
+
+    /* Only bar and baz are allowed for foo section */
+    char input_rules[] =
+        "[rule/section_list]\n"
+        "validator = ini_allowed_sections\n"
+        "section_re = ^foo\\(*$\n";
+
+    /* Make 4 typos */
+    char input_cfg[] =
+        "[fooo]\n"
+        "br = 0\n"
+        "bra = 0\n"
+        "[baar]\n"
+        "abz = 0\n";
+
+    create_rules_from_str(input_rules, &rules_obj);
+    cfg_obj = get_ini_config_from_str(input_cfg, sizeof(input_cfg));
+
+    ret = ini_errobj_create(&errobj);
+    fail_unless(ret == 0, "ini_errobj_create() failed: %s", strerror(ret));
+
+    ret = ini_rules_check(rules_obj, cfg_obj, NULL, 0, errobj);
+    fail_unless(ret == 0, "ini_rules_check() failed: %s", strerror(ret));
+
+    /* Should generate 2 errors */
+    fail_if(ini_errobj_no_more_msgs(errobj),
+            "Expected 2 errors but none found");
+    num_err = ini_errobj_count(errobj);
+    fail_unless(num_err == 2, "Expected 2 errors, got %d", num_err);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "Rule 'rule/section_list' returned error code '22'");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+
+    errmsg = ini_errobj_get_msg(errobj);
+    ret = strcmp(errmsg,
+                 "[rule/section_list]: Validator failed to use regex "
+                 "[^foo\\(*$]:[Unmatched ( or \\(]");
+    fail_unless(ret == 0, "Got msg: [%s]", errmsg);
+    ini_errobj_next(errobj);
+
+    fail_unless(ini_errobj_no_more_msgs(errobj));
+
+    ini_errobj_destroy(&errobj);
+    ini_config_destroy(cfg_obj);
+    ini_rules_destroy(rules_obj);
+}
+END_TEST
+
 static Suite *ini_validators_utils_suite(void)
 {
     Suite *s = suite_create("ini_validators");
@@ -734,6 +1044,7 @@ static Suite *ini_validators_utils_suite(void)
     TCase *tc_allowed_options = tcase_create("ini_allowed_options");
     tcase_add_test(tc_allowed_options, test_ini_allowed_options_ok);
     tcase_add_test(tc_allowed_options, test_ini_allowed_options_no_section);
+    tcase_add_test(tc_allowed_options, test_ini_allowed_options_wrong_regex);
     tcase_add_test(tc_allowed_options, test_ini_allowed_options_typos);
 
     TCase *tc_allowed_sections = tcase_create("ini_allowed_sections");
@@ -745,6 +1056,9 @@ static Suite *ini_validators_utils_suite(void)
     tcase_add_test(tc_allowed_sections, test_ini_allowed_sections_re_typos);
     tcase_add_test(tc_allowed_sections,
                    test_ini_allowed_sections_re_insensitive);
+    tcase_add_test(tc_allowed_sections,
+                   test_ini_allowed_sections_missing_section);
+    tcase_add_test(tc_allowed_sections, test_ini_allowed_sections_wrong_regex);
 
     suite_add_tcase(s, tc_infrastructure);
     suite_add_tcase(s, tc_allowed_options);
