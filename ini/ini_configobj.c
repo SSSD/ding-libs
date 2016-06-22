@@ -1082,7 +1082,8 @@ done:
 static int ini_dummy_noerror(const char *rule_name,
                              struct ini_cfgobj *rules_obj,
                              struct ini_cfgobj *config_obj,
-                             struct ini_errobj *errobj)
+                             struct ini_errobj *errobj,
+                             void **data)
 {
     return 0;
 }
@@ -1091,7 +1092,8 @@ static int ini_dummy_noerror(const char *rule_name,
 static int ini_dummy_error(const char *rule_name,
                            struct ini_cfgobj *rules_obj,
                            struct ini_cfgobj *config_obj,
-                           struct ini_errobj *errobj)
+                           struct ini_errobj *errobj,
+                           void **data)
 {
     return ini_errobj_add_msg(errobj, "Error");
 }
@@ -1133,7 +1135,8 @@ static int is_allowed_section(const char *tested_section,
 static int ini_allowed_sections(const char *rule_name,
                                 struct ini_cfgobj *rules_obj,
                                 struct ini_cfgobj *config_obj,
-                                struct ini_errobj *errobj)
+                                struct ini_errobj *errobj,
+                                void **data)
 {
     struct value_obj *vo = NULL;
     int ret;
@@ -1357,7 +1360,8 @@ static int check_if_allowed(char *section, char *attr, char **allowed,
 static int ini_allowed_options(const char *rule_name,
                                struct ini_cfgobj *rules_obj,
                                struct ini_cfgobj *config_obj,
-                               struct ini_errobj *errobj)
+                               struct ini_errobj *errobj,
+                               void **data)
 {
     struct value_obj *vo = NULL;
     int ret;
@@ -1620,7 +1624,7 @@ int ini_rules_check(struct ini_cfgobj *rules_obj,
                 goto done;
             }
 
-            ret = vfunc(sections[i], rules_obj, config_obj, localerr);
+            ret = vfunc(sections[i], rules_obj, config_obj, localerr, NULL);
             if (ret != 0) {
                 /* Just report the error and continue normally,
                  * maybe there are some errors in localerr */

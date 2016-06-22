@@ -2165,7 +2165,13 @@ size_t ini_errobj_count(struct ini_errobj *errobj);
 typedef int (ini_validator_func)(const char *rule_name,
                                  struct ini_cfgobj *rules_obj,
                                  struct ini_cfgobj *config_obj,
-                                 struct ini_errobj *errobj);
+                                 struct ini_errobj *errobj,
+                                 void **data);
+
+typedef int (ini_schema_validator_func)(const char *rule_name,
+                                        struct ini_cfgobj *rules_obj,
+                                        struct ini_errobj *errobj,
+                                        void **data);
 
 /** @brief Structure used to define application specific
  * (external to libini) validator
@@ -2173,6 +2179,8 @@ typedef int (ini_validator_func)(const char *rule_name,
 struct ini_validator {
     const char *name;
     ini_validator_func *func;
+    /* currently unused, for future expansion */
+    ini_schema_validator_func *schema_validator;
 };
 
 /**

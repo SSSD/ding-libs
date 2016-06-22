@@ -280,7 +280,8 @@ END_TEST
 static int custom_noerror(const char *rule_name,
                           struct ini_cfgobj *rules_obj,
                           struct ini_cfgobj *config_obj,
-                          struct ini_errobj *errobj)
+                          struct ini_errobj *errobj,
+                          void **data)
 {
     return 0;
 }
@@ -288,7 +289,8 @@ static int custom_noerror(const char *rule_name,
 static int custom_error(const char *rule_name,
                         struct ini_cfgobj *rules_obj,
                         struct ini_cfgobj *config_obj,
-                        struct ini_errobj *errobj)
+                        struct ini_errobj *errobj,
+                        void **data)
 {
     return ini_errobj_add_msg(errobj, "Error");
 }
@@ -300,12 +302,12 @@ START_TEST(test_custom_noerror)
     struct ini_errobj *errobj;
     int ret;
     struct ini_validator *noerror[] = {
-        &(struct ini_validator){ "custom_noerror", custom_noerror },
+        &(struct ini_validator){ "custom_noerror", custom_noerror, NULL },
         NULL
     };
     struct ini_validator *missing_name[] = {
-        &(struct ini_validator){ NULL, custom_noerror },
-        &(struct ini_validator){ "custom_noerror", custom_noerror },
+        &(struct ini_validator){ NULL, custom_noerror, NULL },
+        &(struct ini_validator){ "custom_noerror", custom_noerror, NULL },
         NULL
     };
 
@@ -351,11 +353,11 @@ START_TEST(test_custom_error)
     struct ini_errobj *errobj;
     int ret;
     struct ini_validator *error[] = {
-        &(struct ini_validator){ "custom_error", custom_error },
+        &(struct ini_validator){ "custom_error", custom_error, NULL },
         NULL
     };
     struct ini_validator *missing_function[] = {
-        &(struct ini_validator){ "custom_noerror", NULL },
+        &(struct ini_validator){ "custom_noerror", NULL, NULL },
         NULL
     };
     const char *errmsg;
