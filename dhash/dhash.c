@@ -176,7 +176,7 @@ static void sys_free_wrapper(void *ptr, void *pvt)
 static address_t convert_key(hash_key_t *key)
 {
     address_t h;
-    unsigned char *k;
+    const unsigned char *k;
 
     switch(key->type) {
     case HASH_KEY_ULONG:
@@ -184,7 +184,7 @@ static address_t convert_key(hash_key_t *key)
         break;
     case HASH_KEY_STRING:
         /* Convert string to integer */
-        for (h = 0, k = (unsigned char *) key->str; *k; k++)
+        for (h = 0, k = (const unsigned char *)key->str; *k; k++)
             h = h * PRIME_1 ^ (*k - ' ');
         break;
     default:
