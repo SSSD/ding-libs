@@ -136,7 +136,7 @@ typedef enum
 typedef struct hash_key_t {
     hash_key_enum type;
     union {
-        char *str;
+        const char *str;
         unsigned long ul;
     };
 } hash_key_t;
