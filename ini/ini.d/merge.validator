@@ -1,11 +1,11 @@
-File merge.validator did not match provided patterns. Skipping.
-File real8.conf did not match provided patterns. Skipping.
-File new_line.conf did not match provided patterns. Skipping.
-File real32be.conf did not match provided patterns. Skipping.
-File real32le.conf did not match provided patterns. Skipping.
-File real16be.conf did not match provided patterns. Skipping.
-File real16le.conf did not match provided patterns. Skipping.
-File foo.conf.in did not match provided patterns. Skipping.
+File %s%s/merge.validator did not match provided patterns. Skipping.
+File %s%s/real8.conf did not match provided patterns. Skipping.
+File %s%s/new_line.conf did not match provided patterns. Skipping.
+File %s%s/real32be.conf did not match provided patterns. Skipping.
+File %s%s/real32le.conf did not match provided patterns. Skipping.
+File %s%s/real16be.conf did not match provided patterns. Skipping.
+File %s%s/real16le.conf did not match provided patterns. Skipping.
+File %s%s/foo.conf.in did not match provided patterns. Skipping.
 Errors detected while parsing: %s%s/comment.conf.
 Error (9) on line 22: Invalid space character at the beginning of the line.
 Error (9) on line 24: Invalid space character at the beginning of the line.

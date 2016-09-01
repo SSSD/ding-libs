@@ -437,13 +437,18 @@ static int ini_aug_construct_list(char *dirname ,
                      INI_PARENT_DIR,
                      sizeof(INI_PARENT_DIR)) == 0)) continue;
 
+        error = path_concat(fullname, PATH_MAX, dirname, entry->d_name);
+        if (error != EOK) {
+            TRACE_ERROR_NUMBER("path_concat failed.", ret);
+            ref_array_destroy(ra_regex);
+            closedir(dir);
+            free(entry);
+            return error;
+        }
+
         /* Match names */
         match = ini_aug_match_name(entry->d_name, ra_regex);
-
         if (match) {
-
-            snprintf(fullname, PATH_MAX, "%s/%s", dirname, entry->d_name);
-
             if(ini_check_file_perm(fullname, check_perm, ra_err)) {
 
                 /* Dup name and add to the array */
@@ -473,7 +478,7 @@ static int ini_aug_construct_list(char *dirname ,
             ini_aug_add_string(ra_err,
                                "File %s did not match provided patterns."
                                " Skipping.",
-                               entry->d_name);
+                               fullname);
         }
     }
 
