@@ -64,6 +64,9 @@ static char *key_string(hash_key_t *key)
     case HASH_KEY_STRING:
         snprintf(buf, sizeof(buf), "key string = \"%s\"", key->str);
         break;
+    case HASH_KEY_CONST_STRING:
+        snprintf(buf, sizeof(buf), "key string = \"%s\"", key->c_str);
+        break;
     default:
         snprintf(buf, sizeof(buf), "unknown key type = %d", key->type);
         break;

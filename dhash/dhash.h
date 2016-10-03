@@ -112,7 +112,8 @@ typedef struct hash_table_str hash_table_t;
 
 typedef enum {
     HASH_KEY_STRING,
-    HASH_KEY_ULONG
+    HASH_KEY_ULONG,
+    HASH_KEY_CONST_STRING
 } hash_key_enum;
 
 typedef enum
@@ -137,6 +138,7 @@ typedef struct hash_key_t {
     hash_key_enum type;
     union {
         char *str;
+        const char *c_str;
         unsigned long ul;
     };
 } hash_key_t;

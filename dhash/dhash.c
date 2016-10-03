@@ -176,7 +176,7 @@ static void sys_free_wrapper(void *ptr, void *pvt)
 static address_t convert_key(hash_key_t *key)
 {
     address_t h;
-    unsigned char *k;
+    const unsigned char *k;
 
     switch(key->type) {
     case HASH_KEY_ULONG:
@@ -184,7 +184,12 @@ static address_t convert_key(hash_key_t *key)
         break;
     case HASH_KEY_STRING:
         /* Convert string to integer */
-        for (h = 0, k = (unsigned char *) key->str; *k; k++)
+        for (h = 0, k = (const unsigned char *) key->str; *k; k++)
+            h = h * PRIME_1 ^ (*k - ' ');
+        break;
+    case HASH_KEY_CONST_STRING:
+        /* Convert string to integer */
+        for (h = 0, k = (const unsigned char *) key->c_str; *k; k++)
             h = h * PRIME_1 ^ (*k - ' ');
         break;
     default:
@@ -212,6 +217,7 @@ static bool is_valid_key_type(hash_key_enum key_type)
     switch(key_type) {
     case HASH_KEY_ULONG:
     case HASH_KEY_STRING:
+    case HASH_KEY_CONST_STRING:
         return true;
     default:
         return false;
@@ -244,6 +250,8 @@ static bool key_equal(hash_key_t *a, hash_key_t *b)
         return (a->ul == b->ul);
     case HASH_KEY_STRING:
         return (strcmp(a->str, b->str) == 0);
+    case HASH_KEY_CONST_STRING:
+        return (strcmp(a->c_str, b->c_str) == 0);
     }
     return false;
 }
@@ -670,8 +678,11 @@ int hash_destroy(hash_table_t *table)
                         while (p != NULL) {
                             q = p->next;
                             hdelete_callback(table, HASH_TABLE_DESTROY, &p->entry);
-                            if (p->entry.key.type == HASH_KEY_STRING) {
-                                hfree(table, (char *)p->entry.key.str);
+                            if (p->entry.key.type == HASH_KEY_STRING
+                                    || p->entry.key.type == HASH_KEY_CONST_STRING) {
+                                /* Internally we do not use constant memory for keys
+                                 * in hash table elements. */
+                                hfree(table, p->entry.key.str);
                             }
                             hfree(table, (char *)p);
                             p = q;
@@ -972,13 +983,14 @@ int hash_enter(hash_table_t *table, hash_key_t *key, hash_value_t *value)
             element->entry.key.ul = key->ul;
             break;
         case HASH_KEY_STRING:
-            len = strlen(key->str)+1;
+        case HASH_KEY_CONST_STRING:
+            len = strlen(key->c_str) + 1;
             element->entry.key.str = halloc(table, len);
             if (element->entry.key.str == NULL) {
                 hfree(table, element);
                 return HASH_ERROR_NO_MEMORY;
             }
-            memcpy((void *)element->entry.key.str, key->str, len);
+            memcpy(element->entry.key.str, key->str, len);
             break;
         }
 
@@ -1070,8 +1082,9 @@ int hash_delete(hash_table_t *table, hash_key_t *key)
                 return error;
             }
         }
-        if (element->entry.key.type == HASH_KEY_STRING) {
-            hfree(table, (char *)element->entry.key.str);
+        if (element->entry.key.type == HASH_KEY_STRING
+                || element->entry.key.type == HASH_KEY_CONST_STRING) {
+            hfree(table, element->entry.key.str);
         }
         hfree(table, element);
         return HASH_SUCCESS;
