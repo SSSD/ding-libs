@@ -114,11 +114,25 @@ libdhash_la_LDFLAGS = \
 check_PROGRAMS += dhash_test dhash_example
 TESTS += dhash_test dhash_example
 
+if HAVE_CHECK
+    check_PROGRAMS += dhash_ut_check
+    TESTS += dhash_ut_check
+endif
+
+
 dhash_test_SOURCES = dhash/examples/dhash_test.c
 dhash_test_LDADD = libdhash.la
 
 dhash_example_SOURCES = dhash/examples/dhash_example.c
 dhash_example_LDADD = libdhash.la
+
+dhash_ut_check_SOURCES = dhash/dhash_ut_check.c
+dhash_ut_chech_CFLAGS = $(AM_CFLAGS) \
+                        $(CHECK_CFLAGS) \
+                        $(NULL)
+dhash_ut_check_LDADD = libdhash.la \
+                       $(CHECK_LIBS) \
+                       $(NULL)
 
 dist_examples_DATA += \
     dhash/examples/dhash_test.c \
