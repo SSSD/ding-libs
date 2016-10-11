@@ -66,7 +66,7 @@
 #define INI_SECTION_KEY "["
 
 /* Internal sizes. MAX_KEY is defined in config.h */
-#define MAX_VALUE       PATH_MAX
+#define MAX_VALUE       (PATH_MAX + 4096)
 #define BUFFER_SIZE     MAX_KEY + MAX_VALUE + 3
 
 /* Beffer length used for int to string conversions */
