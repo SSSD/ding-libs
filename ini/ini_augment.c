@@ -161,7 +161,7 @@ static int ini_aug_regex_prepare(const char *patterns[],
         for (i = 0; patterns[i] != NULL; i++) {
             pat = patterns[i];
 
-            TRACE_INFO_STRING("Pattern:", *pat);
+            TRACE_INFO_STRING("Pattern:", pat);
 
             preg = calloc(1, sizeof(regex_t));
             if (preg == NULL) {
@@ -439,7 +439,7 @@ static int ini_aug_construct_list(char *dirname ,
 
         error = path_concat(fullname, PATH_MAX, dirname, entry->d_name);
         if (error != EOK) {
-            TRACE_ERROR_NUMBER("path_concat failed.", ret);
+            TRACE_ERROR_NUMBER("path_concat failed.", error);
             ref_array_destroy(ra_regex);
             closedir(dir);
             free(entry);
