@@ -225,6 +225,7 @@ int ini_get_config_valueobj(const char *section,
         }
 
         if ((hash == col_get_item_hash(item)) &&
+            (col_get_item_type(item) == COL_TYPE_BINARY) &&
             (strncasecmp(col_get_item_property(item, &len), name, name_len) == 0) &&
             (len == name_len)) {
                 TRACE_INFO_STRING("Item is found", name);

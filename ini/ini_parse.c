@@ -391,7 +391,7 @@ static int check_section_collision(struct parser_obj *po)
 
     error = col_get_item(po->top,
                          col_get_item_property(po->sec, NULL),
-                         COL_TYPE_ANY,
+                         COL_TYPE_COLLECTIONREF,
                          COL_TRAVERSE_DEFAULT,
                          &item);
 
