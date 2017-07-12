@@ -344,7 +344,8 @@ enum ERR_PARSE {
 #define INI_MS_OVERWRITE 0x0200
 /** @brief Second section is discarded */
 #define INI_MS_PRESERVE  0x0300
-/** @brief Merge but log errors if duplicate sections are detected */
+/** @brief Log errors if duplicate sections are detected; non-exclusive */
+/** This defaults to MERGE, but can be used with OVERWRITE and PRESERVE **/
 #define INI_MS_DETECT    0x0400
 
 /**

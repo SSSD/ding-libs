@@ -22,6 +22,8 @@
 #ifndef INI_DEFINES_H
 #define INI_DEFINES_H
 
+#include <stdint.h>
+
 #define NAME_OVERHEAD   10
 
 #define SLASH           "/"
@@ -115,9 +117,12 @@
 #define INI_MV2S_MASK      0x00F0 /* Merge values options mask
                                    * for two sections. */
 #define INI_MS_MASK        0x0F00 /* Merge section options mask */
+#define INI_MS_MODE_MASK   0x0300 /* Merge section merge mode mask */
 
 
 /* Different error string functions can be passed as callbacks */
 typedef const char * (*error_fn)(int error);
+
+int ini_flags_have(uint32_t flag, uint32_t flags);
 
 #endif

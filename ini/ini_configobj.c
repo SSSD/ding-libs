@@ -270,6 +270,23 @@ static int ini_copy_cb(struct collection_item *item,
     return error;
 }
 
+/* Check flags for flag */
+int ini_flags_have(uint32_t flag, uint32_t flags)
+{
+    switch (flag) {
+    case INI_MS_MERGE:
+    case INI_MS_ERROR:
+    case INI_MS_OVERWRITE:
+    case INI_MS_PRESERVE:
+        return flag == (flags & INI_MS_MODE_MASK);
+    case INI_MS_DETECT:
+        return flag == (flags & INI_MS_DETECT);
+    default:
+        TRACE_ERROR_NUMBER("Unsupported flag", flag);
+    }
+    return 0;
+}
+
 /* Copy configuration */
 int ini_config_copy(struct ini_cfgobj *ini_config,
                     struct ini_cfgobj **ini_new)
@@ -547,7 +564,12 @@ static int acceptor_handler(const char *property,
     donor = passed_data->ci;
     acceptor = *((struct collection_item **)(data));
 
-    mergemode = passed_data->flags & INI_MS_MASK;
+    mergemode = passed_data->flags & INI_MS_MODE_MASK;
+
+    if (passed_data->flags & INI_MS_DETECT) {
+        TRACE_INFO_STRING("Detect mode", "");
+        passed_data->error = EEXIST;
+    }
 
     switch (mergemode) {
     case INI_MS_ERROR:      /* Report error and return */
@@ -582,21 +604,6 @@ static int acceptor_handler(const char *property,
                             }
                             break;
 
-    case INI_MS_DETECT:     /* Detect mode */
-                            TRACE_INFO_STRING("Detect mode", "");
-                            passed_data->error = EEXIST;
-                            error = merge_two_sections(donor,
-                                                       acceptor,
-                                                       passed_data->flags);
-                            if (error) {
-                                if (error != EEXIST) {
-                                    TRACE_ERROR_NUMBER("Failed to merge "
-                                                       "sections", error);
-                                    return error;
-                                }
-                            }
-                            break;
-
     case INI_MS_MERGE:      /* Merge */
     default:                TRACE_INFO_STRING("Merge mode", "");
                             error = merge_two_sections(donor,
@@ -608,14 +615,22 @@ static int acceptor_handler(const char *property,
                                                        "sections", error);
                                     return error;
                                 }
-                                passed_data->error = error;
+
+                                if (!(passed_data->flags & INI_MS_DETECT)) {
+                                    passed_data->error = error;
+                                }
+
+                                error = EOK;
                             }
                             break;
     }
 
-    *dummy = 1;
+    if (error == EOK) {
+        *dummy = 1;
+    }
+
     TRACE_FLOW_EXIT();
-    return EOK;
+    return error;
 }
 
 /* Callback to process the donating config */
@@ -671,8 +686,8 @@ static int donor_handler(const char *property,
                 /* Save error anyway */
                 passed_data->error = acceptor_data.error;
                 /* If it is section DETECT or MERGE+DETECT */
-                if (((passed_data->flags & INI_MS_MASK) == INI_MS_DETECT) ||
-                    (((passed_data->flags & INI_MS_MASK) != INI_MS_ERROR) &&
+                if (ini_flags_have(INI_MS_DETECT, passed_data->flags) ||
+                    (!ini_flags_have(INI_MS_ERROR, passed_data->flags) &&
                      ((passed_data->flags & INI_MV2S_MASK) ==
                        INI_MV2S_DETECT))) {
                     TRACE_INFO_NUMBER("Non-critical error",
@@ -782,7 +797,7 @@ static int merge_configs(struct ini_cfgobj *donor,
 
     /* Check if we got error */
     if ((data.error) &&
-        (((collision_flags & INI_MS_MASK) == INI_MS_ERROR) ||
+        (ini_flags_have(INI_MS_ERROR, collision_flags) ||
          ((collision_flags & INI_MV2S_MASK) == INI_MV2S_ERROR))) {
         TRACE_ERROR_NUMBER("Got error in error mode", data.error);
         return data.error;
@@ -806,7 +821,7 @@ static int merge_configs(struct ini_cfgobj *donor,
 
     /* Check if we got error */
     if ((data.error) &&
-        (((collision_flags & INI_MS_MASK) == INI_MS_DETECT) ||
+        (ini_flags_have(INI_MS_DETECT, collision_flags) ||
          ((collision_flags & INI_MV2S_MASK) == INI_MV2S_DETECT))) {
         TRACE_ERROR_NUMBER("Got error in error or detect mode", data.error);
         error = data.error;
@@ -843,12 +858,12 @@ int valid_collision_flags(uint32_t collision_flags)
         return 0;
     }
 
-    flag = collision_flags & INI_MS_MASK;
+    /* Any combination of DETECT and a MODE flag is valid. */
+    flag = collision_flags & INI_MS_MODE_MASK;
     if ((flag != INI_MS_MERGE) &&
         (flag != INI_MS_OVERWRITE) &&
         (flag != INI_MS_ERROR) &&
-        (flag != INI_MS_PRESERVE) &&
-        (flag != INI_MS_DETECT)) {
+        (flag != INI_MS_PRESERVE)) {
         TRACE_ERROR_STRING("Invalid section collision flag","");
         return 0;
     }
@@ -906,9 +921,9 @@ int ini_config_merge(struct ini_cfgobj *first,
     if (error) {
         TRACE_ERROR_NUMBER("Failed to merge configuration", error);
         if ((error == EEXIST) &&
-            ((((collision_flags & INI_MS_MASK) == INI_MS_DETECT) &&
+            ((ini_flags_have(INI_MS_DETECT, collision_flags) &&
               ((collision_flags & INI_MV2S_MASK) != INI_MV2S_ERROR)) ||
-             (((collision_flags & INI_MS_MASK) != INI_MS_ERROR) &&
+             (!ini_flags_have(INI_MS_ERROR, collision_flags) &&
               ((collision_flags & INI_MV2S_MASK) == INI_MV2S_DETECT)))) {
             TRACE_ERROR_NUMBER("Got error in detect mode", error);
             /* Fall through! */

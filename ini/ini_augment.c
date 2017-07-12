@@ -813,9 +813,9 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
                 }
                 else if
                     ((error == EEXIST) &&
-                     ((((merge_flags & INI_MS_MASK) == INI_MS_DETECT) &&
+                     ((ini_flags_have(INI_MS_DETECT, merge_flags) &&
                        ((merge_flags & INI_MV2S_MASK) != INI_MV2S_ERROR)) ||
-                      (((merge_flags & INI_MS_MASK) != INI_MS_ERROR) &&
+                      ((!ini_flags_have(INI_MS_ERROR, merge_flags)) &&
                        ((merge_flags & INI_MV2S_MASK) == INI_MV2S_DETECT)))) {
                         TRACE_ERROR_NUMBER("Got error in detect mode", error);
                         /* Fall through! */

@@ -580,7 +580,7 @@ static int parser_save_section(struct parser_obj *po)
 
             TRACE_INFO_STRING("Merge collision detected", "");
 
-            mergemode = po->collision_flags & INI_MS_MASK;
+            mergemode = po->collision_flags & INI_MS_MODE_MASK;
 
             switch (mergemode) {
             case INI_MS_ERROR:
@@ -623,9 +623,15 @@ static int parser_save_section(struct parser_obj *po)
                 merge = 1;
                 break;
 
-            case INI_MS_DETECT:
-                /* Detect mode */
-                TRACE_INFO_STRING("Detect mode", "");
+            case INI_MS_MERGE:
+                /* Merge */
+            default:
+                TRACE_INFO_STRING("Merge mode", "");
+                merge = 1;
+                break;
+            }
+
+            if (po->collision_flags & INI_MS_DETECT) {
                 po->merge_error = EEXIST;
                 error = save_error(po->el,
                                    po->seclinenum,
@@ -637,15 +643,6 @@ static int parser_save_section(struct parser_obj *po)
                                         error);
                     return error;
                 }
-                merge = 1;
-                break;
-
-            case INI_MS_MERGE:
-                /* Merge */
-            default:
-                TRACE_INFO_STRING("Merge mode", "");
-                merge = 1;
-                break;
             }
 
             if (merge) {
@@ -1599,9 +1596,9 @@ static int parser_error(struct parser_obj *po)
              * We check for reverse condition and return error,
              * otherwise fall through.
              */
-            if (!((((po->collision_flags & INI_MS_MASK) == INI_MS_ERROR) &&
+            if (!(((ini_flags_have(INI_MS_ERROR, po->collision_flags)) &&
                  (error == EEXIST)) ||
-                (((po->collision_flags & INI_MS_MASK) == INI_MS_MERGE) &&
+                (ini_flags_have(INI_MS_ERROR, po->collision_flags) &&
                  ((po->collision_flags & INI_MV2S_MASK) == INI_MV2S_ERROR) &&
                  (error == EEXIST)))) {
                 return error;
@@ -1728,11 +1725,12 @@ int ini_config_parse(struct ini_cfgfile *file_ctx,
 
     error = parser_run(po);
     if (error) {
-        fl1 = collision_flags & INI_MS_MASK;
+        fl1 = collision_flags & INI_MS_MODE_MASK;
         fl2 = collision_flags & INI_MV1S_MASK;
         fl3 = collision_flags & INI_MV2S_MASK;
         if ((error == EEXIST) &&
-            (((fl1 == INI_MS_DETECT) &&
+            ((ini_flags_have(INI_MS_DETECT, collision_flags) &&
+              (fl1 != INI_MS_ERROR) &&
               (fl2 != INI_MV1S_ERROR) &&
               (fl3 != INI_MV2S_ERROR)) ||
              ((fl2 == INI_MV1S_DETECT) &&
