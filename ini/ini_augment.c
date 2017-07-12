@@ -684,18 +684,19 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
 
     TRACE_FLOW_ENTRY();
 
-    len = ref_array_len(ra_list);
-    if (len == 0) {
-        /* List is empty - nothing to do */
-        *out_cfg = NULL;
-        TRACE_FLOW_EXIT();
-        return EOK;
-    }
-
     error = ini_config_copy(cfg, &res_cfg);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to copy config object", error);
+        *out_cfg = NULL;
         return error;
+    }
+
+    len = ref_array_len(ra_list);
+    if (len == 0) {
+        /* List is empty - nothing to do */
+        *out_cfg = res_cfg;
+        TRACE_FLOW_EXIT();
+        return EOK;
     }
 
     /* Prepare patterns */
@@ -704,7 +705,7 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
                                   &ra_regex);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to prepare regex array.", error);
-        ini_config_destroy(res_cfg);
+        *out_cfg = res_cfg;
         return error;
     }
 
@@ -715,9 +716,7 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
         error = ini_config_create(&snip_cfg);
         if (error) {
             TRACE_ERROR_NUMBER("Failed to create config object", error);
-            ini_config_destroy(res_cfg);
-            ref_array_destroy(ra_regex);
-            return error;
+            goto err;
         }
 
         /* Process snippet */
@@ -767,9 +766,7 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
                 if (error) {
                     TRACE_ERROR_NUMBER("Can't get errors.", error);
                     ini_config_destroy(snip_cfg);
-                    ini_config_destroy(res_cfg);
-                    ref_array_destroy(ra_regex);
-                    return error;
+                    goto err;
                 }
 
                 /* Copy errors into error array */
@@ -800,9 +797,7 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
             if (error) {
                 TRACE_ERROR_NUMBER("Failed to validate section.", error);
                 ini_config_destroy(snip_cfg);
-                ini_config_destroy(res_cfg);
-                ref_array_destroy(ra_regex);
-                return error;
+                goto err;
             }
         }
 
@@ -814,9 +809,7 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
                 if (error == ENOMEM) {
                     TRACE_ERROR_NUMBER("Merge failed.", error);
                     ini_config_destroy(snip_cfg);
-                    ini_config_destroy(res_cfg);
-                    ref_array_destroy(ra_regex);
-                    return error;
+                    goto err;
                 }
                 else if
                     ((error == EEXIST) &&
@@ -854,6 +847,20 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
     *out_cfg = res_cfg;
     TRACE_FLOW_EXIT();
     return error;
+
+err:
+    ini_config_destroy(res_cfg);
+    ref_array_destroy(ra_regex);
+
+    if (ini_config_copy(cfg, &res_cfg)) {
+        TRACE_ERROR_NUMBER("Failed to copy config object", error);
+        *out_cfg = NULL;
+        return error;
+    }
+
+    *out_cfg = res_cfg;
+
+    return error;
 }
 
 /* Function to merge additional snippets of the config file
@@ -879,8 +886,6 @@ int ini_config_augment(struct ini_cfgobj *base_cfg,
     struct ref_array *ra_err = NULL;
     /* List of files that were merged */
     struct ref_array *ra_ok = NULL;
-    /* Resulting configuration object */
-    struct ini_cfgobj *out_cfg = NULL;
 
     /* Check arguments */
     if (base_cfg == NULL) {
@@ -943,7 +948,7 @@ int ini_config_augment(struct ini_cfgobj *base_cfg,
                           merge_flags,
                           ra_err,
                           ra_ok,
-                          &out_cfg);
+                          result_cfg);
     if (error) {
         TRACE_ERROR_NUMBER("Failed to process snippet list.",
                            error);
@@ -955,8 +960,6 @@ int ini_config_augment(struct ini_cfgobj *base_cfg,
 
     /* Cleanup */
     ref_array_destroy(ra_list);
-
-    *result_cfg = out_cfg;
 
     if (error_list) {
         *error_list = ra_err;
