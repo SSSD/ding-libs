@@ -1026,12 +1026,14 @@ int ini_config_merge(struct ini_cfgobj *first,
  * @param[in]  patterns         List of regular expressions
  *                              that the name of a snippet file
  *                              has to match to be considered
- *                              for merge.
+ *                              for merge. These use POSIX Basic Regular
+ *                              Expressions.
  * @param[in]  sections         List of regular expressions
  *                              that the section names in the snippet
  *                              file need to match. If file contains
  *                              sections that do not match any patterns
  *                              the file is skipped and error is recorded.
+ *                              These use POSIX Basic Regular Expressions.
  * @param[in]  check_perm       Pointer to structure that
  *                              holds criteria for the
  *                              access check.
