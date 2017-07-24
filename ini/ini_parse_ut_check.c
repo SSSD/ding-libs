@@ -126,12 +126,122 @@ START_TEST(test_ini_parse_non_kvp)
 }
 END_TEST
 
+START_TEST(test_ini_parse_section_key_conflict)
+{
+    /*
+     * This tests the behavior of ini_config_parse to ensure correct handling
+     * of conflicts between sections and keys of the same name. There are
+     * three possibilities for conflict:
+     *
+     *   1. Inside a section, between the section name and a key name
+     *   2. Between a default-section key name and a section name
+     *   3. Between a key name in a different section and a section name
+     *
+     *   In case (1), parsing finished without an error. However, when
+     *   trying to select a value object inside a section, the returned
+     *   object was an unchecked cast from the section's data, and not the
+     *   attribute's data. In cases (2) and (3), the parser segfaulted while
+     *   trying to merge a section with an attribute.
+     */
+
+    char config1[] =
+        "[a]\n"
+        "a=a\n";
+
+    char config2[] =
+        "a=b\n"
+        "[a]\n"
+        "c=d\n";
+
+    char config3[] =
+        "[a]\n"
+        "b=c\n"
+        "[b]\n"
+        "a=d\n";
+
+    char *file_contents[] = {config1, config2, config3, NULL};
+
+    size_t iter;
+
+    struct ini_cfgobj *ini_config = NULL;
+    struct ini_cfgfile *file_ctx = NULL;
+
+    int ret;
+    int i;
+    int j;
+
+    char **sections = NULL;
+    int sections_count = 0;
+    int sections_error = 0;
+
+    char **attributes = NULL;
+    int attributes_count = 0;
+    int attributes_error = 0;
+
+    struct value_obj *val = NULL;
+    char *val_str = NULL;
+
+    for (iter = 0; file_contents[iter] != NULL; iter++) {
+        ret = ini_config_create(&ini_config);
+        fail_unless(ret == EOK, "Failed to create config. Error %d.\n", ret);
+
+        ret = ini_config_file_from_mem(file_contents[iter],
+                                       strlen(file_contents[iter]),
+                                       &file_ctx);
+        fail_unless(ret == EOK, "Failed to load file. Error %d.\n", ret);
+
+        ret = ini_config_parse(file_ctx, 1, 0, 0, ini_config);
+        fail_unless(ret == EOK, "Failed to parse file. Error %d.\n", ret);
+
+        sections = ini_get_section_list(ini_config, &sections_count,
+                                        &sections_error);
+        fail_unless(sections_error == EOK,
+                    "Failed to get sections. Error %d.\n",
+                    sections_error);
+
+        for (i = 0; i < sections_count; i++) {
+            attributes = ini_get_attribute_list(ini_config,
+                                                sections[i],
+                                                &attributes_count,
+                                                &attributes_error);
+            fail_unless(attributes_error == EOK,
+                        "Failed to get attributes. Error %d.\n",
+                        attributes_error);
+
+            for (j = 0; j < attributes_count; j++) {
+                ret = ini_get_config_valueobj(sections[i], attributes[j],
+                                              ini_config, 0, &val);
+                fail_unless(ret == EOK,
+                            "Failed to get attribute. Error %d.\n",
+                            ret);
+
+                val_str = ini_get_string_config_value(val, &ret);
+                fail_unless(ret == EOK,
+                            "Failed to get attribute as string. Error %d.\n",
+                            ret);
+                fail_unless(val_str != NULL,
+                            "Failed to get attribute as string: was NULL.\n");
+
+                free(val_str);
+            }
+
+            ini_free_attribute_list(attributes);
+        }
+
+        ini_free_section_list(sections);
+        ini_config_file_destroy(file_ctx);
+        ini_config_destroy(ini_config);
+    }
+}
+END_TEST
+
 static Suite *ini_parse_suite(void)
 {
     Suite *s = suite_create("ini_parse_suite");
 
     TCase *tc_parse = tcase_create("ini_parse");
     tcase_add_test(tc_parse, test_ini_parse_non_kvp);
+    tcase_add_test(tc_parse, test_ini_parse_section_key_conflict);
 
     suite_add_tcase(s, tc_parse);
 
