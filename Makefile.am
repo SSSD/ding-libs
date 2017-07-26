@@ -70,11 +70,13 @@ libpath_utils_la_LDFLAGS = \
 
 if HAVE_CHECK
     check_PROGRAMS += path_utils_ut \
+                      ini_augment_ut_check \
                       ini_configmod_ut_check \
                       ini_parse_ut_check \
                       ini_validators_ut_check \
                       $(NULL)
     TESTS += path_utils_ut \
+             ini_augment_ut_check \
              ini_configmod_ut_check \
              ini_parse_ut_check \
              ini_validators_ut_check \
@@ -362,6 +364,10 @@ ini_augment_ut_LDADD = libini_config.la libcollection.la \
 ini_configmod_ut_SOURCES = ini/ini_configmod_ut.c
 ini_configmod_ut_LDADD = libini_config.la libcollection.la \
                          libbasicobjects.la libpath_utils.la libref_array.la
+
+ini_augment_ut_check_SOURCES = ini/ini_augment_ut_check.c
+ini_augment_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
+ini_augment_ut_check_LDADD = libini_config.la $(CHECK_LIBS)
 
 ini_configmod_ut_check_SOURCES = ini/ini_configmod_ut_check.c
 ini_configmod_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
