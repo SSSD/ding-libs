@@ -185,7 +185,7 @@ static int ini_aug_regex_prepare(const char *patterns[],
                 ini_aug_add_string(ra_err,
                                    "Failed to process expression: %s."
                                    " Compilation returned error: %s",
-                                   *pat, err_str);
+                                   pat, err_str);
                 free(err_str);
 
                 /* All error processing is done - advance to next pattern */
@@ -819,6 +819,8 @@ static int ini_aug_apply(struct ini_cfgobj *cfg,
                        ((merge_flags & INI_MV2S_MASK) == INI_MV2S_DETECT)))) {
                         TRACE_ERROR_NUMBER("Got error in detect mode", error);
                         /* Fall through! */
+                    ini_aug_add_string(ra_err, "Duplicate section detected "
+                                       "in snippet: %s.", snip_name);
                 }
                 else {
                     ini_aug_add_string(ra_err,
@@ -949,14 +951,6 @@ int ini_config_augment(struct ini_cfgobj *base_cfg,
                           ra_err,
                           ra_ok,
                           result_cfg);
-    if (error) {
-        TRACE_ERROR_NUMBER("Failed to process snippet list.",
-                           error);
-        ref_array_destroy(ra_list);
-        ref_array_destroy(ra_err);
-        ref_array_destroy(ra_ok);
-        return error;
-    }
 
     /* Cleanup */
     ref_array_destroy(ra_list);
