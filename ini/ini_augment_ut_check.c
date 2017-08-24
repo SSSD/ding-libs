@@ -225,12 +225,103 @@ START_TEST(test_ini_augment_merge_sections)
 }
 END_TEST
 
+START_TEST(test_ini_augment_empty_dir)
+{
+    int ret;
+    struct ini_cfgobj *ini_cfg;
+    struct ini_cfgfile *file_ctx;
+    struct value_obj *vo;
+    const char *patterns[] = { ".*", NULL };
+    const char *sections[] = { ".*", NULL };
+    char **section_list;
+    char **attrs_list;
+    struct ini_cfgobj *result_cfg = NULL;
+    int size;
+    char empty_dir_path[PATH_MAX] = {0};
+    char *builddir;
+    int32_t val;
+    char base_cfg[] =
+        "[section_one]\n"
+        "one = 1\n";
+
+    builddir = getenv("builddir");
+    if (builddir == NULL) {
+        builddir = strdup(".");
+    }
+
+    ret = snprintf(empty_dir_path, PATH_MAX, "%s/tmp_empty_dir", builddir);
+    fail_if(ret > PATH_MAX || ret < 0, "snprintf failed\n");
+
+    ret = ini_config_file_from_mem(base_cfg, strlen(base_cfg),
+                                   &file_ctx);
+    fail_unless(ret == EOK, "Failed to load config. Error %d.\n", ret);
+
+    ret = ini_config_create(&ini_cfg);
+    fail_unless(ret == EOK, "Failed to create config. Error %d.\n", ret);
+    ret = ini_config_parse(file_ctx, INI_STOP_ON_ERROR, INI_MV1S_ALLOW, 0,
+                           ini_cfg);
+    fail_unless(ret == EOK, "Failed to parse configuration. Error %d.\n", ret);
+
+    /* Create an empty directory */
+    ret = mkdir(empty_dir_path, 0700);
+    if (ret == -1) {
+        ret = errno;
+        fail_if(ret != EEXIST,
+                "Failed to create empty directory. Error %d.\n", errno);
+    }
+
+    ret = ini_config_augment(ini_cfg,
+                             empty_dir_path,
+                             patterns,
+                             sections,
+                             NULL,
+                             INI_STOP_ON_ANY,
+                             INI_MV1S_OVERWRITE,
+                             INI_PARSE_NOWRAP,
+                             INI_MV2S_OVERWRITE,
+                             &result_cfg,
+                             NULL,
+                             NULL);
+
+    fail_unless(ret == EOK);
+
+    /* If the snippet directory is empty, result_cfg should be the original
+     * ini_cfg and not NULL */
+    fail_if(result_cfg == NULL);
+
+    /* Now check if the content of result_cfg is what we expected */
+    section_list = ini_get_section_list(result_cfg, &size, NULL);
+    fail_unless(size == 1);
+    fail_unless(strcmp(section_list[0], "section_one") == 0);
+
+    attrs_list = ini_get_attribute_list(result_cfg, section_list[0],
+                                        &size, NULL);
+    fail_unless(size == 1);
+    fail_unless(strcmp(attrs_list[0], "one") == 0);
+
+    ret = ini_get_config_valueobj(section_list[0],
+                                  attrs_list[0],
+                                  result_cfg,
+                                  INI_GET_FIRST_VALUE,
+                                  &vo);
+    fail_unless(ret == 0);
+
+    val = ini_get_int32_config_value(vo, 1, 100, NULL);
+    fail_unless(val == 1, "Expected attribute value not found.\n");
+
+    ini_config_destroy(ini_cfg);
+    ini_config_file_destroy(file_ctx);
+    remove(empty_dir_path);
+}
+END_TEST
+
 static Suite *ini_augment_suite(void)
 {
     Suite *s = suite_create("ini_augment_suite");
 
     TCase *tc_augment = tcase_create("ini_augment");
     tcase_add_test(tc_augment, test_ini_augment_merge_sections);
+    tcase_add_test(tc_augment, test_ini_augment_empty_dir);
 
     suite_add_tcase(s, tc_augment);
 
