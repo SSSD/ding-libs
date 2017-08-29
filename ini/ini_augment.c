@@ -363,14 +363,11 @@ static int ini_aug_construct_list(char *dirname ,
 
     int error = EOK;
     DIR *dir = NULL;
-    struct dirent *entry = NULL;
     struct dirent *entryp = NULL;
     char *snipname = NULL;
     char fullname[PATH_MAX + 1] = {0};
     struct ref_array *ra_regex = NULL;
     bool match = false;
-    int len = 0;
-    int name_max;
 
     TRACE_FLOW_ENTRY();
 
@@ -399,55 +396,42 @@ static int ini_aug_construct_list(char *dirname ,
         return EOK;
     }
 
-    /* Allocate memory for entry (as said in man pages)*/
-    name_max = pathconf(dirname, _PC_NAME_MAX);
-    if (name_max == -1)          /* Limit not defined, or error */
-        name_max = 1024;         /* Take a guess */
-    len = offsetof(struct dirent, d_name) + name_max + 1;
-    entry = malloc(len);
-    if (entry == NULL) {
-        TRACE_ERROR_NUMBER("Failed to allocate memory.", ENOMEM);
-        ref_array_destroy(ra_regex);
-        closedir(dir);
-        return ENOMEM;
-    }
-
     /* Loop through the directory */
     while (true)
     {
-        error = readdir_r(dir, entry, &entryp);
-        if (error) {
+        errno = 0;
+        entryp = readdir(dir);
+        if (entryp == NULL && errno != 0) {
+            error = errno;
             TRACE_ERROR_NUMBER("Failed to read directory.", error);
             ref_array_destroy(ra_regex);
             closedir(dir);
-            free(entry);
             return error;
         }
 
         /* Stop looping if we reached the end */
         if (entryp == NULL) break;
 
-        TRACE_INFO_STRING("Processing", entry->d_name);
+        TRACE_INFO_STRING("Processing", entryp->d_name);
 
         /* Always skip current and parent dirs */
-        if ((strncmp(entry->d_name,
+        if ((strncmp(entryp->d_name,
                      INI_CURRENT_DIR,
                      sizeof(INI_CURRENT_DIR)) == 0) ||
-            (strncmp(entry->d_name,
+            (strncmp(entryp->d_name,
                      INI_PARENT_DIR,
                      sizeof(INI_PARENT_DIR)) == 0)) continue;
 
-        error = path_concat(fullname, PATH_MAX, dirname, entry->d_name);
+        error = path_concat(fullname, PATH_MAX, dirname, entryp->d_name);
         if (error != EOK) {
             TRACE_ERROR_NUMBER("path_concat failed.", error);
             ref_array_destroy(ra_regex);
             closedir(dir);
-            free(entry);
             return error;
         }
 
         /* Match names */
-        match = ini_aug_match_name(entry->d_name, ra_regex);
+        match = ini_aug_match_name(entryp->d_name, ra_regex);
         if (match) {
             if(ini_check_file_perm(fullname, check_perm, ra_err)) {
 
@@ -458,7 +442,6 @@ static int ini_aug_construct_list(char *dirname ,
                     TRACE_ERROR_NUMBER("Failed to dup string.", ENOMEM);
                     ref_array_destroy(ra_regex);
                     closedir(dir);
-                    free(entry);
                     return ENOMEM;
                 }
 
@@ -469,7 +452,6 @@ static int ini_aug_construct_list(char *dirname ,
                                        ENOMEM);
                     ref_array_destroy(ra_regex);
                     closedir(dir);
-                    free(entry);
                     return ENOMEM;
                 }
             }
@@ -482,7 +464,6 @@ static int ini_aug_construct_list(char *dirname ,
         }
     }
 
-    free(entry);
     closedir(dir);
     ref_array_destroy(ra_regex);
 
