@@ -338,31 +338,22 @@ static int parser_read(struct parser_obj *po)
             free(buffer);
         }
         else {
-            /* Check length */
-            if (len >= BUFFER_SIZE) {
-                TRACE_ERROR_STRING("Too long", "");
-                action = PARSE_ERROR;
-                po->last_error = ERR_LONGDATA;
-                free(buffer);
+            /* Trim end line */
+            i = len - 1;
+            while ((i >= 0) &&
+                   ((buffer[i] == '\r') ||
+                    (buffer[i] == '\n'))) {
+                TRACE_INFO_NUMBER("Offset:", i);
+                TRACE_INFO_NUMBER("Code:", buffer[i]);
+                buffer[i] = '\0';
+                i--;
             }
-            else {
-                /* Trim end line */
-                i = len - 1;
-                while ((i >= 0) &&
-                       ((buffer[i] == '\r') ||
-                        (buffer[i] == '\n'))) {
-                    TRACE_INFO_NUMBER("Offset:", i);
-                    TRACE_INFO_NUMBER("Code:", buffer[i]);
-                    buffer[i] = '\0';
-                    i--;
-                }
 
-                po->last_read = buffer;
-                po->last_read_len = i + 1;
-                action = PARSE_INSPECT;
-                TRACE_INFO_STRING("Line:", po->last_read);
-                TRACE_INFO_NUMBER("Linelen:", po->last_read_len);
-            }
+            po->last_read = buffer;
+            po->last_read_len = i + 1;
+            action = PARSE_INSPECT;
+            TRACE_INFO_STRING("Line:", po->last_read);
+            TRACE_INFO_NUMBER("Linelen:", po->last_read_len);
         }
     }
 
