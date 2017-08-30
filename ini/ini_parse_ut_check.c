@@ -235,6 +235,52 @@ START_TEST(test_ini_parse_section_key_conflict)
 }
 END_TEST
 
+/* Maybe we should test even bigger values? */
+#define VALUE_LEN 10000
+/* The +100 is space for section name and key name. */
+#define CFGBUF_LEN (VALUE_LEN + 100)
+START_TEST(test_ini_long_value)
+{
+    int ret;
+    struct ini_cfgobj *ini_cfg;
+    struct ini_cfgfile *file_ctx;
+    struct value_obj *vo;
+    char big_val_cfg[CFGBUF_LEN] = {0};
+    char value[VALUE_LEN] = {0};
+    char *value_got;
+
+    /* The value is just a lot of As ending with '\0'*/
+    memset(value, 'A', VALUE_LEN - 1);
+
+    /* Create config file */
+    ret = snprintf(big_val_cfg, CFGBUF_LEN, "[section]\nkey=%s", value);
+
+    ret = ini_config_file_from_mem(big_val_cfg, strlen(big_val_cfg),
+                                   &file_ctx);
+    fail_unless(ret == EOK, "Failed to load config. Error %d.\n", ret);
+
+    ret = ini_config_create(&ini_cfg);
+    fail_unless(ret == EOK, "Failed to create config. Error %d.\n", ret);
+    ret = ini_config_parse(file_ctx, INI_STOP_ON_ERROR, INI_MV1S_ALLOW, 0,
+                           ini_cfg);
+    fail_if(ret != 0, "Failed to parse config. Error %d.\n", ret);
+
+    ret = ini_get_config_valueobj("section", "key", ini_cfg,
+                                  INI_GET_FIRST_VALUE, &vo);
+    fail_unless(ret == EOK, "ini_get_config_valueobj returned %d\n: %s", ret,
+                strerror(ret));
+
+    value_got = ini_get_string_config_value(vo, &ret);
+    fail_unless(ret == EOK, "ini_get_int_config_value returned %d\n: %s", ret,
+                strerror(ret));
+
+    fail_unless(strcmp(value, value_got) == 0, "Expected and found values differ!\n");
+    free(value_got);
+    ini_config_destroy(ini_cfg);
+    ini_config_file_destroy(file_ctx);
+}
+END_TEST
+
 static Suite *ini_parse_suite(void)
 {
     Suite *s = suite_create("ini_parse_suite");
@@ -242,6 +288,7 @@ static Suite *ini_parse_suite(void)
     TCase *tc_parse = tcase_create("ini_parse");
     tcase_add_test(tc_parse, test_ini_parse_non_kvp);
     tcase_add_test(tc_parse, test_ini_parse_section_key_conflict);
+    tcase_add_test(tc_parse, test_ini_long_value);
 
     suite_add_tcase(s, tc_parse);
 
