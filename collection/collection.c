@@ -44,11 +44,6 @@
 #define EINTR_INTERNAL 10000
 
 
-/* Potential subject for management with libtools */
-#define DATE_FORMAT "%c"
-
-#define TIME_ARRAY_SIZE 100
-
 /* Magic numbers for hashing */
 #if SIZEOF_LONG == 8
     #define FNV1a_prime 1099511628211ul
