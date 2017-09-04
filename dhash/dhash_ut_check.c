@@ -40,9 +40,16 @@ START_TEST(test_key_const_string)
     hash_table_t *htable;
     int ret;
     hash_value_t ret_val;
-    hash_value_t enter_val1 = {.type = HASH_VALUE_INT, .i = 1};
-    hash_value_t enter_val2 = {.type = HASH_VALUE_INT, .i = 2};
-    hash_key_t key = {.type = HASH_KEY_CONST_STRING, .c_str = "constant"};
+    hash_value_t enter_val1;
+    hash_value_t enter_val2;
+    hash_key_t key;
+
+    enter_val1.type = HASH_VALUE_INT;
+    enter_val1.i = 1;
+    enter_val2.type = HASH_VALUE_INT;
+    enter_val2.i = 2;
+    key.type = HASH_KEY_CONST_STRING;
+    key.c_str = "constant";
 
     ret = hash_create(HTABLE_SIZE, &htable, NULL, NULL);
     fail_unless(ret == 0);
@@ -87,11 +94,15 @@ START_TEST(test_key_string)
     hash_table_t *htable;
     int ret;
     hash_value_t ret_val;
-    hash_value_t enter_val1 = {.type = HASH_VALUE_INT, .i = 1};
-    hash_value_t enter_val2 = {.type = HASH_VALUE_INT, .i = 2};
+    hash_value_t enter_val1;
+    hash_value_t enter_val2;
     hash_key_t key;
     char str[] = "non_constant";
 
+    enter_val1.type = HASH_VALUE_INT;
+    enter_val1.i = 1;
+    enter_val2.type = HASH_VALUE_INT;
+    enter_val2.i = 2;
     key.type = HASH_KEY_STRING;
     key.str = str;
 
@@ -139,9 +150,16 @@ START_TEST(test_key_ulong)
     hash_table_t *htable;
     int ret;
     hash_value_t ret_val;
-    hash_value_t enter_val1 = {.type = HASH_VALUE_INT, .i = 1};
-    hash_value_t enter_val2 = {.type = HASH_VALUE_INT, .i = 2};
-    hash_key_t key = {.type = HASH_KEY_ULONG, .ul = 68ul};
+    hash_value_t enter_val1;
+    hash_value_t enter_val2;
+    hash_key_t key;
+
+    enter_val1.type = HASH_VALUE_INT;
+    enter_val1.i = 1;
+    enter_val2.type = HASH_VALUE_INT;
+    enter_val2.i = 2;
+    key.type = HASH_KEY_ULONG;
+    key.ul = 68ul;
 
     ret = hash_create(HTABLE_SIZE, &htable, NULL, NULL);
     fail_unless(ret == 0);
