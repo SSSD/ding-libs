@@ -308,6 +308,9 @@ START_TEST(test_ini_augment_empty_dir)
     val = ini_get_int32_config_value(vo, 1, 100, NULL);
     fail_unless(val == 1, "Expected attribute value not found.\n");
 
+    ini_free_attribute_list(attrs_list);
+    ini_free_section_list(section_list);
+    ini_config_destroy(result_cfg);
     ini_config_destroy(ini_cfg);
     ini_config_file_destroy(file_ctx);
     remove(empty_dir_path);
