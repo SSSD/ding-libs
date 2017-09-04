@@ -746,6 +746,7 @@ static hash_entry_t *hash_iter_next(struct hash_iter_context_t *iter_arg)
                 }
                 iter->j = 0;
                 state = HI_STATE_2;
+                /* FALLTHROUGH */
 
             case HI_STATE_2:
                 if (iter->j >= iter->table->segment_size) {
@@ -754,6 +755,7 @@ static hash_entry_t *hash_iter_next(struct hash_iter_context_t *iter_arg)
                 }
                 iter->p = iter->s[iter->j];
                 state = HI_STATE_3A;
+                /* FALLTHROUGH */
 
             case HI_STATE_3A:
                 if (iter->p == NULL) {
