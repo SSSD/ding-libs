@@ -2071,7 +2071,7 @@ struct ini_errobj;
  * hold error messages from generators. To add messages to
  * the structure use \ref ini_errobj_add_msg.
  *
- * @param[out] errobj         container for errors.
+ * @param[out] _errobj         container for errors.
  *
  * @return Zero on success, nonzero value in case of error.
  */
