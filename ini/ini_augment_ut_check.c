@@ -76,7 +76,7 @@ START_TEST(test_ini_augment_merge_sections)
         "key1 = augment\n"
         "key3 = exists\n";
 
-    char *builddir;
+    const char *builddir;
 
     uint32_t flags[3] = { INI_MS_DETECT , INI_MS_DETECT | INI_MS_PRESERVE,
                           INI_MS_DETECT | INI_MS_OVERWRITE };
@@ -91,7 +91,7 @@ START_TEST(test_ini_augment_merge_sections)
 
     builddir = getenv("builddir");
     if (builddir == NULL) {
-        builddir = strdup(".");
+        builddir = ".";
     }
 
     snprintf(base_path, PATH_MAX, "%s/tmp_augment_base.conf", builddir);
@@ -221,7 +221,6 @@ START_TEST(test_ini_augment_merge_sections)
 
     remove(base_path);
     remove(augment_path);
-    free(builddir);
 }
 END_TEST
 
@@ -238,7 +237,7 @@ START_TEST(test_ini_augment_empty_dir)
     struct ini_cfgobj *result_cfg = NULL;
     int size;
     char empty_dir_path[PATH_MAX] = {0};
-    char *builddir;
+    const char *builddir;
     int32_t val;
     char base_cfg[] =
         "[section_one]\n"
@@ -246,7 +245,7 @@ START_TEST(test_ini_augment_empty_dir)
 
     builddir = getenv("builddir");
     if (builddir == NULL) {
-        builddir = strdup(".");
+        builddir = ".";
     }
 
     ret = snprintf(empty_dir_path, PATH_MAX, "%s/tmp_empty_dir", builddir);
