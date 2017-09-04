@@ -501,12 +501,12 @@ const char *get_const_string_config_value(struct collection_item *item, int *err
 char *get_bin_config_value(struct collection_item *item,
                            int *length, int *error)
 {
-    int i;
+    unsigned i;
     char *value = NULL;
     const char *buff;
     int size = 0;
     unsigned char hex;
-    int len;
+    unsigned len;
     const char *str;
 
     TRACE_FLOW_STRING("get_bin_config_value", "Entry");
