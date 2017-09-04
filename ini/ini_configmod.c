@@ -19,12 +19,11 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE /* for asprintf */
+#include "config.h"
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include "config.h"
 #include "trace.h"
 #include "ref_array.h"
 #include "simplebuffer.h"

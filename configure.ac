@@ -4,7 +4,10 @@ AC_INIT([ding-libs],
         [sssd-devel@lists.fedorahosted.org])
 AC_CONFIG_SRCDIR([README])
 AC_CONFIG_AUX_DIR([build])
-AC_GNU_SOURCE
+
+m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],
+    [AC_USE_SYSTEM_EXTENSIONS],
+    [AC_GNU_SOURCE])
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])

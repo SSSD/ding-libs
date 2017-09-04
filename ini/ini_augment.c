@@ -21,7 +21,6 @@
     along with INI Library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE /* for vasprintf */
 #include "config.h"
 #include <errno.h>
 #include <stdarg.h>
