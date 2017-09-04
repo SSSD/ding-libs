@@ -647,7 +647,7 @@ int col_print_item(struct collection_item *handle, const char *name)
     else {
         if (buf_data.buffer != NULL) {
             if (buf_data.length > 0) buf_data.length--;
-            buf_data.buffer[buf_data.length] = '\0',
+            buf_data.buffer[buf_data.length] = '\0';
             printf("%s\n", buf_data.buffer);
             free(buf_data.buffer);
         }
