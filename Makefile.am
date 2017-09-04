@@ -367,7 +367,8 @@ ini_configmod_ut_LDADD = libini_config.la libcollection.la \
 
 ini_augment_ut_check_SOURCES = ini/ini_augment_ut_check.c
 ini_augment_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
-ini_augment_ut_check_LDADD = libini_config.la $(CHECK_LIBS)
+ini_augment_ut_check_LDADD = libini_config.la $(CHECK_LIBS) \
+                             libref_array.la
 
 ini_configmod_ut_check_SOURCES = ini/ini_configmod_ut_check.c
 ini_configmod_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
