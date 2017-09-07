@@ -110,7 +110,7 @@ dist_include_HEADERS += dhash/dhash.h
 libdhash_la_SOURCES = dhash/dhash.c
 libdhash_la_DEPENDENCIES = dhash/libdhash.sym
 libdhash_la_LDFLAGS = \
-    -version-info 1:2:0 \
+    -version-info 2:0:1 \
     -Wl,--version-script=$(top_srcdir)/dhash/libdhash.sym
 
 check_PROGRAMS += dhash_test dhash_example
@@ -166,7 +166,7 @@ libcollection_la_SOURCES = \
     trace/trace.h
 libcollection_la_DEPENDENCIES = collection/libcollection.sym
 libcollection_la_LDFLAGS = \
-    -version-info 5:0:1 \
+    -version-info 5:1:1 \
     -Wl,--version-script=$(top_srcdir)/collection/libcollection.sym
 
 check_PROGRAMS += \
@@ -292,7 +292,7 @@ libini_config_la_LIBADD = \
     libref_array.la \
     libbasicobjects.la
 libini_config_la_LDFLAGS = \
-    -version-info 7:0:2 \
+    -version-info 7:1:2 \
     -Wl,--version-script=$(top_srcdir)/ini/libini_config.sym
 
 dist_noinst_DATA += \

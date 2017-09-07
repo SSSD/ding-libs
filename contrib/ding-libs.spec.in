@@ -131,7 +131,7 @@ time properties
 %defattr(-,root,root,-)
 %doc COPYING COPYING.LESSER
 %{_libdir}/libdhash.so.1
-%{_libdir}/libdhash.so.1.0.2
+%{_libdir}/libdhash.so.1.1.0
 
 %files -n libdhash-devel
 %defattr(-,root,root,-)
@@ -175,7 +175,7 @@ and serialization
 %doc COPYING
 %doc COPYING.LESSER
 %{_libdir}/libcollection.so.4
-%{_libdir}/libcollection.so.4.1.0
+%{_libdir}/libcollection.so.4.1.1
 
 %files -n libcollection-devel
 %defattr(-,root,root,-)
@@ -304,7 +304,7 @@ structure
 %doc COPYING
 %doc COPYING.LESSER
 %{_libdir}/libini_config.so.5
-%{_libdir}/libini_config.so.5.2.0
+%{_libdir}/libini_config.so.5.2.1
 
 %files -n libini_config-devel
 %defattr(-,root,root,-)
