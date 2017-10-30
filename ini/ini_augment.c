@@ -32,6 +32,8 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <unistd.h>
+#define TRACE_LEVEL 7
+#define TRACE_HOME
 #include "trace.h"
 #include "collection.h"
 #include "collection_tools.h"
@@ -456,10 +458,9 @@ static int ini_aug_construct_list(char *dirname ,
             }
         }
         else {
-            ini_aug_add_string(ra_err,
-                               "File %s did not match provided patterns."
-                               " Skipping.",
-                               fullname);
+            TRACE_INFO_STRING("File did not match provided patterns."
+                              " Skipping:",
+                              fullname);
         }
     }
 
@@ -609,8 +610,8 @@ static int ini_aug_match_sec(struct ini_cfgobj *snip_cfg,
 
     /* Just in case check that we processed anything */
     if (section_count == 0) {
-        ini_aug_add_string(ra_err, "No sections found in file %s. Skipping.",
-                           snip_name);
+        TRACE_INFO_STRING("No sections found in file. Skipping:",
+                          snip_name);
         *skip = true;
         TRACE_FLOW_EXIT();
         return EOK;
