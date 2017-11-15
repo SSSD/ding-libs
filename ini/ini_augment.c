@@ -32,8 +32,6 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <unistd.h>
-#define TRACE_LEVEL 7
-#define TRACE_HOME
 #include "trace.h"
 #include "collection.h"
 #include "collection_tools.h"
