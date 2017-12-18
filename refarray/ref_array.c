@@ -20,9 +20,9 @@
 #include "config.h"
 #include <errno.h>  /* for errors */
 #include <stdint.h>
-#include <malloc.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "ref_array.h"
 #include "trace.h"
