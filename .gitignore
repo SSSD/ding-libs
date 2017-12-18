@@ -46,3 +46,29 @@ build
 *.X
 tags
 *~
+.vscode/
+contrib/ding-libs.spec
+
+# Testing
+*_ut*
+*.out
+foo.conf
+test-suite.log
+test.ini
+bom2be
+bom2le
+bom3
+bom4be
+bom4le
+dhash_example*
+dhash_test*
+merge.validator.*
+test_real*
+modtest.conf.*
+real.conf.manual
+
+# Doxyfiles
+basicobjects/basicobjects.cfg.doxy
+collection/collection.cfg.doxy
+ini/ini_config.cfg.doxy
+refarray/ref_array.cfg.doxy
