@@ -52,6 +52,8 @@ AS_IF([test ["$trace_level" -gt "0"] -a ["$trace_level" -lt "8"] ],[AC_SUBST([TR
 AC_CHECK_SIZEOF([long])
 AC_CHECK_SIZEOF([long long])
 
+gl_LD_VERSION_SCRIPT
+
 AC_CHECK_FUNC([strcasestr],
               AC_DEFINE([HAVE_STRCASESTR],
                         [1],
