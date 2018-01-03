@@ -607,6 +607,12 @@ START_TEST(test_ini_allowed_options_wrong_regex)
                  "[rule/options_for_foo]: Cannot compile regular expression "
                  "from option 'section_re'. "
                  "Error: 'Unmatched [ or [^'");
+    if (ret != 0) {
+        ret = strcmp(errmsg,
+                     "[rule/options_for_foo]: Cannot compile regular expression "
+                     "from option 'section_re'. "
+                     "Error: 'brackets ([ ]) not balanced'");
+    }
     fail_unless(ret == 0, "Got msg: [%s]", errmsg);
     ini_errobj_next(errobj);
 
@@ -1028,6 +1034,11 @@ START_TEST(test_ini_allowed_sections_wrong_regex)
     ret = strcmp(errmsg,
                  "[rule/section_list]: Validator failed to use regex "
                  "[^foo\\(*$]:[Unmatched ( or \\(]");
+    if (ret !=0) {
+        ret = strcmp(errmsg,
+                     "[rule/section_list]: Validator failed to use regex "
+                     "[^foo\\(*$]:[parentheses not balanced]");
+    }
     fail_unless(ret == 0, "Got msg: [%s]", errmsg);
     ini_errobj_next(errobj);
 
