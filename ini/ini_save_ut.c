@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 /* #define TRACE_LEVEL 7 */
 #define TRACE_HOME
 #include "trace.h"
