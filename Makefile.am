@@ -5,6 +5,9 @@ RPMBUILD ?= $(PWD)/rpmbuild
 #Some old versions of automake don't define builddir
 builddir ?= .
 
+# Workaround for gettext whinging
+SUBDIRS =
+
 dist_noinst_DATA = \
     m4 \
     COPYING \
@@ -302,7 +305,7 @@ libini_config_la_LIBADD = \
     libpath_utils.la \
     libref_array.la \
     libbasicobjects.la
-libini_config_la_LDFLAGS = -liconv -lintl \
+libini_config_la_LDFLAGS = $(LIBICONV) $(LIBINTL)\
     -version-info 7:1:2
 if HAVE_LD_VERSION_SCRIPT
 libini_config_la_LDFLAGS += -Wl,--version-script=$(top_srcdir)/ini/libini_config.sym
