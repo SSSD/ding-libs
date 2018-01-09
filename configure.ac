@@ -54,6 +54,9 @@ AC_CHECK_SIZEOF([long long])
 
 gl_LD_VERSION_SCRIPT
 
+AM_ICONV
+AM_GNU_GETTEXT
+
 AC_CHECK_FUNC([strcasestr],
               AC_DEFINE([HAVE_STRCASESTR],
                         [1],
