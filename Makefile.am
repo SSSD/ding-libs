@@ -67,6 +67,8 @@ dist_include_HEADERS += path_utils/path_utils.h
 
 libpath_utils_la_SOURCES = path_utils/path_utils.c
 libpath_utils_la_DEPENDENCIES = path_utils/libpath_utils.sym
+libpath_utils_la_LIBADD = $(LTLIBICONV) \
+    $(LTLIBINTL)
 libpath_utils_la_LDFLAGS = \
     -version-info 1:1:0
 
