@@ -306,8 +306,10 @@ libini_config_la_LIBADD = \
     libcollection.la \
     libpath_utils.la \
     libref_array.la \
-    libbasicobjects.la
-libini_config_la_LDFLAGS = $(LIBICONV) $(LIBINTL)\
+    libbasicobjects.la \
+    $(LTLIBICONV) \
+    $(LTLIBINTL)
+libini_config_la_LDFLAGS = \
     -version-info 7:1:2
 if HAVE_LD_VERSION_SCRIPT
 libini_config_la_LDFLAGS += -Wl,--version-script=$(top_srcdir)/ini/libini_config.sym
