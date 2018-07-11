@@ -541,7 +541,7 @@ void ini_config_clean_state(struct ini_cfgobj *ini_config);
  *                              will be resolved internally.
  * @param[in]  metadata_flags   Flags that specify what additional
  *                              data if any needs to be collected
- *                              about the ini file.
+ *                              about the ini file.  See \ref metacollect.
  * @param[out] file_ctx         Configuration file object.
  *
  * @return 0 - Success.
@@ -882,6 +882,7 @@ void ini_config_file_print(struct ini_cfgfile *file_ctx);
  *                              One can check file
  *                              permissions with mask,
  *                              uid, and gid of the file.
+ *                              See \ref accesscheck.
  * @param[in]  uid              Expected uid of the file.
  * @param[in]  gid              Expected gid of the file.
  * @param[in]  mode             Expected mode of the file.
@@ -947,11 +948,14 @@ int ini_config_changed(struct ini_cfgfile *file_ctx1,
  * @param[in]  file_ctx         Configuration file object.
  * @param[in]  error_level      Flags that control actions
  *                              in case of parsing error.
+ *                              See \ref errorlevel.
  * @param[in]  collision_flags  Flags that control handling
  *                              of the duplicate sections or keys.
+ *                              See \ref collisionflags.
  * @param[in]  parse_flags      Flags that control parsing process,
  *                              for example how to handle spaces at
  *                              the beginning of the line.
+ *                              See \ref parseflags.
  * @param[out] ini_config       Configuration object.
  *
  * @return 0 - Success.
@@ -998,6 +1002,7 @@ int ini_config_copy(struct ini_cfgobj *ini_config,
  *                              be merged to the first one.
  * @param[in]  collision_flags  Flags that control handling
  *                              of the duplicate sections or keys.
+ *                              See \ref collisionflags.
  * @param[out] result           A new configuration object,
  *                              the result of the merge.
  *
@@ -1040,14 +1045,16 @@ int ini_config_merge(struct ini_cfgobj *first,
  *                              access check.
  * @param[in]  error_level      Flags that control actions
  *                              in case of parsing error in a snippet file.
+ *                              See \ref errorlevel.
  * @param[in]  collision_flags  These flags control how the potential
  *                              collisions between keys and sections
  *                              within the snippet file will be handled.
  *                              For more information
- *                              see collision flag definitions.
+ *                              see \ref collisionflags.
  * @param[in]  parse_flags      Flags that control parsing process,
  *                              for example how to handle spaces at
  *                              the beginning of the line.
+ *                              See \ref parseflags.
  * @param[in]  merge_flags      Flags that control handling
  *                              of the duplicate sections or keys
  *                              during merging of the snippets.
@@ -1058,6 +1065,7 @@ int ini_config_merge(struct ini_cfgobj *first,
  *                              the attempt to overwrite
  *                              a specific section might be treated as
  *                              an error.
+ *                              See \ref mergesec.
  * @param[out] result_cfg       A new configuration object,
  *                              the result of the merge.
  * @param[out] error_list       List of strings that
