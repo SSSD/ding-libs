@@ -602,6 +602,8 @@ START_TEST(test_ini_allowed_options_wrong_regex)
     fail_unless(ret == 0, "Got msg: [%s]", errmsg);
     ini_errobj_next(errobj);
 
+    /* Different versions of libc produce slightly different error strings
+     * in this case. For simplicity compare against all of them. */
     errmsg = ini_errobj_get_msg(errobj);
     ret = strcmp(errmsg,
                  "[rule/options_for_foo]: Cannot compile regular expression "
@@ -609,9 +611,16 @@ START_TEST(test_ini_allowed_options_wrong_regex)
                  "Error: 'Unmatched [ or [^'");
     if (ret != 0) {
         ret = strcmp(errmsg,
-                     "[rule/options_for_foo]: Cannot compile regular expression "
-                     "from option 'section_re'. "
+                     "[rule/options_for_foo]: Cannot compile regular "
+		     "expression from option 'section_re'. "
                      "Error: 'brackets ([ ]) not balanced'");
+    }
+
+    if (ret != 0) {
+         ret = strcmp(errmsg,
+                     "[rule/options_for_foo]: Cannot compile regular "
+		     "expression from option 'section_re'. "
+		     "Error: 'Unmatched [, [^, [:, [., or [='");
     }
     fail_unless(ret == 0, "Got msg: [%s]", errmsg);
     ini_errobj_next(errobj);
