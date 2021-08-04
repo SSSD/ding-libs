@@ -55,7 +55,7 @@ AC_CHECK_SIZEOF([long long])
 gl_LD_VERSION_SCRIPT
 
 AM_ICONV
-AM_GNU_GETTEXT
+AM_GNU_GETTEXT([external])
 # AM_GNU_GETTEXT_VERSION is specifically not called as otherwise we pull in all the rest of it's infrastructure, which isn't needed
 
 AC_CHECK_FUNC([strcasestr],
