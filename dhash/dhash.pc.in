@@ -8,4 +8,4 @@ Description: A hash table which will dynamically resize to achieve optimal stora
 Version: @DHASH_VERSION@
 Libs: -L${libdir} -ldhash
 Cflags: -I${includedir}
-URL: http://fedorahosted.org/sssd/
+URL: https://github.com/SSSD/ding-libs
