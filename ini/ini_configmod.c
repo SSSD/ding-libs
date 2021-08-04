@@ -867,7 +867,7 @@ int ini_config_add_double_value(struct ini_cfgobj *ini_config,
     TRACE_FLOW_ENTRY();
 
     ret = asprintf(&strval, "%f", value);
-    if (ret == 1) {
+    if (ret == -1) {
         TRACE_ERROR_NUMBER("Asprintf failed.", ret);
         /* The main reason is propbaly memory allocation */
         return ENOMEM;
