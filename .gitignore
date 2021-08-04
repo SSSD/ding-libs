@@ -67,6 +67,7 @@ merge.validator.*
 test_real*
 modtest.conf.*
 real.conf.manual
+test_rules.ini
 
 # Doxyfiles
 basicobjects/basicobjects.cfg.doxy
