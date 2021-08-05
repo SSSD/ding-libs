@@ -116,6 +116,7 @@ int get_basename(char *base_name, size_t base_name_size, const char *path)
     if (!path) return EINVAL;
     if (!base_name || base_name_size < 1) return ENOBUFS;
 
+    /* coverity[buffer_size_warning : SUPPRESS] */ /* false positive warning */
     strncpy(tmp_path, path, sizeof(tmp_path));
     if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(base_name, basename(tmp_path), base_name_size);
@@ -137,6 +138,7 @@ int get_dirname(char *dir_path, size_t dir_path_size, const char *path)
     if (!path) return EINVAL;
     if (!dir_path || dir_path_size < 1) return ENOBUFS;
 
+    /* coverity[buffer_size_warning : SUPPRESS] */ /* false positive warning */
     strncpy(tmp_path, path, sizeof(tmp_path));
     if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(dir_path, dirname(tmp_path), dir_path_size);
@@ -161,11 +163,13 @@ int get_directory_and_base_name(char *dir_path, size_t dir_path_size,
     if (!dir_path || dir_path_size < 1) return ENOBUFS;
     if (!base_name || base_name_size < 1) return ENOBUFS;
 
+    /* coverity[buffer_size_warning : SUPPRESS] */ /* false positive warning */
     strncpy(tmp_path, path, sizeof(tmp_path));
     if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(base_name, basename(tmp_path), base_name_size);
     if (base_name[base_name_size-1] != '\0') return ENOBUFS;
 
+    /* coverity[buffer_size_warning : SUPPRESS] */ /* false positive warning */
     strncpy(tmp_path, path, sizeof(tmp_path));
     if (tmp_path[sizeof(tmp_path)-1] != '\0') return ENOBUFS;
     strncpy(dir_path, dirname(tmp_path), dir_path_size);
@@ -528,6 +532,7 @@ int find_existing_directory_ancestor(char *ancestor, size_t ancestor_size, const
 
     if (!ancestor || ancestor_size < 1) return ENOBUFS;
     *ancestor = 0;
+    /* coverity[buffer_size_warning : SUPPRESS] */ /* false positive warning */
     strncpy(dir_path, path, sizeof(dir_path));
     if (dir_path[sizeof(dir_path)-1] != '\0') return ENOBUFS;
 
