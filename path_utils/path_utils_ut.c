@@ -292,6 +292,7 @@ START_TEST(test_make_path_absolute)
     char cwd[PATH_MAX];
     char *buf;
     size_t buf_len;
+    int res;
 
     fail_unless(make_path_absolute(p, PATH_MAX, "/foo") == SUCCESS);
     fail_unless_str_equal(p, "/foo");
@@ -299,7 +300,8 @@ START_TEST(test_make_path_absolute)
     fail_if(getcwd(cwd, PATH_MAX) == NULL, "getcwd failed");
 
     fail_unless(make_path_absolute(p, PATH_MAX, "foo") == SUCCESS);
-    snprintf(p2, PATH_MAX, "%s/foo", cwd);
+    res = snprintf(p2, PATH_MAX, "%s/foo", cwd);
+    fail_if((res < 0) || (res >= PATH_MAX));
     fail_unless_str_equal(p, p2);
 
     fail_unless(make_path_absolute(p, PATH_MAX, "") == SUCCESS);
@@ -347,11 +349,13 @@ START_TEST(test_make_normalized_absolute_path)
     char p[PATH_MAX];
     char p2[PATH_MAX];
     char cwd[PATH_MAX];
+    int res;
 
     fail_if(getcwd(cwd, PATH_MAX) == NULL, "getcwd failed");
 
     fail_unless(make_normalized_absolute_path(p, PATH_MAX, "foo/baz/../bar") == SUCCESS);
-    snprintf(p2, PATH_MAX, "%s/foo/bar", cwd);
+    res = snprintf(p2, PATH_MAX, "%s/foo/bar", cwd);
+    fail_if((res < 0) || (res >= PATH_MAX));
     fail_unless_str_equal(p, p2);
 
     fail_unless(make_normalized_absolute_path(p, PATH_MAX, "/foo/../bar") == SUCCESS);
