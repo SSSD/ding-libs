@@ -668,34 +668,33 @@ int hash_destroy(hash_table_t *table)
 
     if (!table) return HASH_ERROR_BAD_TABLE;
 
-    if (table != NULL) {
-        if (table->directory) {
-            for (i = 0; i < table->segment_count; i++) {
-                /* test probably unnecessary */
-                if ((s = table->directory[i]) != NULL) {
-                    for (j = 0; j < table->segment_size; j++) {
-                        p = s[j];
-                        while (p != NULL) {
-                            q = p->next;
-                            hdelete_callback(table, HASH_TABLE_DESTROY, &p->entry);
-                            if (p->entry.key.type == HASH_KEY_STRING
-                                    || p->entry.key.type == HASH_KEY_CONST_STRING) {
-                                /* Internally we do not use constant memory for keys
-                                 * in hash table elements. */
-                                hfree(table, p->entry.key.str);
-                            }
-                            hfree(table, (char *)p);
-                            p = q;
+    if (table->directory) {
+        for (i = 0; i < table->segment_count; i++) {
+            /* test probably unnecessary */
+            if ((s = table->directory[i]) != NULL) {
+                for (j = 0; j < table->segment_size; j++) {
+                    p = s[j];
+                    while (p != NULL) {
+                        q = p->next;
+                        hdelete_callback(table, HASH_TABLE_DESTROY, &p->entry);
+                        if (p->entry.key.type == HASH_KEY_STRING
+                                || p->entry.key.type == HASH_KEY_CONST_STRING) {
+                            /* Internally we do not use constant memory for keys
+                             * in hash table elements. */
+                            hfree(table, p->entry.key.str);
                         }
+                        hfree(table, (char *)p);
+                        p = q;
                     }
-                    hfree(table, s);
                 }
+                hfree(table, s);
             }
-            hfree(table, table->directory);
         }
-        hfree(table, table);
-        table = NULL;
+        hfree(table, table->directory);
     }
+    hfree(table, table);
+    table = NULL;
+
     return HASH_SUCCESS;
 }
 
