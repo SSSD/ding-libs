@@ -277,6 +277,10 @@ Basic object types
 Summary: INI file parser for C
 Group: Development/Libraries
 License: LGPLv3+
+Requires: libcollection = %{collection_version}-%{release}
+Requires: libref_array = %{ref_array_version}-%{release}
+Requires: libbasicobjects = %{basicobjects_version}-%{release}
+Requires: libpath_utils = %{path_utils_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config
