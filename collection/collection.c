@@ -231,8 +231,9 @@ int col_allocate_item(struct collection_item **ci, const char *property,
     TRACE_INFO_NUMBER("Will be using type:", type);
 
     /* Check the length */
-    if (length >= COL_MAX_DATA) {
-        TRACE_ERROR_STRING("col_allocate_item", "Data to long.");
+    if ((length < 0) || (length >= COL_MAX_DATA) ||
+        ((type == COL_TYPE_STRING) && (length == 0))) {
+        TRACE_ERROR_STRING("col_allocate_item", "Bad data length.");
         return EMSGSIZE;
     }
 
@@ -270,13 +271,15 @@ int col_allocate_item(struct collection_item **ci, const char *property,
 
     /* Deal with data */
     item->data = malloc(length);
-    if (item->data == NULL) {
-        TRACE_ERROR_STRING("col_allocate_item", "Failed to dup data.");
-        col_delete_item(item);
-        return ENOMEM;
-    }
+    if (length > 0) {
+        if (item->data == NULL) {
+            TRACE_ERROR_STRING("col_allocate_item", "Failed to dup data.");
+            col_delete_item(item);
+            return ENOMEM;
+        }
 
-    memcpy(item->data, item_data, length);
+        memcpy(item->data, item_data, length);
+    }
     item->length = length;
 
     /* Make sure that data is NULL terminated in case of string */
