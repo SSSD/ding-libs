@@ -279,6 +279,11 @@ int col_allocate_item(struct collection_item **ci, const char *property,
     memcpy(item->data, item_data, length);
     item->length = length;
 
+    if (length == 0) {
+        TRACE_ERROR_STRING("col_allocate_item", "Failed to item data length is 0");
+        col_delete_item(item);
+        return ENOMEM;
+    }
     /* Make sure that data is NULL terminated in case of string */
     if (type == COL_TYPE_STRING) ((char *)(item->data))[length-1] = '\0';
 
