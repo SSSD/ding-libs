@@ -2161,6 +2161,46 @@ static int sort_test(void)
     COLOUT(printf("\nSORTED BUT SKIPPING REFERENCES\n\n"));
     COLOUT(col_debug_collection(level1, COL_TRAVERSE_DEFAULT));
 
+    error = col_sort_collection(level1, COL_CMPIN_PROP_BEG, COL_SORT_SUB | COL_SORT_MYSUB);
+    if (error) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2a);
+        col_destroy_collection(level2b);
+        col_destroy_collection(level3);
+        printf("Failed sort. Error %d\n", error);
+        return error;
+    }
+
+    COLOUT(printf("\nSORTED BY PROP BEGIN BUT SKIPPING REFERENCES\n\n"));
+    COLOUT(col_debug_collection(level1, COL_TRAVERSE_DEFAULT));
+
+
+    error = col_sort_collection(level1, COL_CMPIN_PROP_MID, COL_SORT_SUB | COL_SORT_MYSUB);
+    if (error) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2a);
+        col_destroy_collection(level2b);
+        col_destroy_collection(level3);
+        printf("Failed sort. Error %d\n", error);
+        return error;
+    }
+
+    COLOUT(printf("\nSORTED BY PROP MID BUT SKIPPING REFERENCES\n\n"));
+    COLOUT(col_debug_collection(level1, COL_TRAVERSE_DEFAULT));
+
+    error = col_sort_collection(level1, COL_CMPIN_PROP_END, COL_SORT_SUB | COL_SORT_MYSUB);
+    if (error) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2a);
+        col_destroy_collection(level2b);
+        col_destroy_collection(level3);
+        printf("Failed sort. Error %d\n", error);
+        return error;
+    }
+
+    COLOUT(printf("\nSORTED BY PROP END BUT SKIPPING REFERENCES\n\n"));
+    COLOUT(col_debug_collection(level1, COL_TRAVERSE_DEFAULT));
+
     error = col_sort_collection(level1, COL_CMPIN_PROP_EQU, COL_SORT_SUB);
     if (error) {
         col_destroy_collection(level1);
@@ -2198,6 +2238,32 @@ static int sort_test(void)
     }
 
     COLOUT(printf("\nSORTED DESC NOT SKIPPING BY LENGTH OF PROPERTY\n\n"));
+    COLOUT(col_debug_collection(level1, COL_TRAVERSE_DEFAULT));
+
+    error = col_sort_collection(level1, COL_CMPIN_DATA, COL_SORT_SUB | COL_SORT_DESC);
+    if (error) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2a);
+        col_destroy_collection(level2b);
+        col_destroy_collection(level3);
+        printf("Failed sort. Error %d\n", error);
+        return error;
+    }
+
+    COLOUT(printf("\nSORTED DESC NOT SKIPPING BY DATA\n\n"));
+    COLOUT(col_debug_collection(level1, COL_TRAVERSE_DEFAULT));
+
+    error = col_sort_collection(level1, COL_CMPIN_D, COL_SORT_SUB | COL_SORT_DESC);
+    if (error) {
+        col_destroy_collection(level1);
+        col_destroy_collection(level2a);
+        col_destroy_collection(level2b);
+        col_destroy_collection(level3);
+        printf("Failed sort. Error %d\n", error);
+        return error;
+    }
+
+    COLOUT(printf("\nSORTED DESC NOT SKIPPING BY DATA\n\n"));
     COLOUT(col_debug_collection(level1, COL_TRAVERSE_DEFAULT));
 
     error = col_sort_collection(level1, COL_CMPIN_DATA, COL_SORT_SUB | COL_SORT_DESC);
