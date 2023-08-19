@@ -194,7 +194,7 @@ int col_debug_collection(struct collection_item *handle, int flag)
     error = col_traverse_collection(handle, flag,
                                     col_debug_handle,
                                     (void *)(&nest_level));
-    if (error) printf("Error debuging collection %d\n", error);
+    if (error) printf("Error debugging collection %d\n", error);
 
     TRACE_FLOW_STRING("col_debug_collection", "Exit.");
     return error;
