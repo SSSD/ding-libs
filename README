@@ -1,3 +1,5 @@
+# Build
+
 To build the ding-libs from the tarball:
     ./configure
     make
@@ -8,3 +10,18 @@ To build the ding-libs from the tarball:
 To build the ding-libs from a source checkout:
     autoreconf -if
 then follow the tarball instructions above.
+
+# Requirements
+
+Build:
+
+- `autotools`
+- `gcc`
+- `libc`
+- `coreutils`
+- `file`
+
+Tests:
+
+- `gettext`
+- `diff`
