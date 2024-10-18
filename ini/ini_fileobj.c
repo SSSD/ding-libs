@@ -1534,8 +1534,8 @@ int access_check_int(struct stat *file_stats,
     /* Check uid */
     if (flags & INI_ACCESS_CHECK_UID) {
         if (file_stats->st_uid != uid) {
-            TRACE_ERROR_NUMBER("GID:", file_stats->st_uid);
-            TRACE_ERROR_NUMBER("GID passed in.", uid);
+            TRACE_ERROR_NUMBER("UID:", file_stats->st_uid);
+            TRACE_ERROR_NUMBER("UID passed in.", uid);
             TRACE_ERROR_NUMBER("Access denied.", EACCES);
             return EACCES;
         }
