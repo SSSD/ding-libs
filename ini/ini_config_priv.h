@@ -102,7 +102,8 @@ int valid_collision_flags(uint32_t collision_flags);
 int empty_section(struct collection_item *sec);
 
 /* Internal access check function */
-int access_check_int(struct stat *file_stats,
+int access_check_int(const char *name,
+                     const struct stat *file_stats,
                      uint32_t flags,
                      uid_t uid,
                      gid_t gid,

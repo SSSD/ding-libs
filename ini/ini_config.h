@@ -302,6 +302,18 @@
 #define INI_ACCESS_CHECK_GID   0x00000004
 
 /**
+ * @brief Validate access rights
+ *
+ * If this flag is specified, the UID and permissions set on the file are
+ * validated to be unwritable by the current process, and unreadable for
+ * "others" (cf. chmod(2)), i.e. unreadable for any entity not explicitly
+ * listed as owner or in an ACL.
+ * The flag takes precedence over INI_ACCESS_CHECK_MODE, INI_ACCESS_CHECK_UID
+ * and INI_ACCESS_CHECK_GID.
+ */
+#define INI_ACCESS_CHECK_SECURE 0x00000008
+
+/**
  * @}
  */
 

@@ -774,7 +774,8 @@ static int determine_permissions(struct ini_cfgfile *file_ctx,
 
         overwrite->flags &= INI_ACCESS_CHECK_MODE |
                             INI_ACCESS_CHECK_GID |
-                            INI_ACCESS_CHECK_UID;
+                            INI_ACCESS_CHECK_UID |
+                            INI_ACCESS_CHECK_SECURE;
 
         if (overwrite->flags == 0) {
             TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
@@ -1484,7 +1485,7 @@ const struct stat *ini_config_get_stat(struct ini_cfgfile *file_ctx)
 }
 
 /* Check access */
-int access_check_int(struct stat *file_stats,
+int access_check_int(const char *name, const struct stat *file_stats,
                      uint32_t flags,
                      uid_t uid,
                      gid_t gid,
@@ -1497,11 +1498,35 @@ int access_check_int(struct stat *file_stats,
 
     flags &= INI_ACCESS_CHECK_MODE |
              INI_ACCESS_CHECK_GID |
-             INI_ACCESS_CHECK_UID;
+             INI_ACCESS_CHECK_UID |
+             INI_ACCESS_CHECK_SECURE;
 
     if (flags == 0) {
         TRACE_ERROR_NUMBER("Invalid parameter.", EINVAL);
         return EINVAL;
+    }
+
+    if (flags & INI_ACCESS_CHECK_SECURE) {
+        TRACE_INFO_NUMBER("File mode as saved.", file_stats->st_mode);
+        TRACE_ERROR_NUMBER("File UID:", file_stats->st_uid);
+        TRACE_ERROR_NUMBER("File GID:", file_stats->st_gid);
+        TRACE_ERROR_NUMBER("Process UID:", getuid());
+
+        if (file_stats->st_mode & S_IRWXO) {
+            TRACE_ERROR_NUMBER("Access denied: o+... permissions are not allowed on the file.", EACCES);
+            return EACCES;
+        } else if (file_stats->st_uid != 0 && file_stats->st_uid == uid) {
+            /* If the file is owned by uid, that uid can write to it (possibly after chmod +w). */
+            TRACE_ERROR_NUMBER("Access denied: the particular UID is not allowed on the file.", EACCES);
+            return EACCES;
+        } else if (name != NULL && getuid() != 0 && access(name, W_OK) == 0) {
+            /* access(2) uses real UID */
+            TRACE_ERROR_NUMBER("Access denied: write permissions by the current UID is not allowed on the file.", EACCES);
+            return EACCES;
+        }
+
+        TRACE_FLOW_EXIT();
+        return EOK;
     }
 
     /* Check mode */
@@ -1578,7 +1603,8 @@ int ini_config_access_check(struct ini_cfgfile *file_ctx,
         return EINVAL;
     }
 
-    error =  access_check_int(&(file_ctx->file_stats),
+    error =  access_check_int(file_ctx->filename,
+                              &file_ctx->file_stats,
                               flags,
                               uid,
                               gid,
