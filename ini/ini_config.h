@@ -279,7 +279,7 @@
 /**
  * @brief Validate access mode
  *
- * If this flag is specified the mode parameter
+ * If this flag is specified, the mode parameter
  * will be matched against the permissions set on the file
  * using the provided mask.
  */
