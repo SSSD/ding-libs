@@ -275,7 +275,7 @@ static bool ini_check_file_perm(char *name,
     }
 
     if ((check_perm) && (check_perm->flags)) {
-        error = access_check_int(&file_info,
+        error = access_check_int(name, &file_info,
                                  check_perm->flags,
                                  check_perm->uid,
                                  check_perm->gid,
