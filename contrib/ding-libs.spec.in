@@ -4,8 +4,8 @@ Release: 0%{?dist}@PRERELEASE_VERSION@
 Summary: "Ding is not GLib" assorted utility libraries
 Group: Development/Libraries
 License: LGPLv3+
-URL: http://fedorahosted.org/sssd/
-Source0: %{name}-%{version}.tar.gz
+URL: https://github.com/SSSD/ding-libs/
+Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 %global path_utils_version @PATH_UTILS_VERSION@
