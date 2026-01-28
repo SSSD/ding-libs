@@ -25,6 +25,8 @@
 #include <ctype.h>
 #include "trace.h"
 #include "ref_array.h"
+#include "ini_configobj.h"
+#include "ini_config_priv.h"
 #include "simplebuffer.h"
 #include "ini_comment.h"
 #include "ini_defines.h"
