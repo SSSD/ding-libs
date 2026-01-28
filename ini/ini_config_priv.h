@@ -109,6 +109,32 @@ int access_check_int(struct stat *file_stats,
                      mode_t mode,
                      mode_t mask);
 
+/**
+ * @brief Serialize configuration object
+ *
+ * Serialize configuration object into provided buffer.
+ * Use buffer object functions to manipulate or save
+ * the buffer to a file/stream.
+ *
+ * @param[in]  ini_config       Configuration object.
+ * @param[out] sbobj            Serialized configuration.
+ *
+ * @return 0 - Success.
+ * @return EINVAL - Invalid parameter.
+ * @return ENOMEM - No memory.
+ */
+int ini_config_serialize(struct ini_cfgobj *ini_config,
+                         struct simplebuffer *sbobj);
+
+/* Serialize value */
+int value_serialize(struct value_obj *vo,
+                    const char *key,
+                    struct simplebuffer *sbobj);
+
+/* Serialize comment */
+int ini_comment_serialize(struct ini_comment *ic,
+                          struct simplebuffer *sbobj);
+
 struct ini_errmsg;
 
 struct ini_errobj {

@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <limits.h>
 #include <stdio.h>
-#include "simplebuffer.h"
 #include "ini_valueobj.h"
 
 #ifndef DING_ATTR_FORMAT
@@ -1111,24 +1110,6 @@ int ini_config_augment(struct ini_cfgobj *base_cfg,
  */
 int ini_config_set_wrap(struct ini_cfgobj *ini_config,
                         uint32_t boundary);
-
-/**
- * @brief Serialize configuration object
- *
- * Serialize configuration object into provided buffer.
- * Use buffer object functions to manipulate or save
- * the buffer to a file/stream.
- *
- * @param[in]  ini_config       Configuration object.
- * @param[out] sbobj            Serialized configuration.
- *
- * @return 0 - Success.
- * @return EINVAL - Invalid parameter.
- * @return ENOMEM - No memory.
- */
-int ini_config_serialize(struct ini_cfgobj *ini_config,
-                         struct simplebuffer *sbobj);
-
 
 /* Functions that add, modify or delete sections and values in
  * the configuration object can be found in section \ref ini_mod.

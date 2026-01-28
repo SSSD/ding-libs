@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "simplebuffer.h"
 
 #ifndef EOK
 #define EOK 0
@@ -149,12 +148,6 @@ int ini_comment_copy(struct ini_comment *ic,
  */
 int ini_comment_add(struct ini_comment *ic_to_add,
                     struct ini_comment *ic);
-
-/**
- * Serialize comment
- */
-int ini_comment_serialize(struct ini_comment *ic,
-                          struct simplebuffer *sbobj);
 
 /**
  * Internal function to print comment
