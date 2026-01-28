@@ -29,7 +29,9 @@
 #include <unistd.h>
 #include <limits.h>
 #include <stdio.h>
-#include "ini_valueobj.h"
+#include "ref_array.h"
+
+struct value_obj;
 
 #ifndef DING_ATTR_FORMAT
 #  if ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 3)))
