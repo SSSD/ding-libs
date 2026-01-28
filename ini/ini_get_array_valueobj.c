@@ -32,6 +32,7 @@
 #include "collection_tools.h"
 #include "ini_defines.h"
 #include "ini_configobj.h"
+#include "ini_valueobj.h"
 
 /*
  * Internal contants to indicate how
@@ -93,7 +94,7 @@ static char **get_str_cfg_array(struct value_obj *vo,
 
     /* Allocate memory for the copy of the string */
     TRACE_INFO_NUMBER("Length to allocate is :", dlen);
-    /* Always reserve one more byte 
+    /* Always reserve one more byte
      * for the case when the string consist of delimeters */
     copy = malloc(dlen + 1);
     if (copy == NULL) {
