@@ -270,8 +270,7 @@ endif
 
 lib_LTLIBRARIES += libini_config.la
 dist_pkgconfig_DATA += ini/ini_config.pc
-dist_include_HEADERS += ini/ini_config.h ini/ini_configobj.h \
-                        ini/ini_valueobj.h ini/ini_comment.h \
+dist_include_HEADERS += ini/ini_configobj.h \
                         ini/ini_configmod.h
 
 libini_config_la_SOURCES = \
@@ -310,10 +309,15 @@ libini_config_la_LIBADD = \
     $(LTLIBICONV) \
     $(LTLIBINTL)
 libini_config_la_LDFLAGS = \
-    -version-info 7:1:2
+    -version-info 8:0:0
 if HAVE_LD_VERSION_SCRIPT
 libini_config_la_LDFLAGS += -Wl,--version-script=$(top_srcdir)/ini/libini_config.sym
 endif
+
+noinst_LTLIBRARIES = libini_config_internal.la
+
+libini_config_internal_la_SOURCES = $(libini_config_la_SOURCES)
+libini_config_internal_la_LIBADD = $(libini_config_la_LIBADD)
 
 dist_noinst_DATA += \
     ini/ini.conf \
@@ -365,51 +369,51 @@ TESTS += \
 
 ini_config_ut_SOURCES = ini/ini_config_ut.c
 ini_config_ut_LDADD = \
-    libini_config.la \
+    libini_config_internal.la \
     libcollection.la
 
 ini_comment_ut_SOURCES = ini/ini_comment_ut.c
-ini_comment_ut_LDADD = libini_config.la
+ini_comment_ut_LDADD = libini_config_internal.la
 
 ini_valueobj_ut_SOURCES = ini/ini_valueobj_ut.c
-ini_valueobj_ut_LDADD = libini_config.la libbasicobjects.la
+ini_valueobj_ut_LDADD = libini_config_internal.la libbasicobjects.la
 
 ini_parse_ut_SOURCES = ini/ini_parse_ut.c
-ini_parse_ut_LDADD = libini_config.la libcollection.la libbasicobjects.la
+ini_parse_ut_LDADD = libini_config_internal.la libcollection.la libbasicobjects.la
 
 ini_augment_ut_SOURCES = ini/ini_augment_ut.c
-ini_augment_ut_LDADD = libini_config.la libcollection.la \
+ini_augment_ut_LDADD = libini_config_internal.la libcollection.la \
                        libbasicobjects.la libpath_utils.la libref_array.la
 
 ini_configmod_ut_SOURCES = ini/ini_configmod_ut.c
-ini_configmod_ut_LDADD = libini_config.la libcollection.la \
+ini_configmod_ut_LDADD = libini_config_internal.la libcollection.la \
                          libbasicobjects.la libpath_utils.la libref_array.la
 
 ini_augment_ut_check_SOURCES = ini/ini_augment_ut_check.c
 ini_augment_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
-ini_augment_ut_check_LDADD = libini_config.la $(CHECK_LIBS) \
+ini_augment_ut_check_LDADD = libini_config_internal.la $(CHECK_LIBS) \
                              libref_array.la
 
 ini_configmod_ut_check_SOURCES = ini/ini_configmod_ut_check.c
 ini_configmod_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
-ini_configmod_ut_check_LDADD = libini_config.la libcollection.la \
+ini_configmod_ut_check_LDADD = libini_config_internal.la libcollection.la \
                                libbasicobjects.la libpath_utils.la \
                                libref_array.la \
                                $(CHECK_LIBS)
 
 ini_parse_ut_check_SOURCES = ini/ini_parse_ut_check.c
 ini_parse_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
-ini_parse_ut_check_LDADD = libini_config.la \
+ini_parse_ut_check_LDADD = libini_config_internal.la \
                            libref_array.la \
                            $(CHECK_LIBS)
 
 ini_validators_ut_check_SOURCES = ini/ini_validators_ut_check.c
 ini_validators_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
-ini_validators_ut_check_LDADD = libini_config.la $(CHECK_LIBS)
+ini_validators_ut_check_LDADD = libini_config_internal.la $(CHECK_LIBS)
 
 
 ini_save_ut_SOURCES = ini/ini_save_ut.c
-ini_save_ut_LDADD = libini_config.la libcollection.la \
+ini_save_ut_LDADD = libini_config_internal.la libcollection.la \
                          libbasicobjects.la libpath_utils.la libref_array.la
 
 ini_config-docs:
