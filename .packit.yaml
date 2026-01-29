@@ -1,0 +1,32 @@
+---
+upstream_project_url: https://github.com/SSSD/ding-libs
+
+# Prepare the spec file to be consumed by packit.
+# We replace the configure script placeholders, the version and release is
+# then set by packit to correct values.
+packages:
+  upstream:
+    specfile_path: contrib/ding-libs.spec
+    actions:
+      post-upstream-clone:
+        - cp contrib/ding-libs.spec.in contrib/ding-libs.spec
+        - sed -i "s/@PACKAGE_NAME@/ding-libs/g" contrib/ding-libs.spec
+        - sed -i "s/@PACKAGE_VERSION@/0/g" contrib/ding-libs.spec
+        - sed -i "s/@PRERELEASE_VERSION@/99/g" contrib/ding-libs.spec
+        - sed -i "s/@PATH_UTILS_VERSION@/99.0.0/g" contrib/ding-libs.spec
+        - sed -i "s/@DHASH_VERSION@/99.0.0/g" contrib/ding-libs.spec
+        - sed -i "s/@COLLECTION_VERSION@/99.0.0/g" contrib/ding-libs.spec
+        - sed -i "s/@REF_ARRAY_VERSION@/99.0.0/g" contrib/ding-libs.spec
+        - sed -i "s/@BASICOBJECTS_VERSION@/99.0.0/g" contrib/ding-libs.spec
+        - sed -i "s/@INI_CONFIG_VERSION@/99.0.0/g" contrib/ding-libs.spec
+      get-current-version:
+        - bash -c 'grep "\\[VERSION_NUMBER\\]" version.m4 | sed -E "s/.+\\[([0-9].+)\\].+/\\1/"'
+
+jobs:
+  # Produce COPR build on each pull request
+  - job: copr_build
+    trigger: pull_request
+    packages:
+      - upstream
+    targets:
+      - fedora-rawhide
