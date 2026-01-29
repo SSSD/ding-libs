@@ -308,15 +308,12 @@ structure
 %defattr(-,root,root,-)
 %doc COPYING
 %doc COPYING.LESSER
-%{_libdir}/libini_config.so.5
-%{_libdir}/libini_config.so.5.2.1
+%{_libdir}/libini_config.so.8
+%{_libdir}/libini_config.so.8.0.0
 
 %files -n libini_config-devel
 %defattr(-,root,root,-)
-%{_includedir}/ini_config.h
 %{_includedir}/ini_configobj.h
-%{_includedir}/ini_valueobj.h
-%{_includedir}/ini_comment.h
 %{_includedir}/ini_configmod.h
 %{_libdir}/libini_config.so
 %{_libdir}/pkgconfig/ini_config.pc
