@@ -122,9 +122,7 @@ struct value_obj;
  * - The library allows storing and retrieving multiple key value pairs with
  *   the same key in one section.
  *
- *   <i>There is a deprecated interface that can be found in ini_config.h.
- *   This interface is supported only for backwards compatibility and should
- *   not be used.</i>
+ *   <i>Previously deprecated interface ini_config.h isn't supported anymore.</i>
  */
 
 /**
