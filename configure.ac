@@ -86,6 +86,5 @@ AC_CONFIG_FILES([Makefile contrib/ding-libs.spec
                  collection/collection.cfg.doxy
                  refarray/ref_array.cfg.doxy refarray/ref_array.pc
                  basicobjects/basicobjects.cfg.doxy
-                 basicobjects/basicobjects.pc
                  ini/ini_config.cfg.doxy ini/ini_config.pc])
 AC_OUTPUT
