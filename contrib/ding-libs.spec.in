@@ -8,7 +8,6 @@ URL: https://github.com/SSSD/ding-libs/
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
-%global path_utils_version @PATH_UTILS_VERSION@
 %global dhash_version @DHASH_VERSION@
 %global collection_version @COLLECTION_VERSION@
 %global ref_array_version @REF_ARRAY_VERSION@
@@ -20,7 +19,8 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 ### Dependencies ###
 # ding-libs is a meta-package that will pull in all of its own
 # sub-packages
-Requires: libpath_utils = %{path_utils_version}-%{release}
+Obsoletes: libpath_utils
+Obsoletes: libpath_utils-devel
 Requires: libdhash = %{dhash_version}-%{release}
 Requires: libcollection = %{collection_version}-%{release}
 Requires: libref_array = %{ref_array_version}-%{release}
@@ -39,7 +39,7 @@ BuildRequires: gettext-devel
 
 %description
 A meta-package that pulls in libcollection, libdhash, libini_config,
-librefarray and libpath_utils.
+librefarray.
 
 %package devel
 Summary: Development packages for ding-libs
@@ -48,7 +48,6 @@ License: LGPLv3+
 
 # ding-libs is a meta-package that will pull in all of its own
 # sub-packages
-Requires: libpath_utils-devel = %{path_utils_version}-%{release}
 Requires: libdhash-devel = %{dhash_version}-%{release}
 Requires: libcollection-devel = %{collection_version}-%{release}
 Requires: libref_array-devel = %{ref_array_version}-%{release}
@@ -57,48 +56,7 @@ Requires: libini_config-devel = %{ini_config_version}-%{release}
 
 %description devel
 A meta-package that pulls in development libraries for libcollection,
-libdhash, libini_config, librefarray and libpath_utils.
-
-##############################################################################
-# Path Utils
-##############################################################################
-
-%package -n libpath_utils
-Summary: Filesystem Path Utilities
-Group: Development/Libraries
-License: LGPLv3+
-Version: %{path_utils_version}
-
-%description -n libpath_utils
-Utility functions to manipulate filesystem pathnames
-
-%package -n libpath_utils-devel
-Summary: Development files for libpath_utils
-Group: Development/Libraries
-Requires: libpath_utils = %{path_utils_version}-%{release}
-License: LGPLv3+
-Version: %{path_utils_version}
-
-%description -n libpath_utils-devel
-Utility functions to manipulate filesystem pathnames
-
-%post -n libpath_utils -p /sbin/ldconfig
-%postun -n libpath_utils -p /sbin/ldconfig
-
-%files -n libpath_utils
-%defattr(-,root,root,-)
-%doc COPYING COPYING.LESSER
-%{_libdir}/libpath_utils.so.1
-%{_libdir}/libpath_utils.so.1.0.1
-
-%files -n libpath_utils-devel
-%defattr(-,root,root,-)
-%{_includedir}/path_utils.h
-%{_libdir}/libpath_utils.so
-%{_libdir}/pkgconfig/path_utils.pc
-%doc path_utils/README.path_utils
-%doc path_utils/doc/html/
-
+libdhash, libini_config, librefarray.
 
 ##############################################################################
 # dhash
@@ -280,7 +238,6 @@ License: LGPLv3+
 Requires: libcollection = %{collection_version}-%{release}
 Requires: libref_array = %{ref_array_version}-%{release}
 Requires: libbasicobjects = %{basicobjects_version}-%{release}
-Requires: libpath_utils = %{path_utils_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config
