@@ -10,7 +10,6 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 %global dhash_version @DHASH_VERSION@
 %global ref_array_version @REF_ARRAY_VERSION@
-%global basicobjects_version @BASICOBJECTS_VERSION@
 %global ini_config_version @INI_CONFIG_VERSION@
 
 ### Patches ###
@@ -22,6 +21,8 @@ Obsoletes: libpath_utils <= 0.2.1
 Obsoletes: libpath_utils-devel <= 0.2.1
 Obsoletes: libcollection <= 0.7.0
 Obsoletes: libcollection-devel <= 0.7.0
+Obsoletes: libbasicobjects <= 0.1.1
+Obsoletes: libbasicobjects-devel <= 0.1.1
 Requires: libdhash = %{dhash_version}-%{release}
 Requires: libref_array = %{ref_array_version}-%{release}
 Requires: libini_config = %{ini_config_version}-%{release}
@@ -50,7 +51,6 @@ License: LGPLv3+
 # sub-packages
 Requires: libdhash-devel = %{dhash_version}-%{release}
 Requires: libref_array-devel = %{ref_array_version}-%{release}
-Requires: libbasicobjects-devel = %{basicobjects_version}-%{release}
 Requires: libini_config-devel = %{ini_config_version}-%{release}
 
 %description devel
@@ -141,45 +141,6 @@ A dynamically-growing, reference-counted array
 %doc refarray/doc/html/
 
 ##############################################################################
-# basicobjects
-##############################################################################
-
-%package -n libbasicobjects
-Summary: Basic object types for C
-Group: Development/Libraries
-License: GPLv3+
-Version: %{basicobjects_version}
-
-%description -n libbasicobjects
-Basic object types
-
-%package -n libbasicobjects-devel
-Summary: Development files for libbasicobjects
-Group: Development/Libraries
-License: GPLv3+
-Version: %{basicobjects_version}
-Requires: libbasicobjects = %{basicobjects_version}-%{release}
-
-%description -n libbasicobjects-devel
-Basic object types
-
-%post -n libbasicobjects -p /sbin/ldconfig
-%postun -n libbasicobjects -p /sbin/ldconfig
-
-%files -n libbasicobjects
-%defattr(-,root,root,-)
-%doc COPYING
-%doc COPYING.LESSER
-%{_libdir}/libbasicobjects.so.0
-%{_libdir}/libbasicobjects.so.0.1.0
-
-%files -n libbasicobjects-devel
-%defattr(-,root,root,-)
-%{_includedir}/simplebuffer.h
-%{_libdir}/libbasicobjects.so
-%{_libdir}/pkgconfig/basicobjects.pc
-
-##############################################################################
 # ini_config
 ##############################################################################
 
@@ -188,7 +149,6 @@ Summary: INI file parser for C
 Group: Development/Libraries
 License: LGPLv3+
 Requires: libref_array = %{ref_array_version}-%{release}
-Requires: libbasicobjects = %{basicobjects_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config
@@ -200,7 +160,6 @@ Group: Development/Libraries
 License: LGPLv3+
 Requires: libini_config = %{ini_config_version}-%{release}
 Requires: libref_array-devel = %{ref_array_version}-%{release}
-Requires: libbasicobjects-devel = %{basicobjects_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config-devel
