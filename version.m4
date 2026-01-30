@@ -10,7 +10,6 @@ m4_define([VERSION_NUMBER], [0.6.2])
 # ding-libs-0.1.0-0.20090915gitf1bcde7.fc13.src.rpm
 m4_define([PRERELEASE_VERSION_NUMBER], [])
 
-m4_define([PATH_UTILS_VERSION_NUMBER], [0.2.1])
 m4_define([DHASH_VERSION_NUMBER], [0.5.0])
 m4_define([COLLECTION_VERSION_NUMBER], [0.7.0])
 m4_define([REF_ARRAY_VERSION_NUMBER], [0.1.5])

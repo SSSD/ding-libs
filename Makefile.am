@@ -12,7 +12,6 @@ dist_noinst_DATA = \
     m4 \
     COPYING \
     COPYING.LESSER \
-    path_utils/libpath_utils.sym \
     dhash/libdhash.sym \
     collection/libcollection.sym \
     refarray/libref_array.sym \
@@ -61,21 +60,6 @@ examplesdir = $(docdir)/examples
 # Path Utils
 ##############################################################################
 
-lib_LTLIBRARIES += libpath_utils.la
-dist_pkgconfig_DATA += path_utils/path_utils.pc
-dist_include_HEADERS += path_utils/path_utils.h
-
-libpath_utils_la_SOURCES = path_utils/path_utils.c
-libpath_utils_la_DEPENDENCIES = path_utils/libpath_utils.sym
-libpath_utils_la_LIBADD = $(LTLIBICONV) \
-    $(LTLIBINTL)
-libpath_utils_la_LDFLAGS = \
-    -version-info 1:1:0
-
-if HAVE_LD_VERSION_SCRIPT
-libpath_utils_la_LDFLAGS += -Wl,--version-script=$(top_srcdir)/path_utils/libpath_utils.sym
-endif
-
 if HAVE_CHECK
     check_PROGRAMS += path_utils_ut \
                       ini_augment_ut_check \
@@ -97,7 +81,7 @@ path_utils_ut_CFLAGS = \
     $(CHECK_CFLAGS)
 path_utils_ut_LDADD = \
     $(CHECK_LIBS) \
-    libpath_utils.la
+    libini_config_internal.la
 
 path_utils-docs:
 if HAVE_DOXYGEN
@@ -274,6 +258,8 @@ dist_include_HEADERS += ini/ini_configobj.h \
                         ini/ini_configmod.h
 
 libini_config_la_SOURCES = \
+    path_utils/path_utils.c \
+    path_utils/path_utils.h \
     ini/ini_config.c \
     ini/ini_config.h \
     ini/ini_get_value.c \
@@ -303,7 +289,6 @@ libini_config_la_SOURCES = \
 EXTRA_libini_config_la_DEPENDENCIES = ini/libini_config.sym
 libini_config_la_LIBADD = \
     libcollection.la \
-    libpath_utils.la \
     libref_array.la \
     libbasicobjects.la \
     $(LTLIBICONV) \
@@ -383,11 +368,11 @@ ini_parse_ut_LDADD = libini_config_internal.la libcollection.la libbasicobjects.
 
 ini_augment_ut_SOURCES = ini/ini_augment_ut.c
 ini_augment_ut_LDADD = libini_config_internal.la libcollection.la \
-                       libbasicobjects.la libpath_utils.la libref_array.la
+                       libbasicobjects.la libref_array.la
 
 ini_configmod_ut_SOURCES = ini/ini_configmod_ut.c
 ini_configmod_ut_LDADD = libini_config_internal.la libcollection.la \
-                         libbasicobjects.la libpath_utils.la libref_array.la
+                         libbasicobjects.la libref_array.la
 
 ini_augment_ut_check_SOURCES = ini/ini_augment_ut_check.c
 ini_augment_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
@@ -397,7 +382,7 @@ ini_augment_ut_check_LDADD = libini_config_internal.la $(CHECK_LIBS) \
 ini_configmod_ut_check_SOURCES = ini/ini_configmod_ut_check.c
 ini_configmod_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
 ini_configmod_ut_check_LDADD = libini_config_internal.la libcollection.la \
-                               libbasicobjects.la libpath_utils.la \
+                               libbasicobjects.la \
                                libref_array.la \
                                $(CHECK_LIBS)
 
@@ -414,7 +399,7 @@ ini_validators_ut_check_LDADD = libini_config_internal.la $(CHECK_LIBS)
 
 ini_save_ut_SOURCES = ini/ini_save_ut.c
 ini_save_ut_LDADD = libini_config_internal.la libcollection.la \
-                         libbasicobjects.la libpath_utils.la libref_array.la
+                         libbasicobjects.la libref_array.la
 
 ini_config-docs:
 if HAVE_DOXYGEN
