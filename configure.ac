@@ -84,7 +84,7 @@ AC_CONFIG_FILES([Makefile contrib/ding-libs.spec
                  path_utils/path_utils.cfg.doxy
                  dhash/dhash.pc
                  collection/collection.cfg.doxy
-                 refarray/ref_array.cfg.doxy refarray/ref_array.pc
+                 refarray/ref_array.cfg.doxy
                  basicobjects/basicobjects.cfg.doxy
                  ini/ini_config.cfg.doxy ini/ini_config.pc])
 AC_OUTPUT

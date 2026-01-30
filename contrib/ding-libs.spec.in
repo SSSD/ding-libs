@@ -24,8 +24,9 @@ Obsoletes: libcollection
 Obsoletes: libcollection-devel
 Obsoletes: libbasicobjects
 Obsoletes: libbasicobjects-devel
+Obsoletes: libref_array
+Obsoletes: libref_array-devel
 Requires: libdhash = %{dhash_version}-%{release}
-Requires: libref_array = %{ref_array_version}-%{release}
 Requires: libini_config = %{ini_config_version}-%{release}
 
 ### Build Dependencies ###
@@ -40,8 +41,7 @@ BuildRequires: check-devel
 BuildRequires: gettext-devel
 
 %description
-A meta-package that pulls in libdhash, libini_config,
-librefarray.
+A meta-package that pulls in libdhash and libini_config.
 
 %package devel
 Summary: Development packages for ding-libs
@@ -51,12 +51,11 @@ License: LGPLv3+
 # ding-libs is a meta-package that will pull in all of its own
 # sub-packages
 Requires: libdhash-devel = %{dhash_version}-%{release}
-Requires: libref_array-devel = %{ref_array_version}-%{release}
 Requires: libini_config-devel = %{ini_config_version}-%{release}
 
 %description devel
 A meta-package that pulls in development libraries for
-libdhash, libini_config, librefarray.
+libdhash and libini_config.
 
 ##############################################################################
 # dhash
@@ -101,47 +100,6 @@ time properties
 %doc dhash/examples/*.c
 
 ##############################################################################
-# ref_array
-##############################################################################
-
-%package -n libref_array
-Summary: A refcounted array for C
-Group: Development/Libraries
-License: LGPLv3+
-Version: %{ref_array_version}
-
-%description -n libref_array
-A dynamically-growing, reference-counted array
-
-%package -n libref_array-devel
-Summary: Development files for libref_array
-Group: Development/Libraries
-Requires: libref_array = %{ref_array_version}-%{release}
-License: LGPLv3+
-Version: %{ref_array_version}
-
-%description -n libref_array-devel
-A dynamically-growing, reference-counted array
-
-%post -n libref_array -p /sbin/ldconfig
-%postun -n libref_array -p /sbin/ldconfig
-
-%files -n libref_array
-%defattr(-,root,root,-)
-%doc COPYING
-%doc COPYING.LESSER
-%{_libdir}/libref_array.so.1
-%{_libdir}/libref_array.so.1.2.1
-
-%files -n libref_array-devel
-%defattr(-,root,root,-)
-%{_includedir}/ref_array.h
-%{_libdir}/libref_array.so
-%{_libdir}/pkgconfig/ref_array.pc
-%doc refarray/README.ref_array
-%doc refarray/doc/html/
-
-##############################################################################
 # ini_config
 ##############################################################################
 
@@ -149,7 +107,6 @@ A dynamically-growing, reference-counted array
 Summary: INI file parser for C
 Group: Development/Libraries
 License: LGPLv3+
-Requires: libref_array = %{ref_array_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config
@@ -160,7 +117,6 @@ Summary: Development files for libini_config
 Group: Development/Libraries
 License: LGPLv3+
 Requires: libini_config = %{ini_config_version}-%{release}
-Requires: libref_array-devel = %{ref_array_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config-devel
@@ -180,9 +136,12 @@ Library to process config files in INI format
 %defattr(-,root,root,-)
 %{_includedir}/ini_configobj.h
 %{_includedir}/ini_configmod.h
+%{_includedir}/ref_array.h
 %{_libdir}/libini_config.so
 %{_libdir}/pkgconfig/ini_config.pc
 %doc ini/doc/html/
+%doc refarray/README.ref_array
+%doc refarray/doc/html/
 
 
 ##############################################################################
