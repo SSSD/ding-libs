@@ -30,7 +30,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_SUBST([PRERELEASE_VERSION],
          PRERELEASE_VERSION_NUMBER)
 
-AC_SUBST([PATH_UTILS_VERSION], PATH_UTILS_VERSION_NUMBER)
 AC_SUBST([DHASH_VERSION], DHASH_VERSION_NUMBER)
 AC_SUBST([COLLECTION_VERSION], COLLECTION_VERSION_NUMBER)
 AC_SUBST([REF_ARRAY_VERSION], REF_ARRAY_VERSION_NUMBER)
@@ -81,7 +80,7 @@ if test x$docdir = x; then
 fi
 
 AC_CONFIG_FILES([Makefile contrib/ding-libs.spec
-                 path_utils/path_utils.cfg.doxy path_utils/path_utils.pc
+                 path_utils/path_utils.cfg.doxy
                  dhash/dhash.pc
                  collection/collection.cfg.doxy collection/collection.pc
                  refarray/ref_array.cfg.doxy refarray/ref_array.pc
