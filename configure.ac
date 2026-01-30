@@ -81,7 +81,7 @@ if test x$docdir = x; then
 fi
 
 AC_CONFIG_FILES([Makefile contrib/ding-libs.spec
-                 path_utils/path_utils.cfg.doxy path_utils/path_utils.pc
+                 path_utils/path_utils.cfg.doxy
                  dhash/dhash.pc
                  collection/collection.cfg.doxy collection/collection.pc
                  refarray/ref_array.cfg.doxy refarray/ref_array.pc
