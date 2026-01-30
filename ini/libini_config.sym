@@ -95,6 +95,22 @@ global:
     ini_config_get_bom;
     ini_config_set_bom;
 
+    /* ref_array.h */
+    ref_array_create;
+    ref_array_getref;
+    ref_array_destroy;
+    ref_array_append;
+    ref_array_get;
+    ref_array_getlen;
+    ref_array_len;
+    ref_array_insert;
+    ref_array_replace;
+    ref_array_remove;
+    ref_array_swap;
+    ref_array_reset;
+    ref_array_debug;
+    ref_array_copy;
+
 local:
     *;
 };
