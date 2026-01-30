@@ -6,7 +6,6 @@ includedir=@includedir@
 Name: ini_config
 Description: Library to process config files in INI format
 Version: @INI_CONFIG_VERSION@
-Requires: ref_array
 Libs: -L${libdir} -lini_config
 Cflags: -I${includedir}
 URL: https://github.com/SSSD/ding-libs
