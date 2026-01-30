@@ -9,7 +9,6 @@ Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 %global dhash_version @DHASH_VERSION@
-%global collection_version @COLLECTION_VERSION@
 %global ref_array_version @REF_ARRAY_VERSION@
 %global basicobjects_version @BASICOBJECTS_VERSION@
 %global ini_config_version @INI_CONFIG_VERSION@
@@ -21,8 +20,9 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 # sub-packages
 Obsoletes: libpath_utils
 Obsoletes: libpath_utils-devel
+Obsoletes: libcollection
+Obsoletes: libcollection-devel
 Requires: libdhash = %{dhash_version}-%{release}
-Requires: libcollection = %{collection_version}-%{release}
 Requires: libref_array = %{ref_array_version}-%{release}
 Requires: libini_config = %{ini_config_version}-%{release}
 
@@ -38,7 +38,7 @@ BuildRequires: check-devel
 BuildRequires: gettext-devel
 
 %description
-A meta-package that pulls in libcollection, libdhash, libini_config,
+A meta-package that pulls in libdhash, libini_config,
 librefarray.
 
 %package devel
@@ -49,13 +49,12 @@ License: LGPLv3+
 # ding-libs is a meta-package that will pull in all of its own
 # sub-packages
 Requires: libdhash-devel = %{dhash_version}-%{release}
-Requires: libcollection-devel = %{collection_version}-%{release}
 Requires: libref_array-devel = %{ref_array_version}-%{release}
 Requires: libbasicobjects-devel = %{basicobjects_version}-%{release}
 Requires: libini_config-devel = %{ini_config_version}-%{release}
 
 %description devel
-A meta-package that pulls in development libraries for libcollection,
+A meta-package that pulls in development libraries for
 libdhash, libini_config, librefarray.
 
 ##############################################################################
@@ -99,53 +98,6 @@ time properties
 %{_libdir}/pkgconfig/dhash.pc
 %doc dhash/README.dhash
 %doc dhash/examples/*.c
-
-
-##############################################################################
-# collection
-##############################################################################
-%package -n libcollection
-Summary: Collection data-type for C
-Group: Development/Libraries
-License: LGPLv3+
-Version: %{collection_version}
-
-%description -n libcollection
-A data-type to collect data in a hierarchical structure for easy iteration
-and serialization
-
-%package -n libcollection-devel
-Summary: Development files for libcollection
-Group: Development/Libraries
-License: LGPLv3+
-Requires: libcollection = %{collection_version}-%{release}
-Version: %{collection_version}
-
-%description -n libcollection-devel
-A data-type to collect data in a hierarchical structure for easy iteration
-and serialization
-
-%post -n libcollection -p /sbin/ldconfig
-%postun -n libcollection -p /sbin/ldconfig
-
-
-%files -n libcollection
-%defattr(-,root,root,-)
-%doc COPYING
-%doc COPYING.LESSER
-%{_libdir}/libcollection.so.4
-%{_libdir}/libcollection.so.4.1.1
-
-%files -n libcollection-devel
-%defattr(-,root,root,-)
-%{_includedir}/collection.h
-%{_includedir}/collection_tools.h
-%{_includedir}/collection_queue.h
-%{_includedir}/collection_stack.h
-%{_libdir}/libcollection.so
-%{_libdir}/pkgconfig/collection.pc
-%doc collection/doc/html/
-
 
 ##############################################################################
 # ref_array
@@ -235,28 +187,24 @@ Basic object types
 Summary: INI file parser for C
 Group: Development/Libraries
 License: LGPLv3+
-Requires: libcollection = %{collection_version}-%{release}
 Requires: libref_array = %{ref_array_version}-%{release}
 Requires: libbasicobjects = %{basicobjects_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config
-Library to process config files in INI format into a libcollection data
-structure
+Library to process config files in INI format
 
 %package -n libini_config-devel
 Summary: Development files for libini_config
 Group: Development/Libraries
 License: LGPLv3+
 Requires: libini_config = %{ini_config_version}-%{release}
-Requires: libcollection-devel = %{collection_version}-%{release}
 Requires: libref_array-devel = %{ref_array_version}-%{release}
 Requires: libbasicobjects-devel = %{basicobjects_version}-%{release}
 Version: %{ini_config_version}
 
 %description -n libini_config-devel
-Library to process config files in INI format into a libcollection data
-structure
+Library to process config files in INI format
 
 %post -n libini_config -p /sbin/ldconfig
 %postun -n libini_config -p /sbin/ldconfig

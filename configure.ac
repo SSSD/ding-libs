@@ -83,7 +83,7 @@ fi
 AC_CONFIG_FILES([Makefile contrib/ding-libs.spec
                  path_utils/path_utils.cfg.doxy
                  dhash/dhash.pc
-                 collection/collection.cfg.doxy collection/collection.pc
+                 collection/collection.cfg.doxy
                  refarray/ref_array.cfg.doxy refarray/ref_array.pc
                  basicobjects/basicobjects.cfg.doxy
                  basicobjects/basicobjects.pc
