@@ -30,6 +30,7 @@
 #include "ini_defines.h"
 #include "ini_configobj.h"
 #include "ini_config_priv.h"
+#include "ini_valueobj.h"
 #include "simplebuffer.h"
 #include "path_utils.h"
 #define TRACE_HOME

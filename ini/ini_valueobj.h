@@ -24,7 +24,6 @@
 #define INI_VALUEOBJ_H
 
 #include "ref_array.h"
-#include "simplebuffer.h"
 #include "ini_comment.h"
 
 struct value_obj;
@@ -135,11 +134,6 @@ int value_put_comment(struct value_obj *vo,
 /* Merge comment from one value into another */
 int value_merge_comment(struct value_obj *vo_donor,
                         struct value_obj *vo);
-
-/* Serialize value */
-int value_serialize(struct value_obj *vo,
-                    const char *key,
-                    struct simplebuffer *sbobj);
 
 /* Print value */
 void value_print(const char *key, struct value_obj *vo);
