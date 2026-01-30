@@ -47,6 +47,7 @@ dist_pkgconfig_DATA =
 dist_doc_DATA =
 dist_examples_DATA =
 dist_include_HEADERS =
+dist_noinst_HEADERS =
 lib_LTLIBRARIES =
 check_PROGRAMS =
 TESTS =
@@ -56,6 +57,8 @@ examplesdir = $(docdir)/examples
 ##############################################################################
 # Path Utils
 ##############################################################################
+
+dist_noinst_HEADERS += path_utils/path_utils.h
 
 if HAVE_CHECK
     check_PROGRAMS += path_utils_ut \
@@ -137,6 +140,12 @@ dist_doc_DATA += dhash/README.dhash
 # collection
 ##############################################################################
 
+dist_noinst_HEADERS += collection/collection_priv.h \
+                       collection/collection.h \
+                       collection/collection_tools.h \
+                       collection/collection_queue.h \
+                       collection/collection_stack.h
+
 check_PROGRAMS += \
     collection_ut \
     collection_stack_ut \
@@ -182,6 +191,8 @@ endif
 # basicobjects
 ##############################################################################
 
+dist_noinst_HEADERS += basicobjects/simplebuffer.h
+
 check_PROGRAMS += simplebuffer_ut
 TESTS += simplebuffer_ut
 simplebuffer_ut_SOURCES = basicobjects/simplebuffer_ut.c
@@ -203,13 +214,17 @@ dist_pkgconfig_DATA += ini/ini_config.pc
 dist_include_HEADERS += ini/ini_configobj.h \
                         ini/ini_configmod.h
 
+dist_noinst_HEADERS += ini/ini_config.h \
+                       ini/ini_metadata.h \
+                       ini/ini_defines.h \
+                       ini/ini_valueobj.h \
+                       ini/ini_comment.h \
+                       ini/ini_config_priv.h
+
 libini_config_la_SOURCES = \
     path_utils/path_utils.c \
-    path_utils/path_utils.h \
     basicobjects/simplebuffer.c \
-    basicobjects/simplebuffer.h \
     refarray/ref_array.c \
-    refarray/ref_array.h \
     collection/collection.c \
     collection/collection_tools.c \
     collection/collection_cnv.c \
@@ -217,32 +232,19 @@ libini_config_la_SOURCES = \
     collection/collection_stack.c \
     collection/collection_cmp.c \
     collection/collection_iter.c \
-    collection/collection_priv.h \
-    collection/collection.h \
-    collection/collection_tools.h \
-    collection/collection_queue.h \
-    collection/collection_stack.h \
     ini/ini_config.c \
-    ini/ini_config.h \
     ini/ini_get_value.c \
     ini/ini_get_array.c \
     ini/ini_list.c \
     ini/ini_print.c \
     ini/ini_parse.c \
     ini/ini_metadata.c \
-    ini/ini_metadata.h \
-    ini/ini_defines.h \
     ini/ini_comment.c \
-    ini/ini_comment.h \
     ini/ini_valueobj.c \
-    ini/ini_valueobj.h \
     ini/ini_serialize.c \
     ini/ini_fileobj.c \
     ini/ini_configobj.c \
-    ini/ini_configobj.h \
-    ini/ini_configmod.h \
     ini/ini_configmod.c \
-    ini/ini_config_priv.h \
     ini/ini_get_valueobj.c \
     ini/ini_get_array_valueobj.c \
     ini/ini_list_valueobj.c \
