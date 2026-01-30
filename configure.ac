@@ -31,7 +31,6 @@ AC_SUBST([PRERELEASE_VERSION],
          PRERELEASE_VERSION_NUMBER)
 
 AC_SUBST([DHASH_VERSION], DHASH_VERSION_NUMBER)
-AC_SUBST([REF_ARRAY_VERSION], REF_ARRAY_VERSION_NUMBER)
 AC_SUBST([INI_CONFIG_VERSION], INI_CONFIG_VERSION_NUMBER)
 
 AM_CONDITIONAL([GIT_CHECKOUT], [git log -1 >/dev/null 2>&1])
@@ -81,7 +80,7 @@ AC_CONFIG_FILES([Makefile contrib/ding-libs.spec
                  path_utils/path_utils.cfg.doxy
                  dhash/dhash.pc
                  collection/collection.cfg.doxy
-                 refarray/ref_array.cfg.doxy refarray/ref_array.pc
+                 refarray/ref_array.cfg.doxy
                  basicobjects/basicobjects.cfg.doxy
                  ini/ini_config.cfg.doxy ini/ini_config.pc])
 AC_OUTPUT

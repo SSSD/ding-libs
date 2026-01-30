@@ -13,7 +13,6 @@ dist_noinst_DATA = \
     COPYING \
     COPYING.LESSER \
     dhash/libdhash.sym \
-    refarray/libref_array.sym \
     ini/libini_config.sym
 
 ##############################################################################
@@ -164,24 +163,12 @@ endif
 # refarray
 ##############################################################################
 
-lib_LTLIBRARIES += libref_array.la
-dist_pkgconfig_DATA += refarray/ref_array.pc
 dist_include_HEADERS += refarray/ref_array.h
-
-libref_array_la_SOURCES = \
-    refarray/ref_array.c \
-    trace/trace.h
-libref_array_la_DEPENDENCIES = refarray/libref_array.sym
-libref_array_la_LDFLAGS = \
-    -version-info 3:1:2
-if HAVE_LD_VERSION_SCRIPT
-libref_array_la_LDFLAGS += -Wl,--version-script=$(top_srcdir)/refarray/libref_array.sym
-endif
 
 check_PROGRAMS += ref_array_ut
 TESTS += ref_array_ut
 ref_array_ut_SOURCES = refarray/ref_array_ut.c
-ref_array_ut_LDADD = libref_array.la
+ref_array_ut_LDADD = libini_config_internal.la
 
 dist_doc_DATA += refarray/README.ref_array
 
@@ -221,6 +208,8 @@ libini_config_la_SOURCES = \
     path_utils/path_utils.h \
     basicobjects/simplebuffer.c \
     basicobjects/simplebuffer.h \
+    refarray/ref_array.c \
+    refarray/ref_array.h \
     collection/collection.c \
     collection/collection_tools.c \
     collection/collection_cnv.c \
@@ -261,7 +250,6 @@ libini_config_la_SOURCES = \
     trace/trace.h
 EXTRA_libini_config_la_DEPENDENCIES = ini/libini_config.sym
 libini_config_la_LIBADD = \
-    libref_array.la \
     $(LTLIBICONV) \
     $(LTLIBINTL)
 libini_config_la_LDFLAGS = \
@@ -336,28 +324,23 @@ ini_parse_ut_SOURCES = ini/ini_parse_ut.c
 ini_parse_ut_LDADD = libini_config_internal.la
 
 ini_augment_ut_SOURCES = ini/ini_augment_ut.c
-ini_augment_ut_LDADD = libini_config_internal.la \
-                       libref_array.la
+ini_augment_ut_LDADD = libini_config_internal.la
 
 ini_configmod_ut_SOURCES = ini/ini_configmod_ut.c
-ini_configmod_ut_LDADD = libini_config_internal.la \
-                         libref_array.la
+ini_configmod_ut_LDADD = libini_config_internal.la
 
 ini_augment_ut_check_SOURCES = ini/ini_augment_ut_check.c
 ini_augment_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
-ini_augment_ut_check_LDADD = libini_config_internal.la $(CHECK_LIBS) \
-                             libref_array.la
+ini_augment_ut_check_LDADD = libini_config_internal.la $(CHECK_LIBS)
 
 ini_configmod_ut_check_SOURCES = ini/ini_configmod_ut_check.c
 ini_configmod_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
 ini_configmod_ut_check_LDADD = libini_config_internal.la \
-                               libref_array.la \
                                $(CHECK_LIBS)
 
 ini_parse_ut_check_SOURCES = ini/ini_parse_ut_check.c
 ini_parse_ut_check_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS)
 ini_parse_ut_check_LDADD = libini_config_internal.la \
-                           libref_array.la \
                            $(CHECK_LIBS)
 
 ini_validators_ut_check_SOURCES = ini/ini_validators_ut_check.c
@@ -366,8 +349,7 @@ ini_validators_ut_check_LDADD = libini_config_internal.la $(CHECK_LIBS)
 
 
 ini_save_ut_SOURCES = ini/ini_save_ut.c
-ini_save_ut_LDADD = libini_config_internal.la \
-                    libref_array.la
+ini_save_ut_LDADD = libini_config_internal.la
 
 ini_config-docs:
 if HAVE_DOXYGEN

@@ -11,5 +11,4 @@ m4_define([VERSION_NUMBER], [0.6.2])
 m4_define([PRERELEASE_VERSION_NUMBER], [])
 
 m4_define([DHASH_VERSION_NUMBER], [0.5.0])
-m4_define([REF_ARRAY_VERSION_NUMBER], [0.1.5])
 m4_define([INI_CONFIG_VERSION_NUMBER], [1.4.0])
