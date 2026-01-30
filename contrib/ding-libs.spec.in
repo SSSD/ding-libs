@@ -105,6 +105,14 @@ time properties
 Summary: INI file parser for C
 Group: Development/Libraries
 License: LGPLv3+
+Obsoletes: libpath_utils
+Obsoletes: libpath_utils-devel
+Obsoletes: libcollection
+Obsoletes: libcollection-devel
+Obsoletes: libbasicobjects
+Obsoletes: libbasicobjects-devel
+Obsoletes: libref_array
+Obsoletes: libref_array-devel
 Version: %{ini_config_version}
 
 %description -n libini_config
@@ -114,6 +122,14 @@ Library to process config files in INI format
 Summary: Development files for libini_config
 Group: Development/Libraries
 License: LGPLv3+
+Obsoletes: libpath_utils
+Obsoletes: libpath_utils-devel
+Obsoletes: libcollection
+Obsoletes: libcollection-devel
+Obsoletes: libbasicobjects
+Obsoletes: libbasicobjects-devel
+Obsoletes: libref_array
+Obsoletes: libref_array-devel
 Requires: libini_config = %{ini_config_version}-%{release}
 Version: %{ini_config_version}
 
