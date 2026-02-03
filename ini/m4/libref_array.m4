@@ -1,5 +1,0 @@
-AC_SUBST(REFARRAY_OBJ)
-AC_SUBST(REFARRAY_CFLAGS)
-AC_SUBST(REFARRAY_LIBS)
-
-PKG_CHECK_MODULES(REFARRAY, ref_array >= 0.1.0,,AC_MSG_ERROR([librefarray development package not installed]))

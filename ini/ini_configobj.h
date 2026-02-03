@@ -29,8 +29,9 @@
 #include <unistd.h>
 #include <limits.h>
 #include <stdio.h>
-#include "simplebuffer.h"
-#include "ini_valueobj.h"
+#include "ref_array.h"
+
+struct value_obj;
 
 #ifndef DING_ATTR_FORMAT
 #  if ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 3)))
@@ -121,9 +122,7 @@
  * - The library allows storing and retrieving multiple key value pairs with
  *   the same key in one section.
  *
- *   <i>There is a deprecated interface that can be found in ini_config.h.
- *   This interface is supported only for backwards compatibility and should
- *   not be used.</i>
+ *   <i>Previously deprecated interface ini_config.h isn't supported anymore.</i>
  */
 
 /**
@@ -1111,24 +1110,6 @@ int ini_config_augment(struct ini_cfgobj *base_cfg,
  */
 int ini_config_set_wrap(struct ini_cfgobj *ini_config,
                         uint32_t boundary);
-
-/**
- * @brief Serialize configuration object
- *
- * Serialize configuration object into provided buffer.
- * Use buffer object functions to manipulate or save
- * the buffer to a file/stream.
- *
- * @param[in]  ini_config       Configuration object.
- * @param[out] sbobj            Serialized configuration.
- *
- * @return 0 - Success.
- * @return EINVAL - Invalid parameter.
- * @return ENOMEM - No memory.
- */
-int ini_config_serialize(struct ini_cfgobj *ini_config,
-                         struct simplebuffer *sbobj);
-
 
 /* Functions that add, modify or delete sections and values in
  * the configuration object can be found in section \ref ini_mod.

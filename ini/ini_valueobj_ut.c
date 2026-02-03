@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include "simplebuffer.h"
+#include "ini_configobj.h"
+#include "ini_config_priv.h"
 #include "ini_valueobj.h"
 #include "ini_defines.h"
 #define TRACE_HOME
