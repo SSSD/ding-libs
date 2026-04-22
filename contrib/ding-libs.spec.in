@@ -6,7 +6,6 @@ Group: Development/Libraries
 License: LGPLv3+
 URL: https://github.com/SSSD/ding-libs/
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
-BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 %global dhash_version @DHASH_VERSION@
 %global ini_config_version @INI_CONFIG_VERSION@
